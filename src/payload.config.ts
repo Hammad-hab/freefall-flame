@@ -30,7 +30,6 @@ export default buildConfig({
     s3Storage({
       collections: {
         media: true,
-        papers: true,
       },
       bucket: process.env.S3_BUCKET!,
       clientUploads: true, // browser uploads straight to S3, bypasses serverless body limits
