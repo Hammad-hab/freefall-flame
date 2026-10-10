@@ -69,15 +69,27 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    papers: Paper;
+    datasets: Dataset;
+    'dataset-rows': DatasetRow;
+    'dataset-imports': DatasetImport;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    papers: {
+      datasets: 'datasets';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    papers: PapersSelect<false> | PapersSelect<true>;
+    datasets: DatasetsSelect<false> | DatasetsSelect<true>;
+    'dataset-rows': DatasetRowsSelect<false> | DatasetRowsSelect<true>;
+    'dataset-imports': DatasetImportsSelect<false> | DatasetImportsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -165,6 +177,216 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "papers".
+ */
+export interface Paper {
+  id: number;
+  title: string;
+  authors?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  year?: number | null;
+  documentType?:
+    | (
+        | 'journal-article'
+        | 'technical-memorandum'
+        | 'technical-publication'
+        | 'conference-paper'
+        | 'presentation'
+        | 'poster'
+        | 'other'
+      )
+    | null;
+  /**
+   * NTRS document ID, e.g. 20210011385
+   */
+  ntrsId?: string | null;
+  /**
+   * e.g. 10.1007/s12217-014-9372-2
+   */
+  doi?: string | null;
+  /**
+   * Filled from the NTRS ID if left empty.
+   */
+  sourceUrl?: string | null;
+  /**
+   * e.g. "NASA, public" or "Publisher copyright". For copyrighted papers, link to the source and don’t upload the PDF.
+   */
+  license?: string | null;
+  /**
+   * Which experiments this paper covers, and whether you have confirmed the link.
+   */
+  experiments?:
+    | {
+        experiment:
+          | 'SAFFIRE'
+          | 'FLEX'
+          | 'FLEX-2'
+          | 'ACME'
+          | 'BASS-II'
+          | 'SoFIE'
+          | 'SLICE'
+          | 'CFI'
+          | 'SPICE'
+          | 'SAME'
+          | 'DAFT'
+          | 'Other';
+        linkStatus: 'confirmed' | 'unconfirmed';
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Datasets that list this paper as a source.
+   */
+  datasets?: {
+    docs?: (number | Dataset)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  abstract?: string | null;
+  /**
+   * Extracted text used for AI summaries and search.
+   */
+  fullText?: string | null;
+  ingestStatus?: ('pending' | 'extracted' | 'embedded' | 'failed') | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "datasets".
+ */
+export interface Dataset {
+  id: number;
+  name: string;
+  description?: string | null;
+  /**
+   * Papers this dataset comes from or is described in.
+   */
+  papers?: (number | Paper)[] | null;
+  /**
+   * Visitors can see this dataset and its rows only when published.
+   */
+  published?: boolean | null;
+  /**
+   * Define the columns of the CSV you will upload, and the type each holds. Then upload the CSV under Dataset Imports.
+   */
+  columns: {
+    label: string;
+    /**
+     * Stored field name. Auto-generated from the label if left empty.
+     */
+    key?: string | null;
+    type: 'text' | 'number' | 'integer' | 'boolean' | 'date' | 'category';
+    /**
+     * e.g. %, kPa, cm/s
+     */
+    unit?: string | null;
+    options?:
+      | {
+          value: string;
+          id?: string | null;
+        }[]
+      | null;
+    required?: boolean | null;
+    /**
+     * Header in the CSV, if it differs from the label or key.
+     */
+    csvHeader?: string | null;
+    /**
+     * Optional. Links this column to a standard dashboard field. Values must already be in that field’s unit.
+     */
+    canonicalField?:
+      | (
+          | 'material'
+          | 'o2Percent'
+          | 'pressureKpa'
+          | 'flowCmS'
+          | 'gravityG'
+          | 'outcome'
+          | 'spreadRateMmS'
+          | 'burnRateMm2S'
+          | 'peakTempK'
+        )
+      | null;
+    id?: string | null;
+  }[];
+  rowCount?: number | null;
+  lastImportedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dataset-rows".
+ */
+export interface DatasetRow {
+  id: number;
+  dataset: number | Dataset;
+  rowIndex?: number | null;
+  /**
+   * Values keyed by the dataset’s column keys.
+   */
+  data:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sourcePaper?: (number | null) | Paper;
+  sourcePage?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Create a new entry, pick the dataset, and upload a CSV. Tick "Check only" to validate without importing.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dataset-imports".
+ */
+export interface DatasetImport {
+  id: number;
+  dataset: number | Dataset;
+  /**
+   * Delete the dataset’s existing rows before importing.
+   */
+  replace?: boolean | null;
+  /**
+   * Validate the file and report the result without importing anything.
+   */
+  checkOnly?: boolean | null;
+  status?: ('checked' | 'imported') | null;
+  summary?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -194,6 +416,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'papers';
+        value: number | Paper;
+      } | null)
+    | ({
+        relationTo: 'datasets';
+        value: number | Dataset;
+      } | null)
+    | ({
+        relationTo: 'dataset-rows';
+        value: number | DatasetRow;
+      } | null)
+    | ({
+        relationTo: 'dataset-imports';
+        value: number | DatasetImport;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -267,6 +505,115 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   _objectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "papers_select".
+ */
+export interface PapersSelect<T extends boolean = true> {
+  title?: T;
+  authors?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  year?: T;
+  documentType?: T;
+  ntrsId?: T;
+  doi?: T;
+  sourceUrl?: T;
+  license?: T;
+  experiments?:
+    | T
+    | {
+        experiment?: T;
+        linkStatus?: T;
+        id?: T;
+      };
+  datasets?: T;
+  abstract?: T;
+  fullText?: T;
+  ingestStatus?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "datasets_select".
+ */
+export interface DatasetsSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  papers?: T;
+  published?: T;
+  columns?:
+    | T
+    | {
+        label?: T;
+        key?: T;
+        type?: T;
+        unit?: T;
+        options?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        required?: T;
+        csvHeader?: T;
+        canonicalField?: T;
+        id?: T;
+      };
+  rowCount?: T;
+  lastImportedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dataset-rows_select".
+ */
+export interface DatasetRowsSelect<T extends boolean = true> {
+  dataset?: T;
+  rowIndex?: T;
+  data?: T;
+  sourcePaper?: T;
+  sourcePage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dataset-imports_select".
+ */
+export interface DatasetImportsSelect<T extends boolean = true> {
+  dataset?: T;
+  replace?: T;
+  checkOnly?: T;
+  status?: T;
+  summary?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
