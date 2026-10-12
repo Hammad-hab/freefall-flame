@@ -146,7 +146,7 @@ function Vulnerability() {
   return (
     <div className="relative overflow-hidden rounded-[22px] bg-[#1a6bff] p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-[16px]">Vulnerability</h2>
+        <h2 className="text-[16px]">Sources</h2>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25">
           <Arrow />
         </span>
@@ -173,7 +173,7 @@ function ActiveIncidents() {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-[17px] font-light">Active incidents</h2>
+        <h2 className="text-[17px] font-light">Key Findings</h2>
         <div className="flex gap-2 text-[11px]">
           {["Newest", "All"].map((t) => (
             <span key={t} className="flex items-center gap-4 rounded-full border border-white/10 px-3 py-2">
@@ -261,8 +261,7 @@ function Assistant() {
   ];
   return (
     <Card className="p-5">
-      <div className="text-[17px] font-light">Hi, User 👋</div>
-      <div className="mt-0.5 text-[17px]">How can I help you?</div>
+      <div className="text-[17px] font-light">Ask about this dataset</div>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {actions.map((a) => (
           <div key={a.label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#23232c] px-3.5 py-3.5 text-[12px]">
