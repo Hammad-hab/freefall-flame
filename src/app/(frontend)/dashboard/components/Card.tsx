@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 function Card({ className = "", children }: { className?: string; children: ReactNode }) {
   return (
     <div className={`rounded-[32px] border border-white/[0.07] bg-[#1c1c24] ${className}`}>{children}</div>

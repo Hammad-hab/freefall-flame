@@ -120,7 +120,7 @@ async function main() {
   const parsed = Papa.parse<Record<string, string>>(fs.readFileSync(file, 'utf8'), {
     header: true,
     skipEmptyLines: 'greedy',
-    transformHeader: (h) => h.trim(),
+    transformHeader: (h: string) => h.trim(),
   })
   const headers = parsed.meta.fields ?? []
   const data = parsed.data
@@ -128,8 +128,8 @@ async function main() {
 
   // Infer, then make keys unique.
   const used = new Set<string>()
-  const cols: Inferred[] = headers.map((h) => {
-    const c = inferColumn(h, data.map((r) => r[h] ?? ''))
+  const cols: Inferred[] = headers.map((h: string) => {
+    const c = inferColumn(h, data.map((r: Record<string, string>) => r[h] ?? ''))
     let key = c.key
     for (let i = 2; used.has(key); i++) key = `${c.key}_${i}`
     used.add(key)
@@ -162,7 +162,7 @@ async function main() {
   const rows: Record<string, unknown>[] = []
   const errors: string[] = []
   let errorCount = 0
-  data.forEach((raw, i) => {
+data.forEach((raw: Record<string, string>, i: number) => {
     const out: Record<string, unknown> = {}
     for (const col of cols) {
       let v = raw[col.csvHeader as string] ?? ''
