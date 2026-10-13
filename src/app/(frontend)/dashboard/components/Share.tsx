@@ -118,6 +118,9 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
       <div className="min-w-[280px] flex-1">
         <h1 className="font-display text-[28px] font-light tracking-tight">
           {dataset?.name}
+          {dataset?.description && (
+            <p className="mt-1.5 text-[13px] leading-5 text-white/55 tracking-normal">{dataset?.description}</p>
+          )}
           {filter && (
             <span className="text-flame-blue">
               {' '}

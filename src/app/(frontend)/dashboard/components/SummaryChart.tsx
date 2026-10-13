@@ -10,7 +10,6 @@ function SummaryAndChart({ dataset, rows }: { dataset: Awaited<ReturnType<typeof
   const [tab, setTab] = useState<(typeof TABS)[number]>("Columns");
   console.log(rows)
   const items = [
-    { label: "Name", n: dataset?.name ?? "—", dot: "bg-blue-500" },
     {
       label: "Columns",
       n: dataset?.columns?.length ?? 0,

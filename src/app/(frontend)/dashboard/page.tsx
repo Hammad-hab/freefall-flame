@@ -34,6 +34,10 @@ export default async function Page({ searchParams }: SearchPageProps) {
   return (
       <div className="w-full bg-[#131318] p-8 pb-10 shadow-2xl">
         <Header activeTab={activeTab} />
+        {/*<div className="mt-6">
+          <h1 className="text-[22px] font-semibold tracking-tight text-white">{ds.name}</h1>
+         
+        </div>*/}
         <Share
           datasetId={dataset_id as string} metricKey="o2_initial" />
         <div className="mt-10">
