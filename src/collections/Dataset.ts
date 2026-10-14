@@ -18,6 +18,7 @@ import {
   type CollectionBeforeChangeHook,
   type CollectionConfig,
 } from 'payload'
+import { classifyReading } from '@/lib/combustion'
 
 /* ------------------------------------------------------------------ */
 /* Shared                                                              */
@@ -297,6 +298,17 @@ export const DatasetRows: CollectionConfig = {
       required: true,
       admin: { description: 'Values keyed by the dataset\u2019s column keys.' },
     },
+    {
+      // Original source text for readings that could not be stored as numbers
+      // (sensor saturation / out-of-range markers such as ">500" or "OR").
+      // The dashboard shows these as censored instead of ordinary blanks.
+      name: 'rawData',
+      type: 'json',
+      admin: {
+        description:
+          'Original non-numeric source values keyed by column key, e.g. { "final_co": ">500" }. Present only when the stored value is null because the source text was censored.',
+      },
+    },
     // Provenance: where this row's numbers came from.
     { name: 'sourcePaper', type: 'relationship', relationTo: 'papers' },
     { name: 'sourcePage', type: 'number' },
@@ -351,22 +363,36 @@ const validateCsv: CollectionBeforeChangeHook = async ({ data, req, operation })
   const ignored = headers.filter((h: string) => !used.has(h))
 
   const rows: Record<string, unknown>[] = []
+  const rawRows: (Record<string, string> | null)[] = []
   const problems: string[] = []
   let problemCount = 0
 
   parsed.data.forEach((raw: Record<string, string>, i: number) => {
     const out: Record<string, unknown> = {}
+    const rawOut: Record<string, string> = {}
     for (const col of columns) {
       const header = headerFor.get(col.key)
-      const result = coerce(header ? (raw[header] ?? '') : '', col)
+      const rawText = header ? (raw[header] ?? '') : ''
+      const result = coerce(rawText, col)
       if (result.ok) {
         out[col.key] = result.value
+      } else if (
+        (col.type === 'number' || col.type === 'integer') &&
+        rawText.trim() !== '' &&
+        // Recognized censored / out-of-range / missing markers are kept as
+        // raw text (stored null) so the dashboard can report them instead of
+        // silently treating them as ordinary missing values.
+        ['censored', 'outOfRange', 'missing'].includes(classifyReading(rawText).kind)
+      ) {
+        out[col.key] = null
+        rawOut[col.key] = rawText.trim()
       } else {
         problemCount++
         if (problems.length < MAX_SHOWN) problems.push(`Row ${i + 2}, ${col.label}: ${result.error}`) // +2 = header row, 1-based
       }
     }
     rows.push(out)
+    rawRows.push(Object.keys(rawOut).length ? rawOut : null)
   })
 
   if (problemCount > 0)
@@ -379,6 +405,7 @@ const validateCsv: CollectionBeforeChangeHook = async ({ data, req, operation })
 
   // Hand the validated rows to the afterChange hook.
   req.context.importRows = rows
+  req.context.importRawRows = rawRows
   req.context.importReplace = !!data.replace
   req.context.importCheckOnly = !!data.checkOnly
 
@@ -395,6 +422,7 @@ const validateCsv: CollectionBeforeChangeHook = async ({ data, req, operation })
 // Writes the rows. `req` is passed so a failure rolls back the whole import.
 const writeRows: CollectionAfterChangeHook = async ({ doc, req, operation }) => {
   const rows = req.context.importRows as Record<string, unknown>[] | undefined
+  const rawRows = req.context.importRawRows as (Record<string, string> | null)[] | undefined
   if (operation !== 'create' || !rows || req.context.importCheckOnly) return doc
 
   const datasetId = idOf(doc.dataset)
@@ -422,6 +450,7 @@ const writeRows: CollectionAfterChangeHook = async ({ doc, req, operation }) => 
             dataset: datasetId as number,
             rowIndex: existing + i + j + 1,
             data,
+            ...(rawRows?.[i + j] ? { rawData: rawRows[i + j] } : {}),
           },
           req,
         }),

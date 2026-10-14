@@ -4,41 +4,44 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "./Card";
 import Link from "next/link";
 
-const TABS = ["Overview", "AI Summary", "Referenced Papers", "Visualization"] as const;
-type TabName = (typeof TABS)[number];
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "evidence", label: "Evidence" },
+  { id: "visualization", label: "Visualization" },
+  { id: "ai-summary", label: "Interpretation" },
+  { id: "papers", label: "Referenced Papers" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
-function Header({ activeTab }: { activeTab: TabName }) {
+function Header({ activeTab }: { activeTab: TabId }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // const selectTab = (tab: TabName) => {
-  //   const params = new URLSearchParams(searchParams.toString());
-  //   params.set("tab", tab);
-  //   router.replace(`?${params.toString()}`, { scroll: false });
-  // };
 
   return (
     <header className="flex items-center justify-between">
       <div className="text-[18px] font-semibold tracking-tight">Freefall labs</div>
       <div className="flex items-center gap-2">
-        <nav className="flex rounded-full border border-white/10 bg-[#1c1c24] p-0.5">
+        <nav
+          className="flex rounded-full border border-white/10 bg-[#1c1c24] p-0.5"
+          aria-label="Dashboard sections"
+        >
           {TABS.map((t) => {
             const params = new URLSearchParams(searchParams.toString());
-            params.set("tab", t);
-          
+            params.set("tab", t.id);
+
             return (
               <Link
-                key={t}
+                key={t.id}
                 href={`?${params.toString()}`}
                 scroll={false}
-                aria-current={t === activeTab ? "page" : undefined}
+                aria-current={t.id === activeTab ? "page" : undefined}
                 className={`rounded-full px-4 py-2 text-[12px] transition-colors cursor-pointer ${
-                  t === activeTab
+                  t.id === activeTab
                     ? "bg-[#33333f] text-white"
                     : "text-white/80 hover:text-white"
                 }`}
               >
-                {t}
+                {t.label}
               </Link>
             );
           })}

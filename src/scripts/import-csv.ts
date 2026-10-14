@@ -20,6 +20,7 @@ import Papa from 'papaparse'
 import { getPayload } from 'payload'
 
 import config from '../payload.config'
+import { classifyReading } from '../lib/combustion'
 import { coerce, slugifyKey, type Column } from './dataset'
 
 /* ------------------------------ args ------------------------------ */
@@ -159,15 +160,32 @@ async function main() {
     )
 
   // Validate every row against the inferred columns.
+  // With --blank-junk, non-numeric entries in numeric columns are kept as
+  // raw text in rawData (stored as null) so the dashboard can report them as
+  // censored / out-of-range / invalid instead of ordinary missing values.
+  // Unrecognized junk still fails the import.
   const rows: Record<string, unknown>[] = []
+  const rawRows: Record<string, string>[] = []
   const errors: string[] = []
   let errorCount = 0
-data.forEach((raw: Record<string, string>, i: number) => {
+  data.forEach((raw: Record<string, string>, i: number) => {
     const out: Record<string, unknown> = {}
+    const rawOut: Record<string, string> = {}
     for (const col of cols) {
-      let v = raw[col.csvHeader as string] ?? ''
-      if (blankJunk && (col.type === 'number' || col.type === 'integer') && !isEmpty(v) && !isNum(v)) v = ''
-      const r = coerce(v, col)
+      const v = raw[col.csvHeader as string] ?? ''
+      let value = v
+      if (
+        blankJunk &&
+        (col.type === 'number' || col.type === 'integer') &&
+        !isEmpty(v) &&
+        !isNum(v)
+      ) {
+        // Preserve the original text (">500", "OR", "over", ...) and store
+        // null. Never invent a number for a censored observation.
+        rawOut[col.key] = v.trim()
+        value = ''
+      }
+      const r = coerce(value, col)
       if (r.ok) out[col.key] = r.value
       else {
         errorCount++
@@ -175,6 +193,7 @@ data.forEach((raw: Record<string, string>, i: number) => {
       }
     }
     rows.push(out)
+    rawRows.push(rawOut)
   })
 
   if (errorCount) {
@@ -250,7 +269,15 @@ data.forEach((raw: Record<string, string>, i: number) => {
         payload.create({
           collection: 'dataset-rows',
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: { dataset: datasetId, rowIndex: i + j + 1, data: d } as any,
+          data: {
+            dataset: datasetId,
+            rowIndex: i + j + 1,
+            data: d,
+            ...(Object.keys(rawRows[i + j] ?? {}).length ? { rawData: rawRows[i + j] } : {}),
+            // Row-level paper provenance: every row from this import shares the
+            // paper given via --paper (dataset-level link is set separately).
+            ...(papers[0] ? { sourcePaper: papers[0] } : {}),
+          } as any,
         }),
       ),
     )

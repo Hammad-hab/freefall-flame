@@ -5,50 +5,18 @@ import { getPayload } from 'payload'
 
 import config from '@/payload.config'
 
-export type ColumnType = 'text' | 'number' | 'integer' | 'boolean' | 'date' | 'category'
-
-export type Column = {
-  label: string                              // shown in the UI, e.g. "Oxygen"
-  key: string                                // stored field name, e.g. "oxygen"
-  type: ColumnType
-  unit?: string | null                       // numbers only, e.g. "%", "kPa"
-  required?: boolean | null                  // empty values are rejected on import
-  csvHeader?: string | null                  // CSV header, if it differs from label or key
-  canonicalField?: string | null             // link to a standard dashboard field, e.g. "o2Percent"
-  options?: { value: string }[] | null       // category columns only: the allowed values
-}
-
-/* ------------------------------------------------------------------ */
-/* Types                                                               */
-/* ------------------------------------------------------------------ */
-
-export type PaperRef = {
-  id: number | string
-  title: string
-  ntrsId?: string | null
-  sourceUrl?: string | null
-}
-
-export type DatasetMeta = {
-  id: number | string
-  name: string
-  description?: string | null
-  columns: Column[]
-  rowCount: number
-  lastImportedAt?: string | null
-  papers: PaperRef[]
-}
-
-// One CSV row, flattened: the dataset's column values sit at the top level,
-// provenance sits under underscore keys (column keys can never start with "_").
-export type DataRow = {
-  _id: number | string
-  _index: number | null
-  _paper: number | string | null
-  _page: number | null
-} & Record<string, unknown>
-
-export type DatasetBundle = { dataset: DatasetMeta; rows: DataRow[] }
+// Types and pure column helpers live in src/lib so client components can
+// import them without pulling in this server-only module.
+import type { Column, DataRow, DatasetBundle, DatasetMeta } from '@/lib/types'
+export type { ColumnType, Column, PaperRef, DatasetMeta, DataRow, DatasetBundle } from '@/lib/types'
+export {
+  getColumn,
+  columnsOfType,
+  numericColumns,
+  categoryColumns,
+  columnLabel,
+  numericValues,
+} from '@/lib/columns'
 
 /* ------------------------------------------------------------------ */
 /* Internals                                                           */
@@ -93,6 +61,7 @@ function toRow(doc: any): DataRow {
     _index: doc.rowIndex ?? null,
     _paper: paper && typeof paper === 'object' ? paper.id : (paper ?? null),
     _page: doc.sourcePage ?? null,
+    _rawData: doc.rawData ?? null,
   }
 }
 
@@ -183,37 +152,4 @@ export async function getDatasetBundle(id: number | string): Promise<DatasetBund
     ['dataset-bundle', String(id)],
     { tags: ['datasets', `dataset-${id}`], revalidate: REVALIDATE_SECONDS },
   )()
-}
-
-/* ------------------------------------------------------------------ */
-/* Column helpers (for building charts and filters from a dataset)     */
-/* ------------------------------------------------------------------ */
-
-export function getColumn(dataset: DatasetMeta, key: string): Column | undefined {
-  return dataset.columns.find((c) => c.key === key)
-}
-
-export function columnsOfType(dataset: DatasetMeta, ...types: ColumnType[]): Column[] {
-  return dataset.columns.filter((c) => types.includes(c.type))
-}
-
-/** Columns that make sense on a chart axis. */
-export const numericColumns = (d: DatasetMeta) => columnsOfType(d, 'number', 'integer')
-
-/** Columns that make sense as a filter or group-by. */
-export const categoryColumns = (d: DatasetMeta) => columnsOfType(d, 'category', 'text', 'boolean')
-
-/** Axis label such as "Oxygen (%)". */
-export function columnLabel(col: Column): string {
-  return col.unit ? `${col.label} (${col.unit})` : col.label
-}
-
-/** Numbers from one column, with blanks and non-numbers dropped. */
-export function numericValues(rows: DataRow[], key: string): number[] {
-  const out: number[] = []
-  for (const r of rows) {
-    const v = r[key]
-    if (typeof v === 'number' && Number.isFinite(v)) out.push(v)
-  }
-  return out
 }

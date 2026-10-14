@@ -1,4 +1,4 @@
-import type { PaperRef } from "@/components/util";
+import type { PaperRef } from "@/lib/types";
 
 export default function ReferencedPapers({ papers }: { papers: PaperRef[] }) {
   if (papers.length === 0) {

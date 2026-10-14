@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { Card } from "./Card";
-import { getDataset, getAllRows } from "@/components/util";
+import type { DataRow, DatasetMeta } from "@/lib/types";
 
 const TABS = ["Columns", "Dataset"] as const;
 
-function SummaryAndChart({ dataset, rows }: { dataset: Awaited<ReturnType<typeof getDataset>>, rows: Awaited<ReturnType<typeof getAllRows>> }) {
+function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows: DataRow[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Columns");
-  console.log(rows)
   const items = [
     {
       label: "Columns",

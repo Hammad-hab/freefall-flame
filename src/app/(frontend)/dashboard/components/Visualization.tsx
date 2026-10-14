@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -9,61 +9,77 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
   ScatterChart,
   Scatter,
   Legend,
 } from "recharts";
-import type { DatasetMeta, DataRow } from "@/components/util";
+import {
+  buildRowMapping,
+  computeMaterialMetrics,
+  parseRows,
+  resolveBass2Columns,
+  type ParsedRow,
+  type ReadingClass,
+} from "@/lib/combustion";
+import type { DatasetMeta, DataRow } from "@/lib/types";
+import { C, CHART_COLORS, panelCls, panelStyle } from "./chart-theme";
+import GenericCompare from "./GenericCompare";
 
-// ── Design tokens (match global.css @theme) ────────────────────────────
-const C = {
-  ink: "#07121c",
-  ink2: "#0d1b29",
-  line: "#1d3144",
-  fg: "#e7eff6",
-  muted: "#90a4b6",
-  blue: "#4fa3ff",
-  amber: "#ffa64d",
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+const mean = (vals: number[]): number | null =>
+  vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+
+const stdev = (vals: number[]): number | null => {
+  if (vals.length < 2) return null;
+  const m = mean(vals)!
+  return Math.sqrt(vals.reduce((s, v) => s + (v - m) ** 2, 0) / (vals.length - 1));
 };
 
-const PIE_COLORS = ["#4fa3ff", "#ffa64d", "#34d399", "#f472b6", "#a78bfa", "#fbbf24"];
+const READING_LABEL: Record<ReadingClass, string> = {
+  valid: "valid",
+  missing: "missing",
+  censored: "censored",
+  outOfRange: "out of range",
+  invalid: "invalid",
+};
 
-// ── Helpers ────────────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Small building blocks                                               */
+/* ------------------------------------------------------------------ */
 
-/** Coerce a DataRow value to a finite number, or return null. */
-function num(v: unknown): number | null {
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v === "string") {
-    const n = parseFloat(v.replace(/,/g, ""));
-    return Number.isNaN(n) ? null : n;
-  }
-  return null;
+function Panel({
+  title,
+  subtitle,
+  children,
+  caveat,
+}: {
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+  caveat?: string
+}) {
+  return (
+    <div className={panelCls} style={panelStyle}>
+      <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
+        {title}
+      </h3>
+      {subtitle && (
+        <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
+          {subtitle}
+        </p>
+      )}
+      {children}
+      {caveat && (
+        <p className="mt-2 text-[10px] leading-4" style={{ color: C.muted }}>
+          {caveat}
+        </p>
+      )}
+    </div>
+  )
 }
-
-/** Coerce a DataRow value to a non-empty string. */
-function str(v: unknown): string | null {
-  if (v === null || v === undefined) return null;
-  const s = String(v).trim();
-  return s === "" ? null : s;
-}
-
-/** Compute mean of numeric values. */
-function mean(vals: number[]): number | null {
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-}
-
-/** Compute standard deviation. */
-function stdev(vals: number[]): number | null {
-  if (vals.length < 2) return null;
-  const m = mean(vals)!;
-  const sq = vals.reduce((s, v) => s + (v - m) ** 2, 0) / (vals.length - 1);
-  return Math.sqrt(sq);
-}
-
-// ── Stat Card ──────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -71,23 +87,17 @@ function StatCard({
   sub,
   accent,
 }: {
-  label: string;
-  value: string;
-  sub?: string;
-  accent?: string;
+  label: string
+  value: string
+  sub?: string
+  accent?: string
 }) {
   return (
-    <div
-      className="rounded-xl border p-4"
-      style={{ borderColor: C.line, background: C.ink2 }}
-    >
+    <div className="rounded-xl border p-4" style={{ borderColor: C.line, background: C.panel2 }}>
       <div className="text-[11px] uppercase tracking-wider" style={{ color: C.muted }}>
         {label}
       </div>
-      <div
-        className="mt-1 text-2xl font-semibold leading-none"
-        style={{ color: accent ?? C.fg }}
-      >
+      <div className="mt-1 text-2xl font-semibold leading-none tabular-nums" style={{ color: accent ?? C.fg }}>
         {value}
       </div>
       {sub && (
@@ -96,19 +106,17 @@ function StatCard({
         </div>
       )}
     </div>
-  );
+  )
 }
-
-// ── Filter Pill ────────────────────────────────────────────────────────
 
 function FilterPill({
   label,
   active,
   onClick,
 }: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
+  label: string
+  active: boolean
+  onClick: () => void
 }) {
   return (
     <button
@@ -122,175 +130,142 @@ function FilterPill({
     >
       {label}
     </button>
-  );
+  )
 }
 
-// ── Custom Tooltip ─────────────────────────────────────────────────────
-
-function ChartTooltip({ active, payload, label }: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color?: string }>;
-  label?: string;
+/** Chart tooltip that always shows the sample size behind a mean. */
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  n,
+  excluded,
+  unit,
+}: {
+  active?: boolean
+  payload?: ReadonlyArray<{
+    name?: string | number
+    value?: string | number | ReadonlyArray<string | number>
+    color?: string
+  }>
+  label?: string | number
+  n?: number
+  excluded?: number
+  unit?: string
 }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) return null
   return (
     <div
       className="rounded-lg border px-3 py-2 text-[11px] shadow-xl"
       style={{ borderColor: C.line, background: C.ink }}
     >
-      {label && (
+      {label !== undefined && label !== null && (
         <div className="mb-1 font-medium" style={{ color: C.fg }}>
-          {label}
+          {String(label)}
         </div>
       )}
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color ?? C.fg }}>
-          {p.name}: <span className="font-medium">{typeof p.value === "number" ? p.value.toFixed(2) : p.value}</span>
+          {String(p.name)}:{" "}
+          <span className="font-medium tabular-nums">
+            {typeof p.value === "number"
+              ? p.value.toFixed(2)
+              : Array.isArray(p.value)
+                ? p.value.join(", ")
+                : String(p.value ?? "—")}
+            {unit ?? ""}
+          </span>
         </div>
       ))}
+      {typeof n === "number" && (
+        <div className="mt-1 border-t pt-1" style={{ borderColor: C.line, color: C.muted }}>
+          n = {n} valid reading{n === 1 ? "" : "s"}
+          {typeof excluded === "number" && excluded > 0 && ` · ${excluded} excluded (censored/missing)`}
+        </div>
+      )}
     </div>
-  );
+  )
 }
 
-// ── Main Component ─────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Main component                                                      */
+/* ------------------------------------------------------------------ */
 
 export default function Visualization({
   dataset,
   rows,
 }: {
-  dataset: DatasetMeta;
+  dataset: DatasetMeta
   rows: DataRow[];
 }) {
-  // Resolve columns by canonical field or key heuristics
-  const cols = dataset.columns;
-  const colByKey = useMemo(() => {
-    const m = new Map<string, (typeof cols)[number]>();
-    for (const c of cols) m.set(c.key, c);
-    return m;
-  }, [cols]);
+  // Resolve every combustion role through the shared, validated resolver.
+  const { resolutions, warnings } = useMemo(() => resolveBass2Columns(dataset.columns), [dataset.columns]);
+  const mapping = useMemo(() => buildRowMapping(resolutions), [resolutions]);
+  const parsed = useMemo(() => parseRows(rows, mapping), [rows, mapping]);
 
-  const colByCanon = useMemo(() => {
-    const m = new Map<string, (typeof cols)[number]>();
-    for (const c of cols) if (c.canonicalField) m.set(c.canonicalField, c);
-    return m;
-  }, [cols]);
+  const colOf = (role: string) => resolutions[role]?.column ?? null;
+  const materialCol = colOf("material");
+  const flowCol = colOf("flowRest");
+  const o2iCol = colOf("o2Initial");
+  const o2fCol = colOf("o2Final");
+  const coiCol = colOf("coInitial");
+  const cofCol = colOf("coFinal");
+  const co2iCol = colOf("co2Initial");
+  const co2fCol = colOf("co2Final");
+  const airVelCol = colOf("airVelStart");
+  const piCol = colOf("pi");
+  const testNoCol = colOf("testNo");
+  const thicknessCol = colOf("thickness");
 
-  // Try to find columns by canonical field, then by key patterns
-  const findCol = useMemo(() => {
-    return (patterns: string[], canon?: string | null) => {
-      if (canon) {
-        const c = colByCanon.get(canon);
-        if (c) return c;
-      }
-      for (const p of patterns) {
-        const c = colByKey.get(p);
-        if (c) return c;
-      }
-      // Fuzzy: search by label
-      for (const p of patterns) {
-        const lower = p.toLowerCase();
-        const c = cols.find(
-          (c) =>
-            c.label.toLowerCase().includes(lower) ||
-            c.key.toLowerCase().includes(lower),
-        );
-        if (c) return c;
-      }
-      return undefined;
-    };
-  }, [cols, colByKey, colByCanon]);
+  const hasBass2Columns = Boolean(materialCol && o2iCol && o2fCol);
 
-  // Key columns for combustion datasets
-  const materialCol = findCol(["material", "Material", "fuel"], "material");
-  const thicknessCol = findCol(["thickness", "Thickness"], "thicknessMm");
-  const widthCol = findCol(["width", "Width"], "widthCm");
-  const o2InitialCol = findCol(["o2_initial", "initial_o2", "Calibrated initial O2"], "o2Percent");
-  const o2FinalCol = findCol(["o2_final", "final_o2", "Calibrated final O2"], "o2Percent");
-  const coInitialCol = findCol(["co_initial", "initial_co", "Initial CO"], null);
-  const coFinalCol = findCol(["co_final", "final_co", "Final CO"], null);
-  const co2InitialCol = findCol(["co2_initial", "initial_co2", "Initial CO2"], null);
-  const co2FinalCol = findCol(["co2_final", "final_co2", "Final CO2"], null);
-  const airVelCol = findCol(["air_velocity", "Air_Velocity", "flow"], "flowCmS");
-  const flowRestCol = findCol(["flow_restrictor", "restrictor"], null);
-  const piCol = findCol(["pi", "investigator", "Principle Investigator"], null);
-  const testNoCol = findCol(["test_no", "Test No.", "test"], null);
-  const dateCol = findCol(["date", "Date"], null);
-  const framesCol = findCol(["frames", "Total Frames Shot"], null);
-
-  // Derived numeric values per row
-  const parsed = useMemo(() => {
-    return rows.map((r, i) => {
-      const o2i = o2InitialCol ? num(r[o2InitialCol.key]) : null;
-      const o2f = o2FinalCol ? num(r[o2FinalCol.key]) : null;
-      const coi = coInitialCol ? num(r[coInitialCol.key]) : null;
-      const cof = coFinalCol ? num(r[coFinalCol.key]) : null;
-      const co2i = co2InitialCol ? num(r[co2InitialCol.key]) : null;
-      const co2f = co2FinalCol ? num(r[co2FinalCol.key]) : null;
-      return {
-        _idx: i,
-        material: materialCol ? str(r[materialCol.key]) ?? "Unknown" : "Unknown",
-        thickness: thicknessCol ? num(r[thicknessCol.key]) : null,
-        width: widthCol ? num(r[widthCol.key]) : null,
-        o2i,
-        o2f,
-        o2Consumed: o2i !== null && o2f !== null ? o2i - o2f : null,
-        coi,
-        cof,
-        coProduced: coi !== null && cof !== null ? cof - coi : null,
-        co2i,
-        co2f,
-        co2Produced: co2i !== null && co2f !== null ? co2f - co2i : null,
-        airVel: airVelCol ? num(r[airVelCol.key]) : null,
-        flowRest: flowRestCol ? str(r[flowRestCol.key]) ?? "?" : "?",
-        pi: piCol ? str(r[piCol.key]) ?? "?" : "?",
-        testNo: testNoCol ? str(r[testNoCol.key]) ?? `#${i + 1}` : `#${i + 1}`,
-        date: dateCol ? str(r[dateCol.key]) ?? "" : "",
-        frames: framesCol ? num(r[framesCol.key]) : null,
-      };
-    });
-  }, [rows, materialCol, thicknessCol, widthCol, o2InitialCol, o2FinalCol, coInitialCol, coFinalCol, co2InitialCol, co2FinalCol, airVelCol, flowRestCol, piCol, testNoCol, dateCol, framesCol]);
-
-  // Filter state
+  // Filter state — the controls stay visible even when nothing matches.
   const [materialFilter, setMaterialFilter] = useState<string>("All");
   const [flowFilter, setFlowFilter] = useState<string>("All");
 
-  // Distinct values for filters
   const materials = useMemo(
     () => ["All", ...new Set(parsed.map((r) => r.material))],
     [parsed],
   );
   const flows = useMemo(
-    () => ["All", ...new Set(parsed.map((r) => r.flowRest))],
+    () => ["All", ...new Set(parsed.map((r) => r.flowRest).filter((v): v is string => v !== null))],
     [parsed],
   );
 
-  // Apply filters
-  const filtered = useMemo(() => {
-    return parsed.filter((r) => {
-      if (materialFilter !== "All" && r.material !== materialFilter) return false;
-      if (flowFilter !== "All" && r.flowRest !== flowFilter) return false;
-      return true;
-    });
-  }, [parsed, materialFilter, flowFilter]);
+  const filtered = useMemo(
+    () =>
+      parsed.filter((r) => {
+        if (materialFilter !== "All" && r.material !== materialFilter) return false;
+        if (flowFilter !== "All" && r.flowRest !== flowFilter) return false;
+        return true;
+      }),
+    [parsed, materialFilter, flowFilter],
+  );
 
-  // ── Chart data ──────────────────────────────────────────────────────
+  const resetFilters = () => {
+    setMaterialFilter("All");
+    setFlowFilter("All");
+  };
 
-  // Material distribution
+  // ── Chart data ────────────────────────────────────────────────────
+
   const materialDist = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of filtered) counts.set(r.material, (counts.get(r.material) ?? 0) + 1);
     return [...counts.entries()]
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   }, [filtered]);
 
-  // O2 consumed by material
-  const o2ByMaterial = useMemo(() => {
+  // Per-material means for one derived gas metric, with the sample size (n)
+  // that backs each mean.
+  const gasByMaterial = useCallback((pick: (r: ParsedRow) => number | null) => {
     const groups = new Map<string, number[]>();
     for (const r of filtered) {
-      if (r.o2Consumed === null) continue;
+      const v = pick(r);
+      if (v === null) continue;
       if (!groups.has(r.material)) groups.set(r.material, []);
-      groups.get(r.material)!.push(r.o2Consumed);
+      groups.get(r.material)!.push(v);
     }
     return [...groups.entries()]
       .map(([name, vals]) => ({
@@ -299,644 +274,621 @@ export default function Visualization({
         std: stdev(vals) ?? 0,
         n: vals.length,
       }))
-      .sort((a, b) => b.mean - a.mean);
+      .sort((a, b) => b.mean - a.mean || a.name.localeCompare(b.name));
   }, [filtered]);
 
-  // CO produced by material
-  const coByMaterial = useMemo(() => {
-    const groups = new Map<string, number[]>();
+  const o2ByMaterial = useMemo(() => gasByMaterial((r) => r.o2Consumed), [gasByMaterial]);
+  const coByMaterial = useMemo(() => gasByMaterial((r) => r.coProduced), [gasByMaterial]);
+  const co2ByMaterial = useMemo(() => gasByMaterial((r) => r.co2Produced), [gasByMaterial]);
+
+  const excludedByMaterial = useMemo(() => {
+    const m = new Map<string, number>();
     for (const r of filtered) {
-      if (r.coProduced === null) continue;
-      if (!groups.has(r.material)) groups.set(r.material, []);
-      groups.get(r.material)!.push(r.coProduced);
+      const n = Object.values(r.readingClasses).filter(
+        (k) => k === "censored" || k === "outOfRange" || k === "missing",
+      ).length;
+      m.set(r.material, (m.get(r.material) ?? 0) + n);
     }
-    return [...groups.entries()]
-      .map(([name, vals]) => ({
-        name,
-        mean: mean(vals) ?? 0,
-        std: stdev(vals) ?? 0,
-        n: vals.length,
-      }))
-      .sort((a, b) => b.mean - a.mean);
+    return m;
   }, [filtered]);
 
-  // CO2 produced by material
-  const co2ByMaterial = useMemo(() => {
-    const groups = new Map<string, number[]>();
-    for (const r of filtered) {
-      if (r.co2Produced === null) continue;
-      if (!groups.has(r.material)) groups.set(r.material, []);
-      groups.get(r.material)!.push(r.co2Produced);
-    }
-    return [...groups.entries()]
-      .map(([name, vals]) => ({
-        name,
-        mean: mean(vals) ?? 0,
-        std: stdev(vals) ?? 0,
-        n: vals.length,
-      }))
-      .sort((a, b) => b.mean - a.mean);
-  }, [filtered]);
-
-  // Thickness distribution
   const thicknessDist = useMemo(() => {
     const vals = filtered.map((r) => r.thickness).filter((v): v is number => v !== null);
     if (!vals.length) return [];
     const bins = new Map<string, number>();
     for (const v of vals) {
-      const key = v < 1 ? "<1" : v < 5 ? "1-5" : v < 10 ? "5-10" : "10+";
+      const key = v < 1 ? "<1" : v < 5 ? "1–5" : v < 10 ? "5–10" : "10+";
       bins.set(key, (bins.get(key) ?? 0) + 1);
     }
-    const order = ["<1", "1-5", "5-10", "10+"];
-    return order
-      .filter((k) => bins.has(k))
-      .map((k) => ({ name: k, count: bins.get(k)! }));
+    const order = ["<1", "1–5", "5–10", "10+"];
+    return order.filter((k) => bins.has(k)).map((k) => ({ name: k, count: bins.get(k)! }));
   }, [filtered]);
 
-  // Air velocity vs O2 consumed (scatter)
-  const velVsO2 = useMemo(() => {
-    return filtered
-      .filter((r) => r.airVel !== null && r.o2Consumed !== null)
-      .map((r) => ({
-        x: r.airVel!,
-        y: r.o2Consumed!,
-        material: r.material,
-      }));
-  }, [filtered]);
+  const velVsO2 = useMemo(
+    () =>
+      filtered
+        .filter((r) => r.airVel !== null && r.o2Consumed !== null)
+        .map((r) => ({ x: r.airVel!, y: r.o2Consumed!, material: r.material })),
+    [filtered],
+  );
 
-  // PI breakdown
   const piBreakdown = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const r of filtered) counts.set(r.pi, (counts.get(r.pi) ?? 0) + 1);
+    for (const r of filtered) {
+      const k = r.pi ?? "Unknown";
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
     return [...counts.entries()]
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   }, [filtered]);
 
-  // Gas composition (initial vs final)
+  // Gas composition — split into separate charts so O₂ (~20%) and CO₂
+  // (~0.5%) each get a readable scale.
   const gasComp = useMemo(() => {
     const o2i = filtered.map((r) => r.o2i).filter((v): v is number => v !== null);
     const o2f = filtered.map((r) => r.o2f).filter((v): v is number => v !== null);
     const co2i = filtered.map((r) => r.co2i).filter((v): v is number => v !== null);
     const co2f = filtered.map((r) => r.co2f).filter((v): v is number => v !== null);
-    return [
-      { group: "O₂ (%)", Initial: mean(o2i) ?? 0, Final: mean(o2f) ?? 0 },
-      { group: "CO₂ (%)", Initial: mean(co2i) ?? 0, Final: mean(co2f) ?? 0 },
-    ];
+    return {
+      o2: [
+        { group: "Before tests", Initial: mean(o2i) ?? 0, Final: null as number | null, n: o2i.length },
+        { group: "After tests", Initial: null as number | null, Final: mean(o2f) ?? 0, n: o2f.length },
+      ],
+      co2: [
+        { group: "Before tests", Initial: mean(co2i) ?? 0, Final: null as number | null, n: co2i.length },
+        { group: "After tests", Initial: null as number | null, Final: mean(co2f) ?? 0, n: co2f.length },
+      ],
+    };
   }, [filtered]);
 
-  // Summary stats
-  const allO2Consumed = filtered.map((r) => r.o2Consumed).filter((v): v is number => v !== null);
-  const allCoProduced = filtered.map((r) => r.coProduced).filter((v): v is number => v !== null);
-  const allCo2Produced = filtered.map((r) => r.co2Produced).filter((v): v is number => v !== null);
-  const allThickness = filtered.map((r) => r.thickness).filter((v): v is number => v !== null);
-  const allAirVel = filtered.map((r) => r.airVel).filter((v): v is number => v !== null);
+  const summaryStats = useMemo(() => {
+    const consumed = filtered.map((r) => r.o2Consumed).filter((v): v is number => v !== null);
+    const co = filtered.map((r) => r.coProduced).filter((v): v is number => v !== null);
+    const co2 = filtered.map((r) => r.co2Produced).filter((v): v is number => v !== null);
+    let excluded = 0;
+    for (const r of filtered) {
+      excluded += Object.values(r.readingClasses).filter(
+        (k) => k === "censored" || k === "outOfRange" || k === "missing",
+      ).length;
+    }
+    return { consumed, co, co2, excluded };
+  }, [filtered]);
 
-  // ── Render ──────────────────────────────────────────────────────────
-
-  // Check if we have enough numeric columns for any chart
-  const hasAnyData = filtered.length > 0;
-
-  if (!hasAnyData) {
-    return (
-      <div
-        className="rounded-[22px] border p-6"
-        style={{ borderColor: C.line, background: C.ink2 }}
-      >
-        <h2 className="text-[17px] font-light" style={{ color: C.fg }}>Visualization</h2>
-        <p className="mt-4 text-[13px]" style={{ color: C.muted }}>
-          This dataset needs at least two numeric columns for visualization.
-        </p>
-      </div>
-    );
-  }
+  // ── Render ────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-[17px] font-light" style={{ color: C.fg }}>Visualization</h2>
+        <h2 className="text-[17px] font-light" style={{ color: C.fg }}>
+          Visualization
+        </h2>
         <p className="mt-1 text-[12px]" style={{ color: C.muted }}>
           {filtered.length} of {rows.length} rows · {dataset.name}
         </p>
       </div>
 
-      {/* Filters */}
-      {(materials.length > 2 || flows.length > 2) && (
-        <div className="space-y-3">
-          {materials.length > 2 && (
-            <div>
-              <div className="mb-2 text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>
-                Material
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {materials.map((m) => (
-                  <FilterPill
-                    key={m}
-                    label={m}
-                    active={materialFilter === m}
-                    onClick={() => setMaterialFilter(m)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          {flows.length > 2 && (
-            <div>
-              <div className="mb-2 text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>
-                Flow Restrictor
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {flows.map((f) => (
-                  <FilterPill
-                    key={f}
-                    label={f}
-                    active={flowFilter === f}
-                    onClick={() => setFlowFilter(f)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Mapping warnings (ambiguous columns, duplicate mappings) */}
+      {warnings.length > 0 && (
+        <div className="rounded-xl border p-3 text-[11px] leading-5" style={{ borderColor: `${C.amber}55`, background: `${C.amber}11`, color: C.fg }}>
+          <span className="font-medium">Column mapping needs attention: </span>
+          {warnings.join(" ")}
         </div>
       )}
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Tests"
-          value={String(filtered.length)}
-          sub={materialFilter !== "All" ? `filtered by ${materialFilter}` : "total rows"}
-          accent={C.blue}
-        />
-        {allO2Consumed.length > 0 && (
-          <StatCard
-            label="Mean O₂ Consumed"
-            value={`${(mean(allO2Consumed) ?? 0).toFixed(1)}%`}
-            sub={`range ${(Math.min(...allO2Consumed)).toFixed(1)}–${(Math.max(...allO2Consumed)).toFixed(1)}%`}
-            accent={C.amber}
-          />
-        )}
-        {allCoProduced.length > 0 && (
-          <StatCard
-            label="Mean CO Produced"
-            value={`${Math.round(mean(allCoProduced) ?? 0)} ppm`}
-            sub={`max ${Math.round(Math.max(...allCoProduced))} ppm`}
-            accent="#f472b6"
-          />
-        )}
-        {allCo2Produced.length > 0 && (
-          <StatCard
-            label="Mean CO₂ Produced"
-            value={`${(mean(allCo2Produced) ?? 0).toFixed(2)}%`}
-            sub={`max ${(Math.max(...allCo2Produced)).toFixed(1)}%`}
-            accent="#34d399"
-          />
-        )}
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Material Distribution */}
-        {materialDist.length > 1 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Material Distribution
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Number of tests per material
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={materialDist}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                  >
-                    {materialDist.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: "11px", color: C.muted }}
-                    formatter={(v: string) => <span style={{ color: C.fg }}>{v}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+      {/* Filters — always rendered, including in the empty state */}
+      <div className="space-y-3">
+        {materials.length > 1 && (
+          <div>
+            <div className="mb-2 text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>
+              Material
             </div>
-          </div>
-        )}
-
-        {/* Gas Composition: Initial vs Final */}
-        {gasComp.length > 0 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Gas Composition: Initial vs Final
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Mean gas concentration before and after testing
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={gasComp} barGap={8}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <YAxis stroke={C.muted} fontSize={11} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: "11px" }}
-                    formatter={(v: string) => <span style={{ color: C.fg }}>{v}</span>}
-                  />
-                  <Bar dataKey="Initial" fill={C.blue} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Final" fill={C.amber} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* O2 Consumed by Material */}
-        {o2ByMaterial.length > 0 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Mean O₂ Consumed by Material
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Average oxygen consumed during combustion tests
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={o2ByMaterial} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                    width={80}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="mean" name="Mean O₂ Consumed (%)" fill={C.amber} radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* CO Produced by Material */}
-        {coByMaterial.length > 0 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Mean CO Produced by Material
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Carbon monoxide generated during combustion
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={coByMaterial} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                    width={80}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="mean" name="Mean CO Produced (ppm)" fill="#f472b6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* CO2 Produced by Material */}
-        {co2ByMaterial.length > 0 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Mean CO₂ Produced by Material
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Carbon dioxide generated during combustion
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={co2ByMaterial} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                    width={80}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="mean" name="Mean CO₂ Produced (%)" fill="#34d399" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Thickness Distribution */}
-        {thicknessDist.length > 0 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Thickness Distribution
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Sample thickness ranges (mm)
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={thicknessDist}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <YAxis stroke={C.muted} fontSize={11} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="count" name="Tests" fill={C.blue} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Air Velocity vs O2 Consumed */}
-        {velVsO2.length > 2 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Air Velocity vs O₂ Consumed
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Relationship between airflow and oxygen consumption
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis
-                    type="number"
-                    dataKey="x"
-                    name="Air Velocity (cm/s)"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="y"
-                    name="O₂ Consumed (%)"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <div
-                          className="rounded-lg border px-3 py-2 text-[11px] shadow-xl"
-                          style={{ borderColor: C.line, background: C.ink }}
-                        >
-                          <div style={{ color: C.fg }}>{d.material}</div>
-                          <div style={{ color: C.blue }}>Velocity: {d.x} cm/s</div>
-                          <div style={{ color: C.amber }}>O₂ Consumed: {d.y.toFixed(1)}%</div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Scatter data={velVsO2} fill={C.amber} opacity={0.7} />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* PI Breakdown */}
-        {piBreakdown.length > 1 && (
-          <div
-            className="rounded-[22px] border p-5"
-            style={{ borderColor: C.line, background: C.ink2 }}
-          >
-            <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-              Tests by Principal Investigator
-            </h3>
-            <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-              Number of experiments per researcher
-            </p>
-            <div className="mt-4 h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={piBreakdown} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
-                  <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke={C.muted}
-                    fontSize={11}
-                    tickLine={false}
-                    width={120}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="value" name="Tests" fill={C.blue} radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Data Table */}
-      <div
-        className="rounded-[22px] border p-5"
-        style={{ borderColor: C.line, background: C.ink2 }}
-      >
-        <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-          Data Table
-        </h3>
-        <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
-          Showing first 10 of {filtered.length} rows
-        </p>
-        <div className="mt-4 overflow-x-auto rounded-xl border" style={{ borderColor: C.line }}>
-          <table className="w-max min-w-full border-collapse text-left text-[11px]">
-            <thead style={{ background: "#16283a" }}>
-              <tr>
-                {testNoCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {testNoCol.label}
-                  </th>
-                )}
-                {materialCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {materialCol.label}
-                  </th>
-                )}
-                {thicknessCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {thicknessCol.label}
-                  </th>
-                )}
-                {o2InitialCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {o2InitialCol.label}
-                  </th>
-                )}
-                {o2FinalCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {o2FinalCol.label}
-                  </th>
-                )}
-                {coInitialCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {coInitialCol.label}
-                  </th>
-                )}
-                {coFinalCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {coFinalCol.label}
-                  </th>
-                )}
-                {co2InitialCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {co2InitialCol.label}
-                  </th>
-                )}
-                {co2FinalCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {co2FinalCol.label}
-                  </th>
-                )}
-                {airVelCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {airVelCol.label}
-                  </th>
-                )}
-                {piCol && (
-                  <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
-                    {piCol.label}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.slice(0, 10).map((r) => (
-                <tr
-                  key={r._idx}
-                  className="border-t transition-colors hover:bg-white/[0.02]"
-                  style={{ borderColor: C.line }}
-                >
-                  {testNoCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
-                      {r.testNo}
-                    </td>
-                  )}
-                  {materialCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.fg }}>
-                      {r.material}
-                    </td>
-                  )}
-                  {thicknessCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
-                      {r.thickness ?? "—"}
-                    </td>
-                  )}
-                  {o2InitialCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.blue }}>
-                      {r.o2i !== null ? r.o2i.toFixed(1) : "—"}
-                    </td>
-                  )}
-                  {o2FinalCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.amber }}>
-                      {r.o2f !== null ? r.o2f.toFixed(1) : "—"}
-                    </td>
-                  )}
-                  {coInitialCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
-                      {r.coi !== null ? Math.round(r.coi) : "—"}
-                    </td>
-                  )}
-                  {coFinalCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: "#f472b6" }}>
-                      {r.cof !== null ? Math.round(r.cof) : "—"}
-                    </td>
-                  )}
-                  {co2InitialCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
-                      {r.co2i !== null ? r.co2i.toFixed(2) : "—"}
-                    </td>
-                  )}
-                  {co2FinalCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: "#34d399" }}>
-                      {r.co2f !== null ? r.co2f.toFixed(2) : "—"}
-                    </td>
-                  )}
-                  {airVelCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
-                      {r.airVel !== null ? r.airVel : "—"}
-                    </td>
-                  )}
-                  {piCol && (
-                    <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.muted }}>
-                      {r.pi}
-                    </td>
-                  )}
-                </tr>
+            <div className="flex flex-wrap gap-2">
+              {materials.map((m) => (
+                <FilterPill key={m} label={m} active={materialFilter === m} onClick={() => setMaterialFilter(m)} />
               ))}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length > 10 && (
-          <p className="mt-2 text-[11px]" style={{ color: C.muted }}>
-            Showing 10 of {filtered.length} rows
-          </p>
+            </div>
+          </div>
+        )}
+        {flows.length > 1 && (
+          <div>
+            <div className="mb-2 text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>
+              Flow restrictor
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {flows.map((f) => (
+                <FilterPill key={f} label={f} active={flowFilter === f} onClick={() => setFlowFilter(f)} />
+              ))}
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Empty state — filters stay visible and usable */}
+      {filtered.length === 0 ? (
+        <div className={panelCls} style={panelStyle}>
+          <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
+            No rows match the selected filters.
+          </h3>
+          <p className="mt-2 text-[12px]" style={{ color: C.muted }}>
+            Adjust the material or flow restrictor filters above, or reset them to see all rows.
+          </p>
+          <button
+            onClick={resetFilters}
+            className="mt-3 rounded-full px-4 py-2 text-[12px] transition-opacity hover:opacity-90"
+            style={{ background: C.blue, color: C.ink }}
+          >
+            Reset filters
+          </button>
+        </div>
+      ) : hasBass2Columns ? (
+        <>
+          {/* Stat cards with sample sizes */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard
+              label="Tests"
+              value={String(filtered.length)}
+              sub={materialFilter !== "All" || flowFilter !== "All" ? "filtered selection" : "total rows"}
+              accent={C.blue}
+            />
+            {summaryStats.consumed.length > 0 && (
+              <StatCard
+                label="Mean O₂ consumed"
+                value={`${(mean(summaryStats.consumed) ?? 0).toFixed(1)}%`}
+                sub={`n=${summaryStats.consumed.length} valid readings`}
+                accent={C.amber}
+              />
+            )}
+            {summaryStats.co.length > 0 && (
+              <StatCard
+                label="Mean CO produced"
+                value={`${Math.round(mean(summaryStats.co) ?? 0)} ppm`}
+                sub={`n=${summaryStats.co.length} valid readings`}
+                accent={C.pink}
+              />
+            )}
+            {summaryStats.co2.length > 0 && (
+              <StatCard
+                label="Mean CO₂ produced"
+                value={`${(mean(summaryStats.co2) ?? 0).toFixed(2)}%`}
+                sub={`n=${summaryStats.co2.length} valid readings`}
+                accent={C.green}
+              />
+            )}
+          </div>
+          {summaryStats.excluded > 0 && (
+            <div className="rounded-xl border p-3 text-[11px] leading-5" style={{ borderColor: `${C.amber}55`, background: `${C.amber}11`, color: C.fg }}>
+              {summaryStats.excluded} sensor reading{summaryStats.excluded === 1 ? " was" : "s were"} censored,
+              out of range, or missing in this selection. Means and maxima above are computed from the
+              remaining valid readings only and may be biased low when high readings were excluded.
+            </div>
+          )}
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Material distribution — sorted bar (replaces the pie chart) */}
+            {materialDist.length > 1 && (
+              <Panel title="Tests per Material" subtitle="Number of tests for each material in the selection">
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={materialDist} layout="vertical" margin={{ left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} allowDecimals={false} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        stroke={C.muted}
+                        fontSize={11}
+                        tickLine={false}
+                        width={80}
+                      />
+                      <Tooltip
+                        content={<ChartTooltip n={filtered.length} unit=" tests" />}
+                      />
+                      <Bar dataKey="value" name="Tests" fill={C.blue} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* Gas composition: O₂ on its own scale */}
+            {gasComp.o2.length > 0 && o2iCol && o2fCol && (
+              <Panel
+                title="Mean O₂ Before vs After Tests"
+                subtitle="Average starting and ending oxygen concentration"
+                caveat="Means use valid numeric readings only; censored or missing readings are excluded and counted in the Data Table."
+              >
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={gasComp.o2} barGap={8}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis dataKey="group" stroke={C.muted} fontSize={11} tickLine={false} />
+                      <YAxis stroke={C.muted} fontSize={11} tickLine={false} unit="%" />
+                      <Tooltip
+                        content={<ChartTooltip n={filtered.length} unit="%" />}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "11px" }}
+                        formatter={(v: string) => <span style={{ color: C.fg }}>{v}</span>}
+                      />
+                      <Bar dataKey="Initial" name="Before tests (mean)" fill={C.blue} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Final" name="After tests (mean)" fill={C.amber} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* Gas composition: CO₂ on its own scale */}
+            {gasComp.co2.length > 0 && co2iCol && co2fCol && (
+              <Panel
+                title="Mean CO₂ Before vs After Tests"
+                subtitle="Average carbon dioxide concentration"
+                caveat="CO₂ changes are much smaller than O₂ changes, so this gas gets its own chart and scale."
+              >
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={gasComp.co2} barGap={8}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis dataKey="group" stroke={C.muted} fontSize={11} tickLine={false} />
+                      <YAxis stroke={C.muted} fontSize={11} tickLine={false} unit="%" />
+                      <Tooltip
+                        content={<ChartTooltip n={filtered.length} unit="%" />}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "11px" }}
+                        formatter={(v: string) => <span style={{ color: C.fg }}>{v}</span>}
+                      />
+                      <Bar dataKey="Initial" name="Before tests (mean)" fill={C.blue} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Final" name="After tests (mean)" fill={C.green} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* O2 consumed by material */}
+            {o2ByMaterial.length > 0 && (
+              <Panel
+                title="Mean O₂ Consumed by Material"
+                subtitle="Starting O₂ minus ending O₂, averaged per material"
+              >
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={o2ByMaterial} layout="vertical" margin={{ left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} unit="%" />
+                      <YAxis type="category" dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} width={80} />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          const d = payload[0].payload as { n: number }
+                          const ex = excludedByMaterial.get(label as string) ?? 0
+                          return <ChartTooltip active={active} payload={payload} label={label} n={d.n} excluded={ex} unit="%" />
+                        }}
+                      />
+                      <Bar dataKey="mean" name="Mean O₂ consumed (%)" fill={C.amber} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* CO produced by material */}
+            {coByMaterial.length > 0 && (
+              <Panel title="Mean CO Produced by Material" subtitle="Carbon monoxide generated during combustion">
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={coByMaterial} layout="vertical" margin={{ left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} />
+                      <YAxis type="category" dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} width={80} />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          const d = payload[0].payload as { n: number }
+                          const ex = excludedByMaterial.get(label as string) ?? 0
+                          return <ChartTooltip active={active} payload={payload} label={label} n={d.n} excluded={ex} unit=" ppm" />
+                        }}
+                      />
+                      <Bar dataKey="mean" name="Mean CO produced (ppm)" fill={C.pink} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* CO2 produced by material */}
+            {co2ByMaterial.length > 0 && (
+              <Panel title="Mean CO₂ Produced by Material" subtitle="Carbon dioxide generated during combustion">
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={co2ByMaterial} layout="vertical" margin={{ left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} unit="%" />
+                      <YAxis type="category" dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} width={80} />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          const d = payload[0].payload as { n: number }
+                          const ex = excludedByMaterial.get(label as string) ?? 0
+                          return <ChartTooltip active={active} payload={payload} label={label} n={d.n} excluded={ex} unit="%" />
+                        }}
+                      />
+                      <Bar dataKey="mean" name="Mean CO₂ produced (%)" fill={C.green} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* Thickness distribution */}
+            {thicknessDist.length > 0 && thicknessCol && (
+              <Panel title="Thickness Distribution" subtitle={`Sample thickness ranges (${thicknessCol.unit ?? "mm"})`}>
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={thicknessDist}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} />
+                      <YAxis stroke={C.muted} fontSize={11} tickLine={false} allowDecimals={false} />
+                      <Tooltip content={<ChartTooltip n={filtered.length} unit=" tests" />} />
+                      <Bar dataKey="count" name="Tests" fill={C.blue} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* Starting air velocity vs O2 consumed — explicitly a starting measurement */}
+            {velVsO2.length > 2 && airVelCol && (
+              <Panel
+                title="Starting Air Velocity vs O₂ Consumed"
+                subtitle="Each point is one test; velocity is the measurement taken at test start"
+                caveat="Air velocity is the starting measurement only — not an average or full-test value."
+              >
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis
+                        type="number"
+                        dataKey="x"
+                        name="Starting air velocity (cm/s)"
+                        stroke={C.muted}
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="y"
+                        name="O₂ consumed (%)"
+                        stroke={C.muted}
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null
+                          const d = payload[0].payload as { material: string; x: number; y: number }
+                          return (
+                            <div
+                              className="rounded-lg border px-3 py-2 text-[11px] shadow-xl"
+                              style={{ borderColor: C.line, background: C.ink }}
+                            >
+                              <div style={{ color: C.fg }}>{d.material}</div>
+                              <div style={{ color: C.blue }}>Starting velocity: {d.x} cm/s</div>
+                              <div style={{ color: C.amber }}>O₂ consumed: {d.y.toFixed(1)}%</div>
+                            </div>
+                          )
+                        }}
+                      />
+                      <Scatter data={velVsO2} fill={C.amber} opacity={0.7} />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+
+            {/* PI breakdown */}
+            {piBreakdown.length > 1 && piCol && (
+              <Panel title="Tests by Principal Investigator" subtitle="Number of experiments per researcher">
+                <div className="mt-4 h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={piBreakdown} layout="vertical" margin={{ left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+                      <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} width={120} />
+                      <Tooltip content={<ChartTooltip n={filtered.length} unit=" tests" />} />
+                      <Bar dataKey="value" name="Tests" fill={C.blue} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            )}
+          </div>
+
+          {/* Data table — shows censored/out-of-range markers instead of hiding them */}
+          <DataTable
+            filtered={filtered}
+            rows={rows}
+            resolutions={resolutions}
+            dataset={dataset}
+          />
+        </>
+      ) : (
+        /* Graceful degradation: required BASS-II columns are missing. */
+        <div className={panelCls} style={panelStyle}>
+          <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
+            Combustion analysis unavailable for this dataset
+          </h3>
+          <p className="mt-2 text-[12px]" style={{ color: C.muted }}>
+            This dataset does not include the columns needed for combustion analysis
+            {materialCol ? "" : " (no material column)"}
+            {o2iCol && o2fCol ? "" : " (no initial/final oxygen columns)"}. The charts are omitted
+            rather than filled with unrelated columns. You can still explore this dataset with the
+            generic comparison below.
+          </p>
+        </div>
+      )}
+
+      {/* Generic comparison — always available for any dataset */}
+      <GenericCompare dataset={dataset} rows={rows} />
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Data table                                                          */
+/* ------------------------------------------------------------------ */
+
+function DataTable({
+  filtered,
+  rows,
+  resolutions,
+  dataset,
+}: {
+  filtered: ParsedRow[];
+  rows: DataRow[];
+  resolutions: Record<string, { column: { key: string; label: string } | null }>;
+  dataset: DatasetMeta;
+}) {
+  const col = (role: string) => resolutions[role]?.column ?? null;
+  const testNoCol = col("testNo");
+  const materialCol = col("material");
+  const thicknessCol = col("thickness");
+  const o2iCol = col("o2Initial");
+  const o2fCol = col("o2Final");
+  const coiCol = col("coInitial");
+  const cofCol = col("coFinal");
+  const co2iCol = col("co2Initial");
+  const co2fCol = col("co2Final");
+  const airVelCol = col("airVelStart");
+  const piCol = col("pi");
+
+  const columns = [
+    testNoCol && { key: testNoCol.key, label: testNoCol.label },
+    materialCol && { key: materialCol.key, label: materialCol.label },
+    thicknessCol && { key: thicknessCol.key, label: thicknessCol.label },
+    o2iCol && { key: o2iCol.key, label: `${o2iCol.label} (%)` },
+    o2fCol && { key: o2fCol.key, label: `${o2fCol.label} (%)` },
+    coiCol && { key: coiCol.key, label: `${coiCol.label} (ppm)` },
+    cofCol && { key: cofCol.key, label: `${cofCol.label} (ppm)` },
+    co2iCol && { key: co2iCol.key, label: `${co2iCol.label} (%)` },
+    co2fCol && { key: co2fCol.key, label: `${co2fCol.label} (%)` },
+    airVelCol && { key: airVelCol.key, label: `${airVelCol.label} (cm/s, start)` },
+    piCol && { key: piCol.key, label: piCol.label },
+  ].filter((c): c is { key: string; label: string } => Boolean(c));
+
+  const cell = (raw: DataRow, key: string, readingClass: ReadingClass | undefined, digits = 1) => {
+    if (readingClass === "censored" || readingClass === "outOfRange") {
+      const marker = raw._rawData?.[key]
+      return (
+        <span
+          className="rounded px-1.5 py-0.5 text-[10px]"
+          style={{ background: `${C.amber}22`, color: C.amber }}
+          title={`Sensor reading excluded from statistics: ${READING_LABEL[readingClass]}`}
+        >
+          {marker ?? READING_LABEL[readingClass]}
+        </span>
+      )
+    }
+    const v = raw[key]
+    if (typeof v === "number" && Number.isFinite(v)) {
+      return <span className="tabular-nums">{v.toFixed(digits)}</span>
+    }
+    return <span style={{ color: C.muted }}>—</span>
+  }
+
+  return (
+    <div className={panelCls} style={panelStyle}>
+      <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
+        Data Table
+      </h3>
+      <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
+        Showing first 10 of {filtered.length} filtered rows. Censored or out-of-range sensor
+        readings appear as amber markers with their original source text; they are excluded from all
+        statistics above.
+      </p>
+      <div className="mt-4 overflow-x-auto rounded-xl border" style={{ borderColor: C.line }}>
+        <table className="w-max min-w-full border-collapse text-left text-[11px]">
+          <thead>
+            <tr style={{ background: "#16283a" }}>
+              {columns.map((c) => (
+                <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.slice(0, 10).map((r, i) => (
+              <tr key={i} className="border-t" style={{ borderColor: C.line }}>
+                {testNoCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
+                    {r.testNo ?? `—`}
+                  </td>
+                )}
+                {materialCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.fg }}>
+                    {r.material}
+                  </td>
+                )}
+                {thicknessCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
+                    {r.thickness ?? "—"}
+                  </td>
+                )}
+                {o2iCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.blue }}>
+                    {cell(rows[r._idx], o2iCol.key, r.readingClasses.o2i)}
+                  </td>
+                )}
+                {o2fCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.amber }}>
+                    {cell(rows[r._idx], o2fCol.key, r.readingClasses.o2f)}
+                  </td>
+                )}
+                {coiCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.fg }}>
+                    {cell(rows[r._idx], coiCol.key, r.readingClasses.coi, 0)}
+                  </td>
+                )}
+                {cofCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.pink }}>
+                    {cell(rows[r._idx], cofCol.key, r.readingClasses.cof, 0)}
+                  </td>
+                )}
+                {co2iCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.fg }}>
+                    {cell(rows[r._idx], co2iCol.key, r.readingClasses.co2i, 2)}
+                  </td>
+                )}
+                {co2fCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.green }}>
+                    {cell(rows[r._idx], co2fCol.key, r.readingClasses.co2f, 2)}
+                  </td>
+                )}
+                {airVelCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
+                    {r.airVel ?? "—"}
+                  </td>
+                )}
+                {piCol && (
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.muted }}>
+                    {r.pi ?? "—"}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {filtered.length > 10 && (
+        <p className="mt-2 text-[11px]" style={{ color: C.muted }}>
+          Showing 10 of {filtered.length} rows
+        </p>
+      )}
+    </div>
+  )
 }

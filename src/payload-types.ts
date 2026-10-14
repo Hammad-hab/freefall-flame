@@ -349,6 +349,18 @@ export interface DatasetRow {
     | number
     | boolean
     | null;
+  /**
+   * Original non-numeric source values keyed by column key, e.g. { "final_co": ">500" }. Present only when the stored value is null because the source text was censored.
+   */
+  rawData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   sourcePaper?: (number | null) | Paper;
   sourcePage?: number | null;
   updatedAt: string;
@@ -599,6 +611,7 @@ export interface DatasetRowsSelect<T extends boolean = true> {
   dataset?: T;
   rowIndex?: T;
   data?: T;
+  rawData?: T;
   sourcePaper?: T;
   sourcePage?: T;
   updatedAt?: T;

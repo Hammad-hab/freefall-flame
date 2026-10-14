@@ -4,47 +4,62 @@ import {
   Statistics,
   Assistant,
 } from "./components/Fragments"
-import {getDataset, getAllRows} from "@/components/util"
+import {getDataset, getAllRows, type DataRow, type DatasetMeta} from "@/components/util"
 import Header from "./components/Header";
 import { DatasetNotFound } from "./components/DatasetNotFound";
 import SummaryAndChart from "./components/SummaryChart"
 import Share from "./components/Share"
-import AISummary from "./components/AISummary";
+import InterpretationPanel from "./components/InterpretationPanel";
 import ReferencedPapers from "./components/ReferencedPapers";
 import Visualization from "./components/Visualization";
+import EvidenceRanking from "./components/EvidenceRanking";
+import OxygenHeatmap from "./components/OxygenHeatmap";
+import SourcesStrip from "./components/SourcesStrip";
+import Limitations from "./components/Limitations";
+import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion";
+
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const VALID_TABS = ["Overview", "AI Summary", "Referenced Papers", "Visualization"] as const;
-type TabName = (typeof VALID_TABS)[number];
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "evidence", label: "Evidence" },
+  { id: "visualization", label: "Visualization" },
+  { id: "ai-summary", label: "Interpretation" },
+  { id: "papers", label: "Referenced Papers" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+type LoadedDataset = NonNullable<Awaited<ReturnType<typeof getDataset>>>
+
+/** Shared parsed-row computation for the evidence panels. */
+function parseForDataset(dataset: LoadedDataset, rows: DataRow[]): ParsedRow[] {
+  return parseRows(rows, buildRowMapping(resolveBass2Columns(dataset.columns).resolutions));
+}
 
 export default async function Page({ searchParams }: SearchPageProps) {
   const filters = await searchParams;
   const dataset_id = filters.dataset;
   const rawTab = filters.tab as string;
-  const activeTab: TabName = (VALID_TABS as readonly string[]).includes(rawTab)
-    ? (rawTab as TabName)
-    : "Overview";
+  const activeTab: TabId = (TABS as readonly { id: string }[]).some((t) => t.id === rawTab)
+    ? (rawTab as TabId)
+    : "overview";
 
-  const ds = await getDataset(dataset_id as string)
+  const ds: LoadedDataset | null = await getDataset(dataset_id as string)
   const rows = await getAllRows(dataset_id as string)
   if (!ds) return <DatasetNotFound/>
-
+  const dataset: DatasetMeta = ds
   return (
       <div className="w-full bg-[#131318] p-8 pb-10 shadow-2xl">
         <Header activeTab={activeTab} />
-        {/*<div className="mt-6">
-          <h1 className="text-[22px] font-semibold tracking-tight text-white">{ds.name}</h1>
-         
-        </div>*/}
         <Share
           datasetId={dataset_id as string} metricKey="o2_initial" />
         <div className="mt-10">
-          {activeTab === "Overview" && (
+          {activeTab === "overview" && (
             <>
               <div className="grid grid-cols-[1fr_380px] gap-8">
-                <SummaryAndChart dataset={ds} rows={rows}/>
+                <SummaryAndChart dataset={dataset} rows={rows}/>
                 <Vulnerability />
               </div>
               <div className="mt-8 grid grid-cols-[1.45fr_0.8fr_1fr] gap-8">
@@ -52,16 +67,31 @@ export default async function Page({ searchParams }: SearchPageProps) {
                 <Statistics />
                 <Assistant />
               </div>
+              <div className="mt-8 grid gap-8 lg:grid-cols-2">
+                <SourcesStrip dataset={dataset} rows={rows} />
+                <Limitations />
+              </div>
             </>
           )}
-          {activeTab === "AI Summary" && (
-            <AISummary datasetId={dataset_id as string} datasetName={ds.name} />
+          {activeTab === "evidence" && (
+            <>
+              <EvidenceRanking rows={parseForDataset(dataset, rows)} />
+              <div className="mt-6">
+                <OxygenHeatmap rows={parseForDataset(dataset, rows)} />
+              </div>
+              <div className="mt-6">
+                <Limitations />
+              </div>
+            </>
           )}
-          {activeTab === "Referenced Papers" && (
+          {activeTab === "ai-summary" && (
+            <InterpretationPanel datasetId={dataset_id as string} datasetName={ds.name} />
+          )}
+          {activeTab === "papers" && (
             <ReferencedPapers papers={ds.papers} />
           )}
-          {activeTab === "Visualization" && (
-            <Visualization dataset={ds} rows={rows} />
+          {activeTab === "visualization" && (
+            <Visualization dataset={dataset} rows={rows} />
           )}
         </div>
       </div>
