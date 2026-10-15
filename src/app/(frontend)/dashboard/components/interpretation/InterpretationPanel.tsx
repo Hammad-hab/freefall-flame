@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PaperRef } from "@/lib/types";
-import { C, panelCls, panelStyle } from "./chart-theme";
+import { C, panelCls, panelStyle } from "../ui/chart-theme";
 
 type Response = {
   summary: {

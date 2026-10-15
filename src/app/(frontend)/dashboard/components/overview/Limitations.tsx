@@ -1,6 +1,6 @@
 "use client"
 
-import { C, panelCls, panelStyle } from "./chart-theme"
+import { C, panelCls, panelStyle } from "../ui/chart-theme"
 
 /**
  * Scope and Limitations — the scientific guardrails for the whole dashboard.

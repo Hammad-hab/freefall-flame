@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { numericColumns, categoryColumns, columnLabel } from "@/lib/columns";
 import type { DataRow, DatasetMeta } from "@/lib/types";
-import { C, CHART_COLORS, panelCls, panelStyle } from "./chart-theme";
+import { C, CHART_COLORS, panelCls, panelStyle } from "../ui/chart-theme";
 
 /**
  * Generic comparison chart.

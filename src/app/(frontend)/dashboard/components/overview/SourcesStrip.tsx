@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { DataRow, DatasetMeta, PaperRef } from "@/lib/types";
-import { C, panelCls, panelStyle } from "./chart-theme";
+import { C, panelCls, panelStyle } from "../ui/chart-theme";
 
 /**
  * Sources strip — dataset-wide papers plus row-level (_paper) provenance.

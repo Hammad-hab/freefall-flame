@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Icon } from "./Card";
+import { Icon } from "../ui/Card";
 import Link from "next/link";
 
 const TABS = [

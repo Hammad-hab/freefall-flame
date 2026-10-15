@@ -9,7 +9,7 @@ import {
   type ScoredMaterial,
 } from "@/lib/combustion";
 import type { ParsedRow } from "@/lib/combustion";
-import { C, panelCls, panelStyle } from "./chart-theme";
+import { C, panelCls, panelStyle } from "../ui/chart-theme";
 
 type SortMode = "rank" | "name" | "tests" | "score"
 

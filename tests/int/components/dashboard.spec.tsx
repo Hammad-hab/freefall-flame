@@ -9,11 +9,11 @@
  */
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
-import Visualization from '@/app/(frontend)/dashboard/components/Visualization'
-import EvidenceRanking from '@/app/(frontend)/dashboard/components/EvidenceRanking'
-import OxygenHeatmap from '@/app/(frontend)/dashboard/components/OxygenHeatmap'
-import GenericCompare from '@/app/(frontend)/dashboard/components/GenericCompare'
-import SourcesStrip from '@/app/(frontend)/dashboard/components/SourcesStrip'
+import Visualization from '@/app/(frontend)/dashboard/components/visualization/Visualization'
+import EvidenceRanking from '@/app/(frontend)/dashboard/components/evidence/EvidenceRanking'
+import OxygenHeatmap from '@/app/(frontend)/dashboard/components/evidence/OxygenHeatmap'
+import GenericCompare from '@/app/(frontend)/dashboard/components/visualization/GenericCompare'
+import SourcesStrip from '@/app/(frontend)/dashboard/components/overview/SourcesStrip'
 import { bandIndexFor, buildRowMapping, parseRows, resolveBass2Columns, deriveO2Bands } from '@/lib/combustion'
 import type { DatasetMeta, DataRow } from '@/lib/types'
 

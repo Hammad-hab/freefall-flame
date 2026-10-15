@@ -1,4 +1,4 @@
-import { Arrow, Card, Icon } from "./Card";
+import { Arrow, Card, Icon } from "../ui/Card";
 
 /* ----------------------------- helpers ----------------------------- */
 

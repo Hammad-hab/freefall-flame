@@ -3,19 +3,19 @@ import {
   ActiveIncidents,
   Statistics,
   Assistant,
-} from "./components/Fragments"
+} from "./components/overview/Fragments"
 import {getDataset, getAllRows, type DataRow, type DatasetMeta} from "@/components/util"
-import Header from "./components/Header";
-import { DatasetNotFound } from "./components/DatasetNotFound";
-import SummaryAndChart from "./components/SummaryChart"
-import Share from "./components/Share"
-import InterpretationPanel from "./components/InterpretationPanel";
-import ReferencedPapers from "./components/ReferencedPapers";
-import Visualization from "./components/Visualization";
-import EvidenceRanking from "./components/EvidenceRanking";
-import OxygenHeatmap from "./components/OxygenHeatmap";
-import SourcesStrip from "./components/SourcesStrip";
-import Limitations from "./components/Limitations";
+import Header from "./components/layout/Header";
+import { DatasetNotFound } from "./components/ui/DatasetNotFound";
+import SummaryAndChart from "./components/overview/SummaryChart"
+import Share from "./components/ui/Share"
+import InterpretationPanel from "./components/interpretation/InterpretationPanel"
+import ReferencedPapers from "./components/papers/ReferencedPapers"
+import Visualization from "./components/visualization/Visualization"
+import EvidenceRanking from "./components/evidence/EvidenceRanking"
+import OxygenHeatmap from "./components/evidence/OxygenHeatmap"
+import SourcesStrip from "./components/overview/SourcesStrip"
+import Limitations from "./components/overview/Limitations"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion";
 
 interface SearchPageProps {

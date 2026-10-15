@@ -22,7 +22,7 @@ import {
   type ReadingClass,
 } from "@/lib/combustion";
 import type { DatasetMeta, DataRow } from "@/lib/types";
-import { C, CHART_COLORS, panelCls, panelStyle } from "./chart-theme";
+import { C, CHART_COLORS, panelCls, panelStyle } from "../ui/chart-theme";
 import GenericCompare from "./GenericCompare";
 
 /* ------------------------------------------------------------------ */
