@@ -27,7 +27,7 @@ function smoothPath(values: number[], w: number, h: number, min = 100, max = 400
 
 function SummaryAndChart() {
   const items = [
-    { label: "Triage", n: "1234", dot: "bg-blue-500" },
+    { label: "Triage", n: "1234", dot: "bg-amber-500" },
     { label: "Fixing", n: "0", dot: "bg-emerald-400" },
     { label: "Investigating", n: "24", dot: "bg-pink-500" },
   ];
@@ -42,16 +42,16 @@ function SummaryAndChart() {
   return (
     <Card className="grid grid-cols-[220px_1fr] overflow-hidden">
       {/* Summary */}
-      <div className="rounded-[22px] border-r border-white/[0.07] bg-[#23232c] p-5">
+      <div className="rounded-[22px] border-r border-white/[0.07] bg-[#2c2822] p-5">
         <h2 className="text-[17px] font-light">Summary</h2>
         <div className="mt-4 space-y-2.5">
           {items.map((i) => (
-            <div key={i.label} className="flex items-center justify-between rounded-xl border border-white/10 bg-[#2b2b36] px-3 py-2.5">
+            <div key={i.label} className="flex items-center justify-between rounded-xl border border-white/10 bg-[#363026] px-3 py-2.5">
               <div className="flex items-center gap-2 text-[13px]">
                 <span className={`h-2 w-2 rounded-full ${i.dot}`} />
                 {i.label}
               </div>
-              <span className="rounded-full bg-[#3a3a47] px-2.5 py-1 text-[12px] text-white/80">{i.n}</span>
+              <span className="rounded-full bg-[#474036] px-2.5 py-1 text-[12px] text-white/80">{i.n}</span>
             </div>
           ))}
         </div>
@@ -70,7 +70,7 @@ function SummaryAndChart() {
           <h2 className="text-[17px] font-light">Incident frequency</h2>
           <div className="flex rounded-full border border-white/10 p-0.5 text-[12px]">
             {["12 months", "30 days", "1 week"].map((t, i) => (
-              <span key={t} className={`rounded-full px-4 py-2 ${i === 1 ? "bg-[#33333f]" : "text-white/80"}`}>
+              <span key={t} className={`rounded-full px-4 py-2 ${i === 1 ? "bg-[#3f3830]" : "text-white/80"}`}>
                 {t}
               </span>
             ))}
@@ -91,9 +91,9 @@ function SummaryAndChart() {
             >
               <defs>
                 <linearGradient id="blueLine" x1="0" x2="1">
-                  <stop offset="0" stopColor="#4f46e5" />
-                  <stop offset="0.5" stopColor="#8ea2ff" />
-                  <stop offset="1" stopColor="#6366f1" />
+                  <stop offset="0" stopColor="#ffa64d" />
+                  <stop offset="0.5" stopColor="#ffc080" />
+                  <stop offset="1" stopColor="#ffb868" />
                 </linearGradient>
                 <linearGradient id="pinkLine" x1="0" x2="1">
                   <stop offset="0" stopColor="#e5397f" />
@@ -118,11 +118,11 @@ function SummaryAndChart() {
 
             {/* peak marker */}
             <span
-              className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-[#6e8cff] shadow-[0_0_0_5px_rgba(110,140,255,0.25)]"
+              className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-[#ffa64d] shadow-[0_0_0_5px_rgba(110,140,255,0.25)]"
               style={{ left: `${peakLeft}%`, top: `${peakTop}%` }}
             />
             <div
-              className="absolute rounded-lg border border-white/10 bg-[#2b2b36] px-2 py-1.5 text-[11px] leading-4"
+              className="absolute rounded-lg border border-white/10 bg-[#363026] px-2 py-1.5 text-[11px] leading-4"
               style={{ left: `${peakLeft}%`, top: -26, transform: "translateX(-10%)" }}
             >
               7 September
@@ -144,25 +144,25 @@ function SummaryAndChart() {
 
 function Vulnerability() {
   return (
-    <div className="relative overflow-hidden rounded-[22px] bg-[#1a6bff] p-5">
+    <div className="relative overflow-hidden rounded-[22px] bg-flame-amber text-[#1a0f05] p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-[16px]">Sources</h2>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25">
           <Arrow />
         </span>
       </div>
-      <p className="mt-4 text-[14px] leading-5 text-white/90">
+      <p className="mt-4 text-[14px] leading-5  text-[#1a0f05]">
         Encryption ensures supplier data remains consistently secure from breaches
       </p>
       <div className="absolute inset-x-5 bottom-4 h-[120px]">
         <div className="absolute inset-x-2 bottom-0 h-14 rounded-xl bg-white/20" />
-        <div className="absolute inset-x-0 top-[50px] flex h-[48px] -rotate-[3deg] items-start justify-between rounded-xl bg-[#d6e4ff] px-3 pt-2.5 text-[14px] text-[#1c1c24] shadow-lg">
+        <div className="absolute inset-x-0 top-[50px] flex h-[48px] -rotate-[3deg] items-start justify-between rounded-xl bg-[#ffe8d6] px-3 pt-2.5 text-[14px] text-[#1c1c24] shadow-lg">
           <span>Thread</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1c1c24] text-[11px] text-white">1</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2a2118] text-[11px] text-white">1</span>
         </div>
         <div className="absolute inset-x-0 top-0 flex h-[54px] -rotate-[3deg] items-center justify-between rounded-xl bg-white px-3 text-[14px] text-[#1c1c24] shadow-lg">
           <span>Priority</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1c1c24] text-[11px] text-white">3</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2a2118] text-[11px] text-white">3</span>
         </div>
       </div>
     </div>
@@ -194,13 +194,13 @@ function ActiveIncidents() {
           },
           {
             tag: "Investigating",
-            tagCls: "bg-[#3d3df5] text-white",
+            tagCls: "bg-[#ffa64d] text-white",
             text: "High error rate in user service and issues",
             name: "Elizabeth Belle",
             email: "eliebelle@gmail.com",
           },
         ].map((c) => (
-          <div key={c.name} className="rounded-2xl border border-white/10 bg-[#23232c] p-3.5">
+          <div key={c.name} className="rounded-2xl border border-white/10 bg-[#2c2822] p-3.5">
             <div className="flex items-start justify-between">
               <span className={`rounded-full px-3 py-1.5 text-[12px] ${c.tagCls}`}>{c.tag}</span>
               <div className="text-right text-[11px] leading-4 text-white/70">
@@ -228,12 +228,12 @@ function Statistics() {
     <Card className="relative overflow-hidden p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-[17px] font-light">Statistics</h2>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#23232c]">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#2c2822]">
           <Arrow />
         </span>
       </div>
       <div className="relative mx-auto mt-2 h-[190px] w-[210px]">
-        <div className={`absolute right-[25px] top-0 flex h-[70px] w-[70px] flex-col items-center justify-center rounded-full bg-[#33333f] text-white/80 ${hatch}`}>
+        <div className={`absolute right-[25px] top-0 flex h-[70px] w-[70px] flex-col items-center justify-center rounded-full bg-[#3f3830] text-white/80 ${hatch}`}>
           <span className="text-[18px] font-light leading-none">15%</span>
           <span className="mt-0.5 text-[9px]">Fixing</span>
         </div>
@@ -241,7 +241,7 @@ function Statistics() {
           <span className="text-[36px] font-light leading-none">64%</span>
           <span className="mt-0.5 text-[13px]">Investigating</span>
         </div>
-        <div className="absolute bottom-0 right-[-2px] flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#3d3df5]">
+        <div className="absolute bottom-0 right-[-2px] flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#ffa64d]">
           <span className="text-[24px] font-light leading-none">26%</span>
           <span className="mt-0.5 text-[11px]">Triage</span>
         </div>
@@ -256,7 +256,7 @@ function Assistant() {
   const actions = [
     { label: "Text assistance", c: "text-amber-300", d: "M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4" },
     { label: "Automation", c: "text-pink-400", d: "M9 8l-4 4 4 4M15 8l4 4-4 4" },
-    { label: "Scheduling", c: "text-sky-300", d: "M5 7h14v13H5zM5 11h14M9 4v4M15 4v4" },
+    { label: "Scheduling", c: "text-amber-300", d: "M5 7h14v13H5zM5 11h14M9 4v4M15 4v4" },
     { label: "Smart response", c: "text-violet-300", d: "M5 5h14v10H9l-4 4V5z" },
   ];
   return (
@@ -264,13 +264,13 @@ function Assistant() {
       <div className="text-[17px] font-light">Ask about this dataset</div>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {actions.map((a) => (
-          <div key={a.label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#23232c] px-3.5 py-3.5 text-[12px]">
+          <div key={a.label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#2c2822] px-3.5 py-3.5 text-[12px]">
             <Icon d={a.d} className={`h-4 w-4 ${a.c}`} />
             {a.label}
           </div>
         ))}
       </div>
-      <div className="mt-4 flex items-center justify-between rounded-full border border-white/10 bg-[#2b2b36] px-4 py-2.5 text-[12px] text-white/70">
+      <div className="mt-4 flex items-center justify-between rounded-full border border-white/10 bg-[#363026] px-4 py-2.5 text-[12px] text-white/70">
         Ask something...
         <span className="text-violet-300">✦</span>
       </div>

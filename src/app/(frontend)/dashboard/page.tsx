@@ -16,6 +16,7 @@ import EvidenceRanking from "./components/evidence/EvidenceRanking"
 import OxygenHeatmap from "./components/evidence/OxygenHeatmap"
 import SourcesStrip from "./components/overview/SourcesStrip"
 import Limitations from "./components/overview/Limitations"
+import ThreeBackground from "./components/overview/ThreeBackground"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion";
 
 interface SearchPageProps {
@@ -51,48 +52,51 @@ export default async function Page({ searchParams }: SearchPageProps) {
   if (!ds) return <DatasetNotFound/>
   const dataset: DatasetMeta = ds
   return (
-      <div className="w-full bg-[#131318] p-8 pb-10 shadow-2xl">
-        <Header activeTab={activeTab} />
-        <Share
-          datasetId={dataset_id as string} metricKey="o2_initial" />
-        <div className="mt-10">
-          {activeTab === "overview" && (
-            <>
-              <div className="grid grid-cols-[1fr_380px] gap-8">
-                <SummaryAndChart dataset={dataset} rows={rows}/>
-                <Vulnerability />
-              </div>
-              <div className="mt-8 grid grid-cols-[1.45fr_0.8fr_1fr] gap-8">
-                <ActiveIncidents />
-                <Statistics />
-                <Assistant />
-              </div>
-              <div className="mt-8 grid gap-8 lg:grid-cols-2">
-                <SourcesStrip dataset={dataset} rows={rows} />
-                <Limitations />
-              </div>
-            </>
-          )}
-          {activeTab === "evidence" && (
-            <>
-              <EvidenceRanking rows={parseForDataset(dataset, rows)} />
-              <div className="mt-6">
-                <OxygenHeatmap rows={parseForDataset(dataset, rows)} />
-              </div>
-              <div className="mt-6">
-                <Limitations />
-              </div>
-            </>
-          )}
-          {activeTab === "ai-summary" && (
-            <InterpretationPanel datasetId={dataset_id as string} datasetName={ds.name} />
-          )}
-          {activeTab === "papers" && (
-            <ReferencedPapers papers={ds.papers} />
-          )}
-          {activeTab === "visualization" && (
-            <Visualization dataset={dataset} rows={rows} />
-          )}
+      <div className="w-full bg-[#181410] p-8 pb-10 shadow-2xl">
+        <ThreeBackground />
+        <div className="relative z-10">
+          <Header activeTab={activeTab} />
+          <Share
+            datasetId={dataset_id as string} metricKey="o2_initial" />
+          <div className="mt-10">
+            {activeTab === "overview" && (
+              <>
+                <div className="grid grid-cols-[1fr_380px] gap-8">
+                  <SummaryAndChart dataset={dataset} rows={rows}/>
+                  <Vulnerability />
+                </div>
+                <div className="mt-8 grid grid-cols-[1.45fr_0.8fr_1fr] gap-8">
+                  <ActiveIncidents />
+                  <Statistics />
+                  <Assistant />
+                </div>
+                <div className="mt-8 grid gap-8 lg:grid-cols-2">
+                  <SourcesStrip dataset={dataset} rows={rows} />
+                  <Limitations />
+                </div>
+              </>
+            )}
+            {activeTab === "evidence" && (
+              <>
+                <EvidenceRanking rows={parseForDataset(dataset, rows)} />
+                <div className="mt-6">
+                  <OxygenHeatmap rows={parseForDataset(dataset, rows)} />
+                </div>
+                <div className="mt-6">
+                  <Limitations />
+                </div>
+              </>
+            )}
+            {activeTab === "ai-summary" && (
+              <InterpretationPanel datasetId={dataset_id as string} datasetName={ds.name} />
+            )}
+            {activeTab === "papers" && (
+              <ReferencedPapers papers={ds.papers} />
+            )}
+            {activeTab === "visualization" && (
+              <Visualization dataset={dataset} rows={rows} />
+            )}
+          </div>
         </div>
       </div>
   );

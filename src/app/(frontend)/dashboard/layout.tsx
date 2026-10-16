@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import ThreeBackground from "./components/overview/ThreeBackground";
 
 /**
  * Dashboard layout — wraps every dashboard route.
@@ -9,9 +10,10 @@ import type { ReactNode } from "react";
  */
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0e0e12] text-white antialiased">
-      <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        {children}
+    <div>
+      <ThreeBackground />
+      <div className="min-h-screen bg-[#100e0c] text-white antialiased">
+          {children}
       </div>
     </div>
   );

@@ -26,7 +26,7 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
   return (
     <Card className="grid grid-cols-[300px_1fr] overflow-hidden">
       {/* Summary */}
-      <div className="rounded-[22px] border-r border-white/[0.07] bg-[#23232c] p-5">
+      <div className="rounded-[22px] border-r border-white/[0.07] bg-[#2c2822] p-5">
         <h2 className="text-[17px] font-light">Summary</h2>
         <div className="mt-4 flex gap-2 text-[10px] leading-4 text-white/50">
           <span className="text-white/70">✦</span>
@@ -36,13 +36,13 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
           {items.map((i) => (
             <div
               key={i.label}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#2b2b36] px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#363026] px-3 py-2.5"
             >
               <div className="flex shrink-0 items-center gap-2 text-[13px]">
                 <span className={`h-2 w-2 rounded-full ${i.dot}`} />
                 {i.label}
               </div>
-              <span className="truncate rounded-full bg-[#3a3a47] px-2.5 py-1 text-[12px] text-white/80">
+              <span className="truncate rounded-full bg-[#474036] px-2.5 py-1 text-[12px] text-white/80">
                 {i.n}
               </span>
             </div>
@@ -71,7 +71,7 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
                   aria-controls="chart-panel"
                   onClick={() => setTab(t)}
                   className={`rounded-full px-4 py-2 transition-colors ${
-                    active ? "bg-[#33333f] text-white" : "text-white/80 hover:text-white"
+                    active ? "bg-[#3f3830] text-white" : "text-white/80 hover:text-white"
                   }`}
                 >
                   {t}
@@ -96,7 +96,7 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
                     <span className="truncate text-white/90">{col.label}</span>
                     <span className="flex shrink-0 items-center gap-2">
                       {col.unit && <span className="text-[11px] text-white/40">{col.unit}</span>}
-                      <span className="rounded-full bg-[#3a3a47] px-2 py-0.5 text-[10px] text-white/70">
+                      <span className="rounded-full bg-[#474036] px-2 py-0.5 text-[10px] text-white/70">
                         {col.type}
                       </span>
                     </span>
@@ -109,7 +109,7 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
             <div className="mt-4">
               <div className="overflow-x-auto rounded-xl border border-white/10">
                 <table className="w-max min-w-full border-collapse text-left text-[12px]">
-                  <thead className="bg-[#2b2b36] text-[11px] text-white/60">
+                  <thead className="bg-[#363026] text-[11px] text-white/60">
                     <tr>
                       {dataset?.columns?.map((col) => (
                         <th key={col.key} className="whitespace-nowrap px-3 py-2 font-medium">

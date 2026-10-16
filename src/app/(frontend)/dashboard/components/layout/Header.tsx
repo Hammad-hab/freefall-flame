@@ -22,7 +22,7 @@ function Header({ activeTab }: { activeTab: TabId }) {
       <div className="text-[18px] font-semibold tracking-tight">Freefall labs</div>
       <div className="flex items-center gap-2">
         <nav
-          className="flex rounded-full border border-white/10 bg-[#1c1c24] p-0.5"
+          className="flex rounded-full border border-white/10 bg-[#241f1a] p-0.5"
           aria-label="Dashboard sections"
         >
           {TABS.map((t) => {
@@ -37,7 +37,7 @@ function Header({ activeTab }: { activeTab: TabId }) {
                 aria-current={t.id === activeTab ? "page" : undefined}
                 className={`rounded-full px-4 py-2 text-[12px] transition-colors cursor-pointer ${
                   t.id === activeTab
-                    ? "bg-[#33333f] text-white"
+                    ? "bg-[#3f3830] text-white"
                     : "text-white/80 hover:text-white"
                 }`}
               >
@@ -46,7 +46,7 @@ function Header({ activeTab }: { activeTab: TabId }) {
             );
           })}
         </nav>
-        <button className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#1c1c24]">
+        <button className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#241f1a]">
           <Icon
             d={"M21 21l-4.3-4.3M11 18a7 7 0 100-14 7 7 0 000 14z"}
             className="h-4 w-4"
