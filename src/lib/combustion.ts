@@ -291,7 +291,7 @@ export function parseRows(rows: RawRow[], mapping: RowMapping): ParsedRow[] {
       o2Consumed,
       coi: coiR.value,
       cof: cofR.value,
-      coProduced: coiR.kind === 'valid' && cofR.kind === 'valid' ? (cofR.value as number) - (coiR.value as number) : null,
+      coProduced: coiR.kind === 'valid' && cofR.kind === 'valid' ? Math.max(0, (cofR.value as number) - (coiR.value as number)) : null,
       co2i: co2iR.value,
       co2f: co2fR.value,
       co2Produced: co2iR.kind === 'valid' && co2fR.kind === 'valid' ? (co2fR.value as number) - (co2iR.value as number) : null,

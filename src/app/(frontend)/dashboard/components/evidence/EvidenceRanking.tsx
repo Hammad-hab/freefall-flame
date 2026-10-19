@@ -132,11 +132,11 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
               <button
                 key={m}
                 onClick={() => setSort(m)}
-                className="rounded-full border px-3 py-1 text-[11px] transition-colors"
+                className="rounded-full border px-3 py-1 text-[11px] transition-colors hover:brightness-110"
                 style={{
                   borderColor: sort === m ? C.blue : C.line,
-                  background: sort === m ? `${C.blue}22` : 'transparent',
-                  color: sort === m ? C.blue : C.muted,
+                  background: sort === m ? C.blue : C.surface,
+                  color: sort === m ? C.ink : C.muted,
                 }}
               >
                 {m === "rank" ? "Rank" : m === "name" ? "Name" : m === "tests" ? "Tests" : "Score"}

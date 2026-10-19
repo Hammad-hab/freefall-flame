@@ -110,11 +110,11 @@ export default function OxygenHeatmap({ rows }: { rows: ParsedRow[] }) {
             <button
               key={m}
               onClick={() => setSort(m)}
-              className="rounded-full border px-2.5 py-0.5 text-[11px] transition-colors"
+              className="rounded-full border px-2.5 py-0.5 text-[11px] transition-colors hover:brightness-110"
               style={{
                 borderColor: sort === m ? C.blue : C.line,
-                background: sort === m ? `${C.blue}22` : 'transparent',
-                color: sort === m ? C.blue : C.muted,
+                background: sort === m ? C.blue : C.surface,
+                color: sort === m ? C.ink : C.muted,
               }}
             >
               {m === "score" ? "Evidence score" : m === "name" ? "Name" : "Test count"}

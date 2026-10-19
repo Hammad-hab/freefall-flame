@@ -11,7 +11,6 @@ import ThreeBackground from "./components/overview/ThreeBackground";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div>
-      <ThreeBackground />
       <div className="min-h-screen bg-[#100e0c] text-white antialiased">
           {children}
       </div>

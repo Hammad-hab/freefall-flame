@@ -1,20 +1,17 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Icon } from "../ui/Card";
 import Link from "next/link";
 
 const TABS = [
   { id: "overview", label: "Overview" },
-  { id: "evidence", label: "Evidence" },
-  { id: "visualization", label: "Visualization" },
+  { id: "ranking", label: "Ranking" },
   { id: "ai-summary", label: "Interpretation" },
-  { id: "papers", label: "Referenced Papers" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
 function Header({ activeTab }: { activeTab: TabId }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   return (

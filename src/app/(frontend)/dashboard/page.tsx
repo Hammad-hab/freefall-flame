@@ -18,6 +18,7 @@ import SourcesStrip from "./components/overview/SourcesStrip"
 import Limitations from "./components/overview/Limitations"
 import ThreeBackground from "./components/overview/ThreeBackground"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion";
+import { computeShares } from "@/lib/shares";
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -25,10 +26,8 @@ interface SearchPageProps {
 
 const TABS = [
   { id: "overview", label: "Overview" },
-  { id: "evidence", label: "Evidence" },
-  { id: "visualization", label: "Visualization" },
+  { id: "ranking", label: "Ranking" },
   { id: "ai-summary", label: "Interpretation" },
-  { id: "papers", label: "Referenced Papers" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -51,13 +50,19 @@ export default async function Page({ searchParams }: SearchPageProps) {
   const rows = await getAllRows(dataset_id as string)
   if (!ds) return <DatasetNotFound/>
   const dataset: DatasetMeta = ds
+
+  // The header bar and the statistics card both break the dataset down by
+  // whoever ran the tests, so resolve that column once and share the result.
+  const piColumn = resolveBass2Columns(dataset.columns).resolutions.pi?.column ?? null
+  const shares = computeShares(rows, piColumn)
   return (
       <div className="w-full bg-[#181410] p-8 pb-10 shadow-2xl">
-        <ThreeBackground />
         <div className="relative z-10">
           <Header activeTab={activeTab} />
           <Share
-            datasetId={dataset_id as string} metricKey="o2_initial" />
+            datasetId={dataset_id as string}
+            groupKey={piColumn?.key}
+            metricKey="o2_initial" />
           <div className="mt-10">
             {activeTab === "overview" && (
               <>
@@ -67,16 +72,20 @@ export default async function Page({ searchParams }: SearchPageProps) {
                 </div>
                 <div className="mt-8 grid grid-cols-[1.45fr_0.8fr_1fr] gap-8">
                   <ActiveIncidents />
-                  <Statistics />
+                  <Statistics shares={shares} />
                   <Assistant />
                 </div>
                 <div className="mt-8 grid gap-8 lg:grid-cols-2">
                   <SourcesStrip dataset={dataset} rows={rows} />
                   <Limitations />
                 </div>
+                {/* Charts moved out of their own tab; still part of the overview. */}
+                <div className="mt-8">
+                  <Visualization dataset={dataset} rows={rows} />
+                </div>
               </>
             )}
-            {activeTab === "evidence" && (
+            {activeTab === "ranking" && (
               <>
                 <EvidenceRanking rows={parseForDataset(dataset, rows)} />
                 <div className="mt-6">
@@ -88,13 +97,12 @@ export default async function Page({ searchParams }: SearchPageProps) {
               </>
             )}
             {activeTab === "ai-summary" && (
-              <InterpretationPanel datasetId={dataset_id as string} datasetName={ds.name} />
-            )}
-            {activeTab === "papers" && (
-              <ReferencedPapers papers={ds.papers} />
-            )}
-            {activeTab === "visualization" && (
-              <Visualization dataset={dataset} rows={rows} />
+              <>
+                <InterpretationPanel datasetId={dataset_id as string} datasetName={ds.name} />
+                <div className="mt-8">
+                  <ReferencedPapers papers={ds.papers} />
+                </div>
+              </>
             )}
           </div>
         </div>

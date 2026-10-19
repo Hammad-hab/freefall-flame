@@ -13,11 +13,9 @@ resolves columns, parses rows, and renders the active tab.
 
 | Tab ID         | Label            | Components Rendered                                      |
 | -------------- | ---------------- | -------------------------------------------------------- |
-| `overview`     | Overview         | SummaryChart, Vulnerability, ActiveIncidents, Statistics, Assistant, SourcesStrip, Limitations |
-| `evidence`     | Evidence         | EvidenceRanking, OxygenHeatmap, Limitations              |
-| `visualization`| Visualization    | Visualization                                            |
-| `ai-summary`   | Interpretation   | InterpretationPanel                                      |
-| `papers`       | Referenced Papers| ReferencedPapers                                         |
+| `overview`     | Overview         | SummaryChart, Vulnerability, ActiveIncidents, Statistics, Assistant, SourcesStrip, Limitations, Visualization |
+| `ranking`      | Ranking          | EvidenceRanking, OxygenHeatmap, Limitations              |
+| `ai-summary`   | Interpretation   | InterpretationPanel, ReferencedPapers                    |
 
 ---
 
@@ -58,7 +56,12 @@ Shared design tokens and panel styles:
 Server component. Renders the dataset name, description, row count pills,
 and mean metric stats. Used at the top of the dashboard.
 
-**Props:** `datasetId: string, metricKey?: string`
+**Props:** `datasetId: string, groupKey?: string, metricKey?: string, filter?: { key, value }`
+
+The pills break the dataset down by `groupKey` (the dashboard passes the
+resolved Principal Investigator column). They are computed by the shared
+`computeShares` helper in `src/lib/shares.ts`, the same helper the statistics
+card uses, so the two views cannot disagree.
 
 ### `ui/DatasetNotFound.tsx`
 
@@ -91,9 +94,13 @@ of the BASS-II dataset. Rendered on both Overview and Evidence tabs.
 
 ### `overview/Fragments.tsx`
 
-Template placeholder panels (Vulnerability, ActiveIncidents, Statistics,
-Assistant). These appear to be from a design template and are not wired to
-real data. They are preserved for visual reference.
+Overview panels. `Vulnerability`, `ActiveIncidents`, and `Assistant` are still
+template placeholders with no relationship to the dataset.
+
+`Statistics` is now wired to real data: it renders the share-of-rows breakdown
+from `src/lib/shares.ts` as proportional circles (circle area ∝ share). It
+receives its data as a prop, which the page resolves once and passes to both
+this card and the header bar.
 
 ---
 
@@ -137,7 +144,22 @@ Client component. Materials × O₂-concentration band heatmap. Features:
 
 ### `visualization/Visualization.tsx`
 
-Client component. The main charting panel. Features:
+Client component. Orchestrator: resolves the combustion columns, owns the
+material/flow filter state, derives the chart data, and lays out the panels.
+Everything presentational lives in the sibling modules below.
+
+**Props:** `dataset: DatasetMeta, rows: DataRow[]`
+
+| Module | Responsibility |
+| ------ | -------------- |
+| `chartData.ts` | Pure derivations — no React, no recharts. Unit-testable. |
+| `primitives.tsx` | `Panel`, `StatCard`, `FilterPill`, `Notice`, `ChartTooltip` |
+| `MaterialCharts.tsx` | Charts grouped by material or investigator |
+| `GasCharts.tsx` | Before/after gas composition + velocity scatter |
+| `DataTable.tsx` | Raw readings with censored/out-of-range markers |
+| `GenericCompare.tsx` | Dataset-agnostic comparison chart |
+
+Features:
 
 - Material and flow restrictor filters
 - Stat cards with sample sizes (n)
@@ -148,8 +170,6 @@ Client component. The main charting panel. Features:
 - Bar chart: Tests by Principal Investigator
 - Data table with censored/out-of-range markers
 - Graceful degradation when BASS-II columns are missing
-
-**Props:** `dataset: DatasetMeta, rows: DataRow[]`
 
 ### `visualization/GenericCompare.tsx`
 

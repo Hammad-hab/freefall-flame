@@ -1,4 +1,5 @@
 import { Arrow, Card, Icon } from "../ui/Card";
+import type { ShareResult } from "@/lib/shares";
 
 /* ----------------------------- helpers ----------------------------- */
 
@@ -223,7 +224,26 @@ function ActiveIncidents() {
   );
 }
 
-function Statistics() {
+/**
+ * Share-of-rows breakdown, rendered as proportional circles.
+ *
+ * Replaces the original fixed 64/26/15 "Fixing / Investigating / Triage"
+ * circles, which were template filler with no relationship to the dataset.
+ * Now every circle is sized and labelled from the same `computeShares` result
+ * the header bar uses, so the two can never disagree.
+ *
+ * Circle area is proportional to share (radius ∝ √share) — the original
+ * circles were sized by eye, which is why 64% looked smaller than 26%.
+ */
+function Statistics({ shares }: { shares: ShareResult }) {
+  const { groupLabel, total, shares: entries } = shares
+
+  // Scale the largest share to the card's usable width, then size the rest by
+  // area. Radius, not diameter, is what the eye compares.
+  const maxShare = Math.max(0, ...entries.map((s) => s.share))
+  const radiusFor = (share: number) =>
+    maxShare > 0 ? 26 + (Math.sqrt(share / maxShare) * 26) : 0
+
   return (
     <Card className="relative overflow-hidden p-5">
       <div className="flex items-center justify-between">
@@ -232,24 +252,45 @@ function Statistics() {
           <Arrow />
         </span>
       </div>
-      <div className="relative mx-auto mt-2 h-[190px] w-[210px]">
-        <div className={`absolute right-[25px] top-0 flex h-[70px] w-[70px] flex-col items-center justify-center rounded-full bg-[#3f3830] text-white/80 ${hatch}`}>
-          <span className="text-[18px] font-light leading-none">15%</span>
-          <span className="mt-0.5 text-[9px]">Fixing</span>
-        </div>
-        <div className="absolute left-0 top-[12px] flex h-[134px] w-[134px] flex-col items-center justify-center rounded-full bg-[#e5397f]">
-          <span className="text-[36px] font-light leading-none">64%</span>
-          <span className="mt-0.5 text-[13px]">Investigating</span>
-        </div>
-        <div className="absolute bottom-0 right-[-2px] flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#ffa64d]">
-          <span className="text-[24px] font-light leading-none">26%</span>
-          <span className="mt-0.5 text-[11px]">Triage</span>
-        </div>
-      </div>
+
+      {entries.length === 0 ? (
+        <p className="mt-6 text-[12px] leading-5 text-white/50">
+          No rows to break down yet.
+        </p>
+      ) : (
+        <>
+          <div className="mt-2 flex items-end gap-3">
+            {entries.map((s) => {
+              const size = radiusFor(s.share) * 2
+              return (
+                <div key={s.label} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className={`flex items-center justify-center rounded-full text-center ${
+                      s.other ? `border border-white/10 bg-[#3f3830] text-white/80 ${hatch}` : 'bg-flame-amber text-[#1a0f05]'
+                    }`}
+                    style={{ width: size, height: size, minWidth: 26, minHeight: 26 }}
+                    title={`${s.label}: ${s.count} of ${total} rows (${s.share.toFixed(1)}%)`}
+                  >
+                    <span className={s.share >= 25 ? 'text-[15px] font-light' : 'text-[11px] font-light'}>
+                      {Math.round(s.share)}%
+                    </span>
+                  </div>
+                  <span className="max-w-[88px] truncate text-[10px] text-white/60">{s.label}</span>
+                </div>
+              )
+            })}
+          </div>
+          <p className="mt-3 text-[10px] leading-4 text-white/40">
+            Share of rows by {groupLabel ?? 'value'} · {total} rows. Circle area is proportional to
+            share.
+          </p>
+        </>
+      )}
+
       {/* page curl */}
       <div className="absolute -bottom-1 left-0 h-9 w-16 [clip-path:polygon(0_0,100%_100%,0_100%)] bg-gradient-to-br from-[#2b2b36] to-[#0e0e12]" />
     </Card>
-  );
+  )
 }
 
 function Assistant() {

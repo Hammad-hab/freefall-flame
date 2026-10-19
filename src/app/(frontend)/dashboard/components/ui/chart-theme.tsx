@@ -9,6 +9,11 @@ export const C = {
   panel2: '#2c2822',
   chip: '#363026',
   chip2: '#474036',
+  /** Opaque control surfaces. Controls must never be transparent: the animated
+   *  background shows through the page padding, so a transparent pill reads as
+   *  part of the backdrop instead of as a control. */
+  surface: '#363026',
+  surfaceHover: '#474036',
   line: '#2e2418',
   fg: '#f0ebe2',
   muted: '#a89e90',

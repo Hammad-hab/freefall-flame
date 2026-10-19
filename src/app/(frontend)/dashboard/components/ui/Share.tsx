@@ -8,6 +8,7 @@ import {
   columnLabel,
   type DataRow,
 } from '@/components/util'
+import { computeShares } from '@/lib/shares'
 
 const hatch =
   'bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.14)_0px,rgba(255,255,255,0.14)_1px,transparent_1px,transparent_5px)]'
@@ -16,7 +17,11 @@ const PILL_STYLES = ['bg-flame-amber text-[#1a0f05]', 'bg-fg text-ink', 'bg-line
 
 type Props = {
   datasetId: number | string
-  /** Column key to split the pills by. Default: first category column with 2 to 12 distinct values. */
+  /**
+   * Column key to split the pills by. Default: first category column with 2 to
+   * 12 distinct values. The dashboard passes the resolved Principal
+   * Investigator column here, so the bar always reports who ran the tests.
+   */
   groupKey?: string
   /** Column key for the mean and range stat. Default: first numeric column. */
   metricKey?: string
@@ -56,20 +61,7 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
         return d >= 2 && d <= 12
       })
 
-  let pills: { label: string; count: number; share: number; other?: boolean }[] = []
-  if (group && rows.length) {
-    const counts = new Map<string, number>()
-    for (const r of rows) {
-      const v = r[group.key]
-      const k = v === null || v === undefined || v === '' ? '(blank)' : String(v)
-      counts.set(k, (counts.get(k) ?? 0) + 1)
-    }
-    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1])
-    const top = sorted.slice(0, 3)
-    const rest = sorted.slice(3).reduce((s, [, c]) => s + c, 0)
-    pills = top.map(([label, count]) => ({ label, count, share: (count / rows.length) * 100 }))
-    if (rest > 0) pills.push({ label: 'Other', count: rest, share: (rest / rows.length) * 100, other: true })
-  }
+  const shares = computeShares(rows, group)
 
   /* ---------------------------- stats ---------------------------- */
   const metric = metricKey
@@ -134,10 +126,10 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
             {filter ? 'No rows match this filter.' : 'No rows have been imported yet.'}
           </p>
         ) : (
-          pills.length > 0 && (
+          shares.shares.length > 0 && (
             <>
               <div className="mt-4 flex max-w-[560px] gap-2">
-                {pills.map((p, i) => (
+                {shares.shares.map((p, i) => (
                   <div
                     key={p.label}
                     style={{ flexGrow: Math.max(p.share, 8), flexBasis: 0, minWidth: 76 }}
@@ -154,7 +146,9 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
                   </div>
                 ))}
               </div>
-              <p className="mt-2 px-1.5 text-[11px] text-muted">Share of rows by {group!.label}</p>
+              <p className="mt-2 px-1.5 text-[11px] text-muted">
+                Share of rows by {shares.groupLabel}
+              </p>
             </>
           )
         )}
