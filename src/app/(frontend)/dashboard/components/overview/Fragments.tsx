@@ -1,6 +1,8 @@
 import { Arrow, Card, Icon } from "../ui/Card";
+import { useState, useMemo, useCallback, useEffect, type FormEvent } from "react";
+import type { PaperRef } from "@/lib/types";
 import type { ShareResult } from "@/lib/shares";
-
+import { C } from "../ui/chart-theme";
 /* ----------------------------- helpers ----------------------------- */
 
 const hatch =
@@ -144,8 +146,11 @@ function SummaryAndChart() {
 }
 
 function Vulnerability() {
+  // min-h reserves room for the decorative card stack: it is absolutely positioned against
+  // the bottom edge and would be clipped once the card is no longer stretched to the
+  // height of a taller grid sibling.
   return (
-    <div className="relative overflow-hidden rounded-[22px] bg-flame-amber text-[#1a0f05] p-5">
+    <div className="relative min-h-[260px] overflow-hidden rounded-[22px] bg-flame-amber text-[#1a0f05] p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-[16px]">Sources</h2>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25">
@@ -172,10 +177,10 @@ function Vulnerability() {
 
 function ActiveIncidents() {
   return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between">
+    <Card className="@container p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-[17px] font-light">Key Findings</h2>
-        <div className="flex gap-2 text-[11px]">
+        <div className="flex flex-wrap gap-2 text-[11px]">
           {["Newest", "All"].map((t) => (
             <span key={t} className="flex items-center gap-4 rounded-full border border-white/10 px-3 py-2">
               {t}
@@ -184,7 +189,7 @@ function ActiveIncidents() {
           ))}
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 items-end gap-3">
+      <div className="mt-4 grid grid-cols-1 items-end gap-3 @xl:grid-cols-2">
         {[
           {
             tag: "Fixing",
@@ -246,7 +251,7 @@ function Statistics({ shares }: { shares: ShareResult }) {
 
   return (
     <Card className="relative overflow-hidden p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-[17px] font-light">Statistics</h2>
         <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#2c2822]">
           <Arrow />
@@ -259,7 +264,7 @@ function Statistics({ shares }: { shares: ShareResult }) {
         </p>
       ) : (
         <>
-          <div className="mt-2 flex items-end gap-3">
+          <div className="mt-2 flex flex-wrap items-end gap-3">
             {entries.map((s) => {
               const size = radiusFor(s.share) * 2
               return (
@@ -293,30 +298,182 @@ function Statistics({ shares }: { shares: ShareResult }) {
   )
 }
 
-function Assistant() {
-  const actions = [
-    { label: "Text assistance", c: "text-amber-300", d: "M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4" },
-    { label: "Automation", c: "text-pink-400", d: "M9 8l-4 4 4 4M15 8l4 4-4 4" },
-    { label: "Scheduling", c: "text-amber-300", d: "M5 7h14v13H5zM5 11h14M9 4v4M15 4v4" },
-    { label: "Smart response", c: "text-violet-300", d: "M5 5h14v10H9l-4 4V5z" },
-  ];
+function Assistant({ datasetId, datasetName }: AssistantProps) {
+  const [material, setMaterial] = useState<string>("all")
+  const [question, setQuestion] = useState("")
+  const [data, setData] = useState<InterpretationResponse | null>(null)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [model, setModel] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const materials = useMemo(
+    () => (data?.allMaterials ? ["all", ...data.allMaterials] : ["all"]),
+    [data],
+  )
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    setAnswer(null)
+    try {
+      const qs = new URLSearchParams({ dataset: datasetId })
+      if (material !== "all") qs.set("material", material)
+      const res = await fetch(`/api/interpretation?${qs}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to load interpretation")
+      setData(json as InterpretationResponse)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [datasetId, material])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const ask = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault()
+      if (!question.trim()) return
+      setLoading(true)
+      setError(null)
+      setAnswer(null)
+      try {
+        const qs = new URLSearchParams({ dataset: datasetId, question: question.trim() })
+        if (material !== "all") qs.set("material", material)
+        const res = await fetch(`/api/interpretation?${qs}`)
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || "Failed to ask")
+        setAnswer(json.answer ?? null)
+        setModel(json.model ?? null)
+      } catch (err) {
+        setError((err as Error).message)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [datasetId, material, question],
+  )
+
   return (
-    <Card className="p-5">
-      <div className="text-[17px] font-light">Ask about this dataset</div>
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        {actions.map((a) => (
-          <div key={a.label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#2c2822] px-3.5 py-3.5 text-[12px]">
-            <Icon d={a.d} className={`h-4 w-4 ${a.c}`} />
-            {a.label}
-          </div>
-        ))}
+    <Card className="@container p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-[17px] font-light">Ask about this dataset</div>
+          <p className="mt-1 text-[12px] leading-5 text-white/55">
+            Grounded in this dataset&apos;s measured summary and linked papers. Ask anything; interpretations are
+            labelled as interpretations.
+          </p>
+        </div>
+        {materials.length > 1 && (
+          <label className="flex items-center gap-2 text-[11px]" style={{ color: C.muted }}>
+            Material
+            <select
+              value={material}
+              onChange={(e) => setMaterial(e.target.value)}
+              className="rounded-lg border border-white/10 px-2 py-1.5 text-[11px]"
+              style={{ borderColor: C.line, background: C.panel2, color: C.fg }}
+            >
+              <option value="all">All materials</option>
+              {materials.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
-      <div className="mt-4 flex items-center justify-between rounded-full border border-white/10 bg-[#363026] px-4 py-2.5 text-[12px] text-white/70">
-        Ask something...
-        <span className="text-violet-300">✦</span>
-      </div>
+
+      <form onSubmit={ask} className="mt-4">
+        <div className="flex gap-2">
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask about this dataset…"
+            className="min-w-0 flex-1 rounded-lg border border-white/10 px-3 py-2 text-[12px] leading-5 outline-none focus:border-blue"
+            style={{ color: C.fg, background: C.panel2, borderColor: C.line }}
+          />
+          <button
+            type="submit"
+            disabled={loading || !question.trim()}
+            className="rounded-full border bg-flame-amber px-4 py-2 text-[12px] font-medium text-[#1a0f05] hover:bg-[#ffb868] disabled:opacity-40"
+          >
+            {loading ? "Asking…" : "Ask"}
+          </button>
+        </div>
+        {question.trim() !== "" && (
+          <p className="mt-1 text-[11px] text-white/50">
+            Asking routes the grounded summary to the AI service when one is configured.
+          </p>
+        )}
+      </form>
+
+      {error && <p className="mt-4 text-[13px]" style={{ color: C.red }}>{error}</p>}
+      {loading && !data && <p className="mt-4 text-[13px]" style={{ color: C.muted }}>Building grounded summary…</p>}
+
+      {data && !loading && (
+        <>
+          <Section title="What the data shows (measured)" accent={C.blue}>
+            {data.fallback.observations.map((o, i) => <Bullet key={i} text={o} />)}
+          </Section>
+
+          <Section
+            title={
+              answer
+                ? `What it may mean (AI-assisted${model ? ` — ${model}` : ""})`
+                : "What it may mean"
+            }
+            accent={C.amber}
+          >
+            {answer ? (
+              <p className="whitespace-pre-wrap text-[12px] leading-6" style={{ color: C.fg }}>
+                {answer}
+              </p>
+            ) : (
+              <>
+                <p className="mb-2 text-[11px] leading-4 text-white/55">
+                  {data.ai ? "No AI service is configured on the server, so this is a deterministic reading — not AI-generated." : null}
+                  {data.fallback.interpretations.map((t, i) => <Bullet key={i} text={t} />)}
+                </p>
+              </>
+            )}
+          </Section>
+
+          <Section title="What remains uncertain" accent={C.red}>
+            {data.fallback.uncertainties.map((u, i) => <Bullet key={i} text={u} />)}
+          </Section>
+
+          {data.papers.length > 0 && (
+            <Section title="Linked research sources" accent={C.green}>
+              <p className="mb-2 text-[11px] leading-4 text-white/55">
+                Cited for traceability. A linked paper is not evidence that it supports any particular chart value.
+              </p>
+              <ul className="space-y-1.5">
+                {data.papers.map((p) => (
+                  <li key={p.id} className="text-[12px] leading-5" style={{ color: C.fg }}>
+                    <span className="font-medium">{p.title}</span>
+                    {p.ntrsId && (
+                      <a
+                        href={`https://ntrs.nasa.gov/citations/${p.ntrsId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-[11px]"
+                        style={{ color: C.blue }}
+                      >
+                        NTRS: {p.ntrsId} ↗
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+        </>
+      )}
     </Card>
-  );
+  )
 }
 
 export {

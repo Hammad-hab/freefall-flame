@@ -3,8 +3,8 @@ import './global.css'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: '',
+  title: 'Freefall Labs - Microgravity',
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flame in Freefall: themes</title>
+<style>
+:root{--ink:#120f0b;--panel:#1b1611;--panel2:#262019;--surface:#2d261e;--line:#3a3127;--fg:#f4ece2;--muted:#a39583;--accent:#f4a95a;--on:#1a1208;--chip2:#3b2f21;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ink);color:var(--fg);font:14px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif;transition:background .25s,color .25s}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:13px}
+.themes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tb{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 12px 6px 8px;font:inherit;font-size:12px;cursor:pointer}
+.tb[aria-pressed=true]{border-color:var(--accent);color:var(--fg)}
+.tb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dots{display:flex}
+.gl{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:6px}
+.dots i{width:12px;height:12px;border-radius:50%;margin-left:-3px;border:1px solid rgba(128,128,128,.4)}
+.dots i:first-child{margin-left:0}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;min-width:0}
+.card h2{font-size:16px;font-weight:600;margin:0 0 14px}
+.s4{grid-column:span 4}.s5{grid-column:span 5}.s3{grid-column:span 3}.s7{grid-column:span 7}.s6{grid-column:span 6}
+@media(max-width:860px){.s3,.s4,.s5,.s6,.s7{grid-column:span 12}}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.badge{background:var(--chip2);color:var(--accent);border-radius:999px;padding:2px 10px;font-size:12px;font-variant-numeric:tabular-nums}
+.col{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0;font-size:13px}
+.col span:last-child{color:var(--muted);background:var(--surface);border-radius:999px;padding:0 10px;font-size:11px;line-height:20px}
+.acc{background:var(--accent);color:var(--on);border-color:transparent}
+.acc h2{color:var(--on)}
+.acc .paper{background:#fff;color:#1a1208;border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;box-shadow:0 6px 14px rgba(0,0,0,.18)}
+.pill{display:inline-block;border-radius:999px;padding:5px 14px;font-size:12px;border:1px solid var(--accent);background:var(--accent);color:var(--on)}
+.pill.ghost{background:var(--surface);border-color:var(--line);color:var(--muted)}
+.find{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.find p{margin:10px 0 0}.find small{color:var(--muted)}
+.find .top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+.circles{display:flex;flex-wrap:wrap;gap:12px}
+.c{border-radius:50%;background:var(--accent);color:var(--on);display:grid;place-items:center;font-weight:600;font-size:13px}
+.c.o{background:repeating-linear-gradient(45deg,var(--surface) 0 4px,var(--panel2) 4px 8px);color:var(--fg);border:1px solid var(--line)}
+.muted{color:var(--muted)}
+.tabs{display:inline-flex;border:1px solid var(--line);background:var(--ink);border-radius:999px;padding:2px;margin-bottom:12px}
+.tabs span{padding:5px 14px;border-radius:999px;font-size:12px;color:var(--muted)}
+.tabs span.on{background:var(--chip2);color:var(--fg)}
+.flame{height:8px;border-radius:99px;margin:10px 0 4px;background:linear-gradient(90deg,var(--ink),var(--accent))}
+pre{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;font:12px/1.5 ui-monospace,Menlo,monospace;overflow-x:auto;color:var(--fg);max-width:100%}
+.copy{margin-top:10px;font:inherit;font-size:12px}
+.note{font-size:12px;color:var(--muted);margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Flame in Freefall: theme options</h1>
+  <p class="sub">Pick one and the whole mock updates. The token block at the bottom maps straight onto <code>C</code> in chart-theme.ts.</p>
+  <div class="themes" id="themes" role="group" aria-label="Theme"></div>
+
+  <div class="grid">
+    <div class="card s4">
+      <h2>Summary</h2>
+      <div class="row"><span>Columns</span><span class="badge">60</span></div>
+      <div class="row"><span>Last updated</span><span class="badge">10/14/2026</span></div>
+      <div class="flame"></div><div class="note">Accent ramp used for temperature</div>
+    </div>
+    <div class="card s5">
+      <h2>Columns</h2>
+      <div class="tabs"><span class="on">Columns</span><span>Dataset</span></div>
+      <div class="col"><span>Principle Investigator</span><span>category</span></div>
+      <div class="col"><span>Test No.</span><span>text</span></div>
+      <div class="col"><span>Date</span><span>date</span></div>
+      <div class="col"><span>GMT</span><span>integer</span></div>
+    </div>
+    <div class="card s3 acc">
+      <h2>Sources</h2>
+      <div class="paper"><span>Priority</span><b>3</b></div>
+      <div class="paper"><span>Thread</span><b>1</b></div>
+    </div>
+
+    <div class="card s6">
+      <h2>Key findings</h2>
+      <div class="find"><div class="top"><span class="pill">Fixing</span><span>INC-0000</span></div><p>Blow-off at 14 cm/s in the PMMA bar runs.</p><small>Run T20, SIBAL fabric</small></div>
+      <div class="find"><div class="top"><span class="pill ghost">Investigating</span><span>INC-0001</span></div><p>CO rises before the flame goes out at low flow.</p><small>Run T29</small></div>
+    </div>
+    <div class="card s3">
+      <h2>Statistics</h2>
+      <div class="circles">
+        <div class="c" style="width:84px;height:84px">22%</div>
+        <div class="c" style="width:82px;height:82px">21%</div>
+        <div class="c" style="width:82px;height:82px">21%</div>
+        <div class="c o" style="width:104px;height:104px">36%</div>
+      </div>
+    </div>
+    <div class="card s3">
+      <h2>Controls</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="pill">Pause</span><span class="pill ghost">Step</span><span class="pill ghost">Reset</span>
+        <span class="pill ghost">Oxygen</span><span class="pill ghost">Flow</span>
+      </div>
+      <p class="note">Active = accent fill. Idle = surface chip.</p>
+    </div>
+
+    <div class="card s7" style="grid-column:span 12">
+      <h2 id="tt">Tokens</h2>
+      <pre id="tok"></pre>
+      <button class="pill ghost copy" id="cp">Copy tokens</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const T={
+ "Ember":{d:"Current. Warm dark, amber accent. Best fit for fire.",ink:"#120f0b",panel:"#1b1611",panel2:"#262019",surface:"#2d261e",line:"#3a3127",fg:"#f4ece2",muted:"#a39583",accent:"#f4a95a",on:"#1a1208",chip2:"#3b2f21"},
+ "Midnight":{d:"Cool blue-black. Makes flame colours pop in the grid.",ink:"#0b0f17",panel:"#121826",panel2:"#1a2233",surface:"#202a3d",line:"#2c384f",fg:"#e8eef9",muted:"#8d9bb5",accent:"#5aa9f4",on:"#06101d",chip2:"#1f3050"},
+ "Forest":{d:"Deep green, lime accent. Calm for long sessions.",ink:"#0b120e",panel:"#111b15",panel2:"#18261d",surface:"#1e2f24",line:"#2a4132",fg:"#e8f4ec",muted:"#8fa898",accent:"#8fe08a",on:"#08140b",chip2:"#223c2a"},
+ "Violet":{d:"Plum dark, soft violet. Reads as research tool.",ink:"#100c16",panel:"#181222",panel2:"#221a30",surface:"#2a2039",line:"#3a2d4f",fg:"#f0eaf8",muted:"#a698bd",accent:"#b48cf4",on:"#150b24",chip2:"#33264c"},
+ "Rose":{d:"Wine dark, coral-pink accent. Warmer than Ember, less orange.",ink:"#140c0e",panel:"#1e1316",panel2:"#2a1b1f",surface:"#332126",line:"#46303a",fg:"#f8ecee",muted:"#b49aa0",accent:"#f4728a",on:"#240810",chip2:"#47252d"},
+ "Graphite":{d:"Neutral grey, white accent. Lets the sim be the only colour.",ink:"#0e0e0f",panel:"#161617",panel2:"#202022",surface:"#28282b",line:"#37373b",fg:"#f2f2f3",muted:"#9b9ba1",accent:"#e6e6ea",on:"#111113",chip2:"#34343a"},
+ "Paper":{d:"Light warm paper, burnt orange. For print and projector.",ink:"#f6f1e9",panel:"#fffaf2",panel2:"#f2ebdf",surface:"#ebe3d4",line:"#d9cfbd",fg:"#231a10",muted:"#7b6c57",accent:"#d9622b",on:"#fff7ee",chip2:"#f6dcc9"},
+ "Daylight":{d:"Cool light grey-blue. Clean, high contrast.",ink:"#eef2f7",panel:"#ffffff",panel2:"#f1f4f9",surface:"#e6ebf3",line:"#d3dae6",fg:"#0f1a2b",muted:"#5d6b82",accent:"#1f6fe0",on:"#ffffff",chip2:"#dbe8fb"},
+ "Lab Light":{j:1,d:"JupyterLab default light.",ink:"#eeeeee",panel:"#ffffff",panel2:"#f5f5f5",surface:"#eeeeee",line:"#bdbdbd",fg:"#212121",muted:"#616161",accent:"#1976d2",on:"#ffffff",chip2:"#d6e6f7"},
+ "Lab Dark":{j:1,d:"JupyterLab default dark.",ink:"#111111",panel:"#1e1e1e",panel2:"#262626",surface:"#2f2f2f",line:"#424242",fg:"#eeeeee",muted:"#9e9e9e",accent:"#2196f3",on:"#04111f",chip2:"#1b3a5c"},
+ "Dracula":{j:1,d:"Purple on charcoal.",ink:"#21222c",panel:"#282a36",panel2:"#303341",surface:"#383a4a",line:"#44475a",fg:"#f8f8f2",muted:"#7d88b8",accent:"#bd93f9",on:"#1d1630",chip2:"#3d3a5c"},
+ "Monokai":{j:1,d:"Classic editor dark, lime accent.",ink:"#1e1f1c",panel:"#272822",panel2:"#2f302a",surface:"#3a3b33",line:"#49483e",fg:"#f8f8f2",muted:"#9a9680",accent:"#a6e22e",on:"#12190a",chip2:"#3b4224"},
+ "Solarized Dark":{j:1,d:"Low-contrast teal dark.",ink:"#00212b",panel:"#002b36",panel2:"#073642",surface:"#0c4150",line:"#1b5565",fg:"#eee8d5",muted:"#93a1a1",accent:"#268bd2",on:"#fdf6e3",chip2:"#0e4a63"},
+ "Solarized Light":{j:1,d:"Cream light with blue accent.",ink:"#eee8d5",panel:"#fdf6e3",panel2:"#f5eed9",surface:"#eee8d5",line:"#d6cfb8",fg:"#073642",muted:"#657b83",accent:"#268bd2",on:"#fdf6e3",chip2:"#d5e6ea"},
+ "Gruvbox Dark":{j:1,d:"Retro warm dark, yellow accent.",ink:"#1d2021",panel:"#282828",panel2:"#32302f",surface:"#3c3836",line:"#504945",fg:"#ebdbb2",muted:"#a89984",accent:"#fabd2f",on:"#1d2021",chip2:"#4a3f1e"},
+ "Gruvbox Light":{j:1,d:"Retro warm light, rust accent.",ink:"#f2e5bc",panel:"#fbf1c7",panel2:"#f2e5bc",surface:"#ebdbb2",line:"#d5c4a1",fg:"#3c3836",muted:"#7c6f64",accent:"#af3a03",on:"#fbf1c7",chip2:"#f1d3b4"},
+ "Nord":{j:1,d:"Arctic blue-grey.",ink:"#242933",panel:"#2e3440",panel2:"#3b4252",surface:"#434c5e",line:"#4c566a",fg:"#eceff4",muted:"#a3adc2",accent:"#88c0d0",on:"#1c2530",chip2:"#3b5361"},
+ "One Dark":{j:1,d:"Atom-style dark, blue accent.",ink:"#1b1d23",panel:"#21252b",panel2:"#282c34",surface:"#2f343d",line:"#3e4451",fg:"#c8ccd4",muted:"#7f8795",accent:"#61afef",on:"#0d1520",chip2:"#28405c"},
+ "Oceans16":{j:1,d:"Muted slate, sea-glass accent.",ink:"#232832",panel:"#2b303b",panel2:"#343d46",surface:"#3b4550",line:"#4f5b66",fg:"#dfe1e8",muted:"#a7adba",accent:"#96b5b4",on:"#17201f",chip2:"#35484a"},
+ "Chesterish":{j:1,d:"jupyter-themes dark, orange accent.",ink:"#1c1f24",panel:"#22252b",panel2:"#2a2e36",surface:"#323741",line:"#424855",fg:"#e0e2e6",muted:"#9097a3",accent:"#ff9d4d",on:"#1c0f04",chip2:"#4a3220"}
+};
+const K=["ink","panel","panel2","surface","line","fg","muted","accent","on","chip2"];
+const box=document.getElementById("themes");
+function apply(n){
+  const t=T[n],r=document.documentElement.style;
+  K.forEach(k=>r.setProperty("--"+k,t[k]));
+  box.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.n===n));
+  document.getElementById("tt").textContent="Tokens: "+n+" ("+t.d+")";
+  document.getElementById("tok").textContent="export const C = {\n"+K.map(k=>"  "+k+": '"+t[k]+"',").join("\n")+"\n};";
+  try{localStorage.setItem("flame-theme",n)}catch(e){}
+}
+Object.keys(T).forEach(n=>{
+  const t=T[n];if(t.j&&!box.querySelector(".gl")){const g=document.createElement("span");g.className="gl";g.textContent="Jupyter";box.appendChild(g)}const b=document.createElement("button");
+  b.className="tb";b.dataset.n=n;b.title=t.d;
+  b.innerHTML='<span class="dots"><i style="background:'+t.ink+'"></i><i style="background:'+t.panel2+'"></i><i style="background:'+t.accent+'"></i></span>'+n;
+  b.onclick=()=>apply(n);box.appendChild(b);
+});
+document.getElementById("cp").onclick=e=>{
+  try{navigator.clipboard.writeText(document.getElementById("tok").textContent);e.target.textContent="Copied"}catch(x){e.target.textContent="Select and copy manually"}
+};
+let s="Ember";try{s=localStorage.getItem("flame-theme")||s}catch(e){}
+apply(T[s]?s:"Ember");
+</script>
+</body>
+</html>

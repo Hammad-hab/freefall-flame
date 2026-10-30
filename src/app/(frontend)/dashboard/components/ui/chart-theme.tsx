@@ -1,7 +1,7 @@
-/**
- * Shared chart/theme tokens for the dashboard panels.
+/** Shared chart/theme tokens for the dashboard panels.
  * Kept in one place so every panel matches the existing dark visual design.
  */
+
 export const C = {
   ink: '#120e08',
   ink2: '#1a140c',

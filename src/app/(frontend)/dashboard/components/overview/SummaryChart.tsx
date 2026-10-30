@@ -23,10 +23,14 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
     },
   ];
 
+  // @container, so the summary/chart split follows the card's own width rather than the
+  // pane's: the card is one column of a grid that itself collapses. flex-wrap does the
+  // collapsing — the summary stays full width until the card is wide enough for a 300px
+  // sidebar beside the chart.
   return (
-    <Card className="grid grid-cols-[300px_1fr] overflow-hidden">
+    <Card className="@container flex flex-wrap overflow-hidden">
       {/* Summary */}
-      <div className="rounded-[22px] border-r border-white/[0.07] bg-[#2c2822] p-5">
+      <div className="w-full shrink-0 rounded-[22px] border-b border-white/[0.07] bg-[#2c2822] p-5 @2xl:w-[300px] @2xl:border-b-0 @2xl:border-r">
         <h2 className="text-[17px] font-light">Summary</h2>
         <div className="mt-4 flex gap-2 text-[10px] leading-4 text-white/50">
           <span className="text-white/70">✦</span>
@@ -51,8 +55,8 @@ function SummaryAndChart({ dataset, rows }: { dataset: DatasetMeta | null; rows:
       </div>
 
       {/* Chart */}
-      <div className="min-w-0 p-5 pb-4">
-        <div className="flex items-center justify-between">
+      <div className="min-w-0 flex-1 basis-[300px] p-5 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[17px] font-light">{tab === 'Columns' ? 'Columns' : "Dataset Preview"}</h2>
           <div
             role="tablist"
