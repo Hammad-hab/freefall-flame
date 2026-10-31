@@ -11,9 +11,9 @@ import {
 import type { ParsedRow } from "@/lib/combustion";
 import { C, panelCls, panelStyle } from "../ui/chart-theme";
 
-type SortMode = "rank" | "name" | "tests" | "score"
+type SortMode = "rank" | "name" | "tests" | "score";
 
-const DEFAULT_WEIGHTS: EvidenceWeights = { testCoverage: 0.5, o2Diversity: 0.3, o2Range: 0.2 }
+const DEFAULT_WEIGHTS: EvidenceWeights = { testCoverage: 0.5, o2Diversity: 0.3, o2Range: 0.2 };
 
 /**
  * Material Evidence Ranking.
@@ -23,10 +23,11 @@ const DEFAULT_WEIGHTS: EvidenceWeights = { testCoverage: 0.5, o2Diversity: 0.3, 
  * weights are adjustable; scores recalculate immediately when weights change.
  */
 export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
-  const [weights, setWeights] = useState<EvidenceWeights>(DEFAULT_WEIGHTS)
-  const [sort, setSort] = useState<SortMode>("rank")
+  const [weights, setWeights] = useState<EvidenceWeights>(DEFAULT_WEIGHTS);
+  const [sort, setSort] = useState<SortMode>("rank");
+  const [showFormula, setShowFormula] = useState(false);
 
-  const bandWidth = 1
+  const bandWidth = 1;
 
   const bands = useMemo(
     () =>
@@ -35,31 +36,31 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
         { widthPct: bandWidth },
       ),
     [rows],
-  )
+  );
 
-  const metrics = useMemo(() => computeMaterialMetrics(rows, bands), [rows, bands])
-  const scored = useMemo(() => computeEvidenceScores(metrics, weights), [metrics, weights])
+  const metrics = useMemo(() => computeMaterialMetrics(rows, bands), [rows, bands]);
+  const scored = useMemo(() => computeEvidenceScores(metrics, weights), [metrics, weights]);
 
-  const weightSum = weights.testCoverage + weights.o2Diversity + weights.o2Range
-  const norm = (w: number) => (weightSum > 0 ? Math.round((w / weightSum) * 100) : 33)
+  const weightSum = weights.testCoverage + weights.o2Diversity + weights.o2Range;
+  const norm = (w: number) => (weightSum > 0 ? Math.round((w / weightSum) * 100) : 33);
 
   const sorted = useMemo(() => {
-    const arr = [...scored]
+    const arr = [...scored];
     switch (sort) {
       case "name":
-        arr.sort((a, b) => a.material.localeCompare(b.material))
-        break
+        arr.sort((a, b) => a.material.localeCompare(b.material));
+        break;
       case "tests":
-        arr.sort((a, b) => b.tests - a.tests || a.material.localeCompare(b.material))
-        break
+        arr.sort((a, b) => b.tests - a.tests || a.material.localeCompare(b.material));
+        break;
       case "score":
-        arr.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.material.localeCompare(b.material))
-        break
+        arr.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.material.localeCompare(b.material));
+        break;
       default:
-        arr.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999) || a.material.localeCompare(b.material))
+        arr.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999) || a.material.localeCompare(b.material));
     }
-    return arr
-  }, [scored, sort])
+    return arr;
+  }, [scored, sort]);
 
   const slider = (
     label: string,
@@ -86,7 +87,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
         aria-label={`${label} weight`}
       />
     </div>
-  )
+  );
 
   return (
     <div className="space-y-4">
@@ -111,15 +112,28 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl border p-3 text-[11px] leading-5" style={{ borderColor: C.line, background: C.panel2, color: C.muted }}>
-          <span style={{ color: C.fg }}>Evidence Score</span> = w₁·Test Coverage + w₂·O₂ Condition
-          Diversity + w₃·O₂ Range Coverage. Each component is normalized 0–100 against the
-          best-covered material in the current view; weights are normalized so they sum to 1. A
-          component whose data is unknown (no valid O₂ readings) is excluded and the remaining
-          weights are renormalized — missing evidence is not zero coverage. Scores are shown to
-          one decimal to avoid false precision; tied scores share a rank. Mean O₂ consumed is a
-          separate measured quantity and is deliberately not part of this score: it depends on
-          sample size, burn duration, and experimental conditions.
+        {/* Inline formula expander */}
+        <div className="mt-3">
+          <button
+            onClick={() => setShowFormula((v) => !v)}
+            className="flex items-center gap-2 text-[11px] underline"
+            style={{ color: C.blue }}
+          >
+            {showFormula ? "Hide" : "Show"} how this score is calculated
+            <span style={{ color: C.muted }}>{showFormula ? "▲" : "▼"}</span>
+          </button>
+          {showFormula && (
+            <div className="mt-2 rounded-xl border p-3 text-[11px] leading-5" style={{ borderColor: C.line, background: C.panel2, color: C.muted }}>
+              <span style={{ color: C.fg }}>Evidence Score</span> = w₁·Test Coverage + w₂·O₂ Condition
+              Diversity + w₃·O₂ Range Coverage. Each component is normalized 0–100 against the
+              best-covered material in the current view; weights are normalized so they sum to 1. A
+              component whose data is unknown (no valid O₂ readings) is excluded and the remaining
+              weights are renormalized — missing evidence is not zero coverage. Scores are shown to
+              one decimal to avoid false precision; tied scores share a rank. Mean O₂ consumed is a
+              separate measured quantity and is deliberately not part of this score: it depends on
+              sample size, burn duration, and experimental conditions.
+            </div>
+          )}
         </div>
 
         {/* Sort control */}
@@ -216,5 +230,5 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
         </p>
       </div>
     </div>
-  )
+  );
 }

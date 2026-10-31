@@ -34,17 +34,20 @@ export interface TabData {
 
 function OverviewContent({ data }: { data: TabData }) {
   return (
-    <div className="space-y-8">
-      {/* Container-query variants, not viewport ones: the overview renders inside a
-          resizable pane, so its columns must follow the pane's width. A 400px pane on a
-          1920px screen must still stack. */}
+    <div className="space-y-4">
+      {/* Dataset title heading */}
+      <div className="flex items-start gap-3">
+        <h1 className="text-[18px] font-light leading-tight" style={{ color: '#e8e4de' }}>
+          {data.datasetName}
+        </h1>
+      </div>
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[1fr_380px]">
         <SummaryAndChart dataset={data.dataset} rows={data.rows} />
         <Vulnerability />
       </div>
       <div className="grid grid-cols-1 gap-8 @2xl:grid-cols-2 @6xl:grid-cols-[1.45fr_0.8fr_1fr]">
         <Statistics shares={data.shares} />
-        <Assistant data={data} />
+        <Assistant datasetId={data.datasetId} datasetName={data.datasetName} className="@6xl:col-span-2" />
       </div>
       <div className="grid grid-cols-1 gap-8 @3xl:grid-cols-2">
         <SourcesStrip dataset={data.dataset} rows={data.rows} />
@@ -58,7 +61,7 @@ function EvidenceContent({ data }: { data: TabData }) {
   return (
     <div className="space-y-6">
       <EvidenceRanking rows={data.parsedRows} />
-      <OxygenHeatmap rows={data.parsedRows} />
+      <OxygenHeatmap rows={data.parsedRows} rawRows={data.rows} />
       <Limitations />
     </div>
   )

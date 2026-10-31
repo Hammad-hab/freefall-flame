@@ -117,8 +117,9 @@ export async function GET(request: Request) {
         '4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.',
         '5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.',
         '6. Cite research claims using the paper titles and years provided. Do not fabricate citations.',
-        '7. Keep the answer under 350 words, structured as: What the data shows / What it may mean / What remains uncertain.',
-        '8. Do not send or echo the raw dataset.',
+        '7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.',
+        '8. Be concise; use short sentences, not long paragraphs.',
+        '9. Do not send or echo the raw dataset.',
       ].join('\n')
       const user = JSON.stringify({ summary, papers }, null, 2)
       const upstream = await fetch(OPENROUTER_URL, {
@@ -155,7 +156,8 @@ STRICT RULES:
 4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.
 5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.
 6. Cite research claims using the paper titles and years provided. Do not fabricate citations.
-7. Keep the answer under 350 words, structured as: What the data shows / What it may mean / What remains uncertain.`
+7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.
+8. Be concise; use short sentences, not long paragraphs.`
 
       const user = JSON.stringify({ summary, papers, question }, null, 2)
       const upstream = await fetch(OPENROUTER_URL, {
@@ -178,60 +180,4 @@ STRICT RULES:
   }
 
   return NextResponse.json({ summary, papers, fallback, ai, model, answer, answerModel, allMaterials: [...new Set(parsedAll.map((r) => r.material))].sort() })
-}
-}}, null, 2)
-      const upstream = await fetch(OPENROUTER_URL, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: DEFAULT_MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
-      })
-      const data = (await upstream.json().catch(() => null)) as {
-        choices?: Array<{ message?: { content?: string | null } }>
-        error?: { message?: string }
-      } | null
-      const question = new URL(request.url).searchParams.get('question')
-
-      // --- Ask about this dataset (free-text question) -------------------------
-      // When a `question` parameter is present the compact summary + question are
-      // routed to OpenRouter. The answer is labelled as an interpretation and is
-      // returned alongside the deterministic fallback, so a question is never
-      // answered without an associated measured summary.
-      if (question && apiKey) {
-        try {
-          const system = `You are a careful scientific data interpreter for a fire-safety dashboard.
-
-STRICT RULES:
-1. Use ONLY the numerical summary and paper metadata provided in the user message. Never invent measurements, sample sizes, or findings.
-2. Distinguish measured results from interpretations. Label interpretations as interpretations.
-3. When the summary is insufficient to support a question, say so explicitly.
-4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.
-5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.
-6. Cite research claims using the paper titles and years provided. Do not fabricate citations.
-7. Keep the answer under 350 words, structured as: What the data shows / What it may mean / What remains uncertain.`
-
-          const user = JSON.stringify({ summary, papers, question }, null, 2)
-          const upstream = await fetch(OPENROUTER_URL, {
-            method: 'POST',
-            headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: DEFAULT_MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
-          })
-          const data = (await upstream.json().catch(() => null)) as {
-            choices?: Array<{ message?: { content?: string | null } }>
-            error?: { message?: string }
-          } | null
-          if (upstream.ok && data?.choices?.[0]?.message?.content) {
-            answer = data.choices[0].message.content
-            answerModel = DEFAULT_MODEL
-          }
-        } catch {
-          // Question answering is an enhancement, never a hard dependency; keep the
-          // deterministic summary so the ask panel still renders something.
-        }
-      }
-
-      return NextResponse.json({ summary, papers, fallback, ai, model, answer, answerModel, allMaterials: [...new Set(parsedAll.map((r) => r.material))].sort() })
-    } catch (e) {
-      console.error(e)
-    }
-}
 }

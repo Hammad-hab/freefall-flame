@@ -1,7 +1,9 @@
 import { Arrow, Card, Icon } from "../ui/Card";
-import { useState, useMemo, useCallback, useEffect, type FormEvent } from "react";
+import { useState, useMemo, useCallback, useEffect, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { PaperRef } from "@/lib/types";
 import type { ShareResult } from "@/lib/shares";
+import type { InterpretationSummary } from "@/lib/combustion";
 import { C } from "../ui/chart-theme";
 /* ----------------------------- helpers ----------------------------- */
 
@@ -177,8 +179,8 @@ function Vulnerability() {
 
 function ActiveIncidents() {
   return (
-    <Card className="@container p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+  <Card className="@container p-5">
+  <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-[17px] font-light">Key Findings</h2>
         <div className="flex flex-wrap gap-2 text-[11px]">
           {["Newest", "All"].map((t) => (
@@ -298,8 +300,80 @@ function Statistics({ shares }: { shares: ShareResult }) {
   )
 }
 
-function Assistant({ datasetId, datasetName }: AssistantProps) {
+interface AssistantProps {
+  datasetId: string
+  datasetName: string
+  className?: string
+}
+
+type InterpretationResponse = {
+  summary: InterpretationSummary
+  papers: Array<Partial<PaperRef> & { id: number | string }>
+  fallback: { observations: string[]; interpretations: string[]; uncertainties: string[] }
+  ai: string | null
+  answer: string | null
+  model: string | null
+  allMaterials: string[]
+}
+
+function Section({ title, accent, children }: { title: string; accent: string; children: ReactNode }) {
+  return (
+    <div className="mt-5">
+      <h3 className="text-[13px] font-medium" style={{ color: accent }}>{title}</h3>
+      <div className="mt-2 space-y-2 text-[12px] leading-5" style={{ color: C.fg }}>{children}</div>
+    </div>
+  )
+}
+
+function Bullet({ text }: { text: string }) {
+  return (
+    <div className="flex gap-2">
+      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full" style={{ background: C.muted }} />
+      <span>{text}</span>
+    </div>
+  )
+}
+
+function truncateAnswer(text: string, maxChars: number): { truncated: string; isTruncated: boolean } {
+  if (text.length <= maxChars) return { truncated: text, isTruncated: false };
+  const truncated = text.slice(0, maxChars);
+  const lastPeriod = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? ")
+  );
+  const cut = lastPeriod !== -1 ? lastPeriod + 1 : maxChars;
+  return { truncated: truncated.slice(0, cut), isTruncated: true };
+}
+
+function truncateInterpretations(interpretations: string, maxChars: number): { truncated: string; isTruncated: boolean } {
+  if (interpretations.length <= maxChars) return { truncated: interpretations, isTruncated: false };
+  const truncated = interpretations.slice(0, maxChars);
+  const lastPeriod = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? ")
+  );
+  const cut = lastPeriod !== -1 ? lastPeriod + 1 : maxChars;
+  return { truncated: truncated.slice(0, cut), isTruncated: true };
+}
+
+function truncateText(text: string, maxChars: number): { truncated: string; isTruncated: boolean } {
+  if (text.length <= maxChars) return { truncated: text, isTruncated: false };
+  const truncated = text.slice(0, maxChars);
+  const lastPeriod = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? ")
+  );
+  const cut = lastPeriod !== -1 ? lastPeriod + 1 : maxChars;
+  return { truncated: truncated.slice(0, cut), isTruncated: true };
+}
+
+function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
+  const router = useRouter();
   const [material, setMaterial] = useState<string>("all")
+
   const [question, setQuestion] = useState("")
   const [data, setData] = useState<InterpretationResponse | null>(null)
   const [answer, setAnswer] = useState<string | null>(null)
@@ -358,8 +432,24 @@ function Assistant({ datasetId, datasetName }: AssistantProps) {
     [datasetId, material, question],
   )
 
+  const summary = useMemo(() => {
+    if (!data) return null
+    const parts: string[] = []
+    const obs = data.fallback.observations.filter(Boolean).join(" ")
+    if (obs) parts.push(obs)
+    if (answer) {
+      parts.push(answer)
+    } else {
+      const dets = data.fallback.interpretations.filter(Boolean).join(" ")
+      if (dets) parts.push(dets)
+    }
+    const uncs = data.fallback.uncertainties.filter(Boolean).join(" ")
+    if (uncs) parts.push(uncs)
+    return truncateText(parts.join(" "), 350)
+  }, [data, answer])
+
   return (
-    <Card className="@container p-5">
+    <Card className={`@container relative p-5 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[17px] font-light">Ask about this dataset</div>
@@ -411,66 +501,32 @@ function Assistant({ datasetId, datasetName }: AssistantProps) {
       </form>
 
       {error && <p className="mt-4 text-[13px]" style={{ color: C.red }}>{error}</p>}
-      {loading && !data && <p className="mt-4 text-[13px]" style={{ color: C.muted }}>Building grounded summary…</p>}
+      {loading && !data && (
+        <p className="mt-4 text-[13px]" style={{ color: C.muted }}>Building grounded summary…</p>
+      )}
 
-      {data && !loading && (
-        <>
-          <Section title="What the data shows (measured)" accent={C.blue}>
-            {data.fallback.observations.map((o, i) => <Bullet key={i} text={o} />)}
-          </Section>
-
-          <Section
-            title={
-              answer
-                ? `What it may mean (AI-assisted${model ? ` — ${model}` : ""})`
-                : "What it may mean"
-            }
-            accent={C.amber}
-          >
-            {answer ? (
-              <p className="whitespace-pre-wrap text-[12px] leading-6" style={{ color: C.fg }}>
-                {answer}
-              </p>
-            ) : (
-              <>
-                <p className="mb-2 text-[11px] leading-4 text-white/55">
-                  {data.ai ? "No AI service is configured on the server, so this is a deterministic reading — not AI-generated." : null}
-                  {data.fallback.interpretations.map((t, i) => <Bullet key={i} text={t} />)}
-                </p>
-              </>
-            )}
-          </Section>
-
-          <Section title="What remains uncertain" accent={C.red}>
-            {data.fallback.uncertainties.map((u, i) => <Bullet key={i} text={u} />)}
-          </Section>
-
-          {data.papers.length > 0 && (
-            <Section title="Linked research sources" accent={C.green}>
-              <p className="mb-2 text-[11px] leading-4 text-white/55">
-                Cited for traceability. A linked paper is not evidence that it supports any particular chart value.
-              </p>
-              <ul className="space-y-1.5">
-                {data.papers.map((p) => (
-                  <li key={p.id} className="text-[12px] leading-5" style={{ color: C.fg }}>
-                    <span className="font-medium">{p.title}</span>
-                    {p.ntrsId && (
-                      <a
-                        href={`https://ntrs.nasa.gov/citations/${p.ntrsId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-2 text-[11px]"
-                        style={{ color: C.blue }}
-                      >
-                        NTRS: {p.ntrsId} ↗
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Section>
+      {data && !loading && summary && (
+        <Section title="Summary" accent={C.amber}>
+          <p className="whitespace-pre-wrap text-[12px] leading-6" style={{ color: C.fg }}>
+            {summary.truncated}
+          </p>
+          {summary.isTruncated && (
+            <>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <button
+                type="button"
+                onClick={() => {
+                  const u = new URL(window.location.href)
+                  u.searchParams.set("tab", "ai-summary")
+                  router.push(u.toString())
+                }}
+                className="relative mt-2 text-[12px] font-medium text-flame-amber transition-colors hover:text-white"
+              >
+                Read more
+              </button>
+            </>
           )}
-        </>
+        </Section>
       )}
     </Card>
   )

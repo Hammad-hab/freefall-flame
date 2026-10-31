@@ -294,7 +294,7 @@ export default function Visualization({
       )}
 
       {/* Generic comparison — always available for any dataset */}
-      <GenericCompare dataset={dataset} rows={rows} />
+      {/*<GenericCompare dataset={dataset} rows={rows} />*/}
     </div>
   );
 }
