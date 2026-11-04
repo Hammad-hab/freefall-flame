@@ -34,6 +34,7 @@ export const MAT = Object.freeze({
   ICE: 9, OIL: 10, OIL_FIRE: 11, SMOKE: 12, FLAME: 13, FAN: 14, PMMA: 15, PMMA_FIRE: 16,
   SIBAL: 17, SIBAL_FIRE: 18, FIBREGLASS: 19, NOMEX: 20, NOMEX_FIRE: 21, WAX: 22,
   WAX_LIQUID: 23, WAX_FIRE: 24,
+  BURNER: 25,   // flame-core 1.1.0: the porous gas burner (needs fuel gas; not offered yet)
 } as const);
 export const KIND = Object.freeze({ STATIC: 0, POWDER: 1, LIQUID: 2, GAS: 3 } as const);
 export const DIR = Object.freeze({ RIGHT: 0, DOWN: 1, LEFT: 2, UP: 3 } as const);

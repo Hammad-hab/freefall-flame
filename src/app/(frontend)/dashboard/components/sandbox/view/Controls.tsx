@@ -231,9 +231,11 @@ export function BuildPanel({ engine, c }: { engine: Engine; c: Controls }) {
 
       {/* 25 materials: two columns, each name truncated rather than wrapped so the
           grid rows stay aligned. The swatch carries the colour, so the selected
-          state is an amber border instead of the usual amber fill. */}
+          state is an amber border instead of the usual amber fill.
+          flame-core 1.1.0 adds a 26th, the gas burner; it does nothing without
+          fuel gas, which the sandbox doesn't offer yet, so it is left out. */}
       <div id="palette" className="mt-3 grid grid-cols-2 gap-1.5">
-        {engine.materials.map((m) => {
+        {engine.materials.filter((m) => m.id !== MAT.BURNER).map((m) => {
           const on = m.id === material && tool === 'paint';
           return (
             <button
