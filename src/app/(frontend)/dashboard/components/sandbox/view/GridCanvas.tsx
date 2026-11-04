@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GridView, type StrokeHandler, type ViewName } from './GridView';
+import type { RGB } from './colors';
 import type { Engine } from '../engine/Engine';
 
 interface GridCanvasProps {
@@ -9,9 +10,12 @@ interface GridCanvasProps {
   view?: ViewName;
   brushRadius?: number;
   onStroke?: StrokeHandler;
-  onFrame?: () => void;       // e.g. engine.step()
+  onFrame?: () => void;       // runs before each draw (the sandbox's clock)
   className: string,
-  scale?: number;             // overlay px per cell
+  /** CSS pixels per cell; the canvas is cell x width by cell x height (sandbox.tsx fits it). */
+  cell?: number;
+  /** Empty cells in the material view take this colour. */
+  airColour?: RGB | null;
 }
 
 export default function GridCanvas({
@@ -20,17 +24,21 @@ export default function GridCanvas({
   brushRadius = 2,
   onStroke,
   onFrame,
-  scale = 4,
+  cell = 4,
+  airColour = null,
   className,
 }: GridCanvasProps) {
   const gridRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const viewRef = useRef<GridView | null>(null);
+  const [dpr, setDpr] = useState(1);
 
   const strokeRef = useRef(onStroke);
   const frameRef = useRef(onFrame);
   strokeRef.current = onStroke;
   frameRef.current = onFrame;
+
+  useEffect(() => { setDpr(window.devicePixelRatio || 1); }, [cell]);
 
   useEffect(() => {
     if (!engine || !gridRef.current || !overlayRef.current) return;
@@ -55,12 +63,17 @@ export default function GridCanvas({
 
   useEffect(() => { if (viewRef.current) viewRef.current.view = view; }, [view]);
   useEffect(() => { if (viewRef.current) viewRef.current.brushRadius = brushRadius; }, [brushRadius]);
+  useEffect(() => { if (viewRef.current) viewRef.current.airColour = airColour; }, [airColour]);
 
   if (!engine) return null;
   const w = engine.width, h = engine.height;
+  // The overlay (brush circle, flow arrows) is drawn at device resolution so its
+  // lines stay sharp; GridView reads its pixels per cell from the canvas width.
+  const overlayW = Math.max(w, Math.round(w * cell * dpr));
+  const overlayH = Math.max(h, Math.round(h * cell * dpr));
 
   return (
-    <div style={{ position: 'relative', width: w * scale, height: h * scale }} className={className}>
+    <div style={{ position: 'relative', width: w * cell, height: h * cell }} className={className}>
       <canvas
         ref={gridRef}
         width={w}
@@ -69,8 +82,8 @@ export default function GridCanvas({
       />
       <canvas
         ref={overlayRef}
-        width={w * scale}
-        height={h * scale}
+        width={overlayW}
+        height={overlayH}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
       />
     </div>
