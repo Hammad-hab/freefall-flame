@@ -59,8 +59,9 @@ exactly as stored, with counts.
 
 Restoring:
 
-- **Switching back** needs no backup: the import changes nothing old. Untick
-  "published" on "BASS-II (cleaned)" and tick it on "BASS-II" in /admin.
+- **Switching back** needs no backup: the import changes nothing old. Run
+  `switch-bass2-default.ts -- --to old --write` (below), or change the
+  "published" ticks in /admin.
 - **If old data were ever lost**, a restore script (not written; write it only if
   needed) would read the backup file and, for each dataset missing from the
   database, create it with the same name, description, papers, columns and
@@ -75,9 +76,20 @@ An unpublished dataset is "Dataset not found" for visitors, including on
 `DATASET_PREVIEW_IDS=<id>` (comma-separated). This only works in `next dev`, never
 in a production build, and nothing a visitor sends can turn it on.
 
-## Making it the default (not done yet)
+## Making it the default (done 4 Nov 2026)
 
 The dashboard opens the first published dataset whose name contains "BASS",
-sorted by name. Publishing "BASS-II (cleaned)" and unpublishing "BASS-II" (id 2)
-and "BASS-II CSV Sample" (id 1) makes it the default. The list is cached for 60
-seconds.
+sorted by name. Since 4 Nov 2026 "BASS-II (cleaned)" (id 4) is published and
+"BASS-II" (id 2) and "BASS-II CSV Sample" (id 1) are not, so it is the default.
+
+The flags are switched with a script (only the `published` checkbox changes):
+
+```
+pnpm payload run src/scripts/switch-bass2-default.ts -- --to cleaned            # dry run
+pnpm payload run src/scripts/switch-bass2-default.ts -- --to cleaned --write
+pnpm payload run src/scripts/switch-bass2-default.ts -- --to old --write        # switch back
+```
+
+It prints each flag before and after, changes them in one transaction and
+reads them back. The dashboard's list is cached for 60 seconds, so visitors see
+the change within a minute. The same can be done by hand in /admin.
