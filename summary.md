@@ -380,9 +380,10 @@ with sharp/esbuild/unrs-resolver built specially).
   used. The old open `/api/openrouter` route was removed (fix/security). Limits, in
   `src/lib/ai-guard.ts`: the model is fixed on the server (`openai/gpt-4o-mini`); a
   question is at most 500 characters; each visitor (by IP address) gets at most 10 new
-  requests every 10 minutes; each interpretation and answer is cached in memory, keyed by
-  what the model is sent, so repeats are free and don't count (the cache is lost when the
-  server restarts).
+  requests every 10 minutes; at most 300 paid AI calls per UTC day for everyone together
+  (then HTTP 429); each interpretation and answer is cached in memory, keyed by what the
+  model is sent, so repeats are free and don't count (the cache and the daily count are
+  lost when the server restarts).
 - **Toolchain note** (from the project's own history): the repo pins pnpm and the local
   global pnpm can corrupt the pnpm 12 lockfile (`ERR_PNPM_BROKEN_LOCKFILE`); the README /
   `.npmrc` style tooling expects pnpm 12.x under Node >= 20.18.1. The `next.config.ts`

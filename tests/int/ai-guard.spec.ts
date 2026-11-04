@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DAILY_PAID_CAP,
+  DailyCap,
   LruCache,
   QUESTION_MAX_CHARS,
   RATE_LIMIT_MAX,
@@ -44,6 +46,24 @@ describe('RateLimiter', () => {
     t = 1_000_000 + RATE_LIMIT_WINDOW_MS // the first request has left the window
     expect(lim.take('a').ok).toBe(true)
     expect(lim.take('a').ok).toBe(false)
+  })
+})
+
+describe('DailyCap', () => {
+  it(`allows ${DAILY_PAID_CAP} paid calls per UTC day in total, then refuses until midnight UTC`, () => {
+    let t = Date.UTC(2026, 10, 4, 12, 0, 0) // noon UTC
+    const cap = new DailyCap(DAILY_PAID_CAP, () => t)
+    for (let i = 0; i < DAILY_PAID_CAP - 1; i++) expect(cap.take(1).ok).toBe(true)
+    expect(cap.take(2).ok).toBe(false) // 299 + 2 would pass the cap: nothing is counted
+    expect(cap.take(1).ok).toBe(true) // the 300th
+    expect(cap.usedToday).toBe(DAILY_PAID_CAP)
+    const refused = cap.take(1)
+    expect(refused.ok).toBe(false)
+    if (!refused.ok) expect(refused.retryAfterS).toBe(12 * 60 * 60) // 12 h to midnight UTC
+    expect(cap.take(0).ok).toBe(true) // a cached answer costs nothing and is never refused
+    t = Date.UTC(2026, 10, 5, 0, 0, 0) // midnight UTC: a new day
+    expect(cap.take(1).ok).toBe(true)
+    expect(cap.usedToday).toBe(1)
   })
 })
 

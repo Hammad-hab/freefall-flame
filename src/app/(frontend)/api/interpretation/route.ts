@@ -9,8 +9,10 @@ import {
 } from '@/lib/combustion'
 import {
   AI_MODEL,
+  DAILY_PAID_CAP,
   RATE_LIMIT_MAX,
   RATE_LIMIT_WINDOW_MS,
+  aiDailyCap,
   aiLimiter,
   cacheKey,
   cachedCall,
@@ -188,6 +190,18 @@ export async function GET(request: Request) {
         { status: 429, headers: { 'Retry-After': String(taken.retryAfterS) } },
       )
     }
+  }
+
+  // The daily cap counts only calls that will be paid: new, with a key configured.
+  const paidCalls = apiKey ? (interpretNew ? 1 : 0) + (answerNew ? 1 : 0) : 0
+  const capped = aiDailyCap.take(paidCalls)
+  if (!capped.ok) {
+    return NextResponse.json(
+      {
+        error: `The dashboard's daily limit of ${DAILY_PAID_CAP} AI answers has been reached. AI answers start again at midnight UTC (in ${Math.ceil(capped.retryAfterS / 3600)} h).`,
+      },
+      { status: 429, headers: { 'Retry-After': String(capped.retryAfterS) } },
+    )
   }
 
   // --- Ask about this dataset (free-text question) -------------------------

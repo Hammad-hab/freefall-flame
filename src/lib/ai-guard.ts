@@ -12,6 +12,8 @@
 // - Per visitor (by IP address), at most RATE_LIMIT_MAX requests the server
 //   has not answered before, in any RATE_LIMIT_WINDOW_MS. Answers served from
 //   the cache don't count.
+// - For everyone together, at most DAILY_PAID_CAP paid AI calls per UTC day.
+//   Like the cache, the count lives in the server process (a restart resets it).
 
 import { createHash } from 'node:crypto'
 import { QUESTION_MAX_CHARS } from './ai-limits'
@@ -23,7 +25,9 @@ export const PROMPT_VERSION = 1
 export const RATE_LIMIT_MAX = 10
 export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const CACHE_MAX_ENTRIES = 500
+export const DAILY_PAID_CAP = 300
 const LIMITER_MAX_VISITORS = 10_000
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /** The visitor's IP address, as the host reports it. */
 export function visitorId(headers: Headers): string {
@@ -81,6 +85,37 @@ export class RateLimiter {
   }
 }
 
+/** At most `cap` paid calls per UTC day, for all visitors together. */
+export class DailyCap {
+  private day = -1
+  private used = 0
+
+  constructor(
+    readonly cap: number,
+    private now: () => number = Date.now,
+  ) {}
+
+  /** Count `n` paid calls, unless that would pass the cap (then count none). */
+  take(n: number): { ok: true } | { ok: false; retryAfterS: number } {
+    const t = this.now()
+    const today = Math.floor(t / DAY_MS)
+    if (today !== this.day) {
+      this.day = today
+      this.used = 0
+    }
+    if (n <= 0) return { ok: true }
+    if (this.used + n > this.cap) {
+      return { ok: false, retryAfterS: Math.max(1, Math.ceil(((today + 1) * DAY_MS - t) / 1000)) }
+    }
+    this.used += n
+    return { ok: true }
+  }
+
+  get usedToday(): number {
+    return this.used
+  }
+}
+
 /** A small least-recently-used cache. */
 export class LruCache<V> {
   private map = new Map<string, V>()
@@ -127,6 +162,7 @@ const g = globalThis as typeof globalThis & {
     limiter: RateLimiter
     cache: LruCache<string | null>
     inflight: Map<string, Promise<string | null>>
+    dailyCap?: DailyCap
   }
 }
 g.__aiGuard ??= {
@@ -134,7 +170,10 @@ g.__aiGuard ??= {
   cache: new LruCache<string | null>(CACHE_MAX_ENTRIES),
   inflight: new Map(),
 }
+g.__aiGuard.dailyCap ??= new DailyCap(DAILY_PAID_CAP)
 export const aiLimiter = g.__aiGuard.limiter
+/** Paid calls today, for everyone together. */
+export const aiDailyCap = g.__aiGuard.dailyCap
 /** Cached model output; null means "no AI configured" (nothing to retry). */
 export const aiCache = g.__aiGuard.cache
 /** Calls still running, so two identical requests at once pay only once. */
