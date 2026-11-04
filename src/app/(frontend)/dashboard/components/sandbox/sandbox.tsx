@@ -6,25 +6,16 @@ import { Engine, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
 import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
 import PresetsPanel from './view/PresetsPanel';
-import type { RGB } from './view/colors';
 import { fitCell } from './view/fit';
-import { C } from '../ui/chart-theme';
+import { AIR_COLOUR } from './view/theme';
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TABS = [{ id: 'build', label: 'Build' }, { id: 'world', label: 'World' }, { id: 'presets', label: 'Presets' }];
 
-/** Empty cells take the dashboard's panel colour (ui/chart-theme C.ink2), so the
- *  chamber sits in the page like the other panels. Only air changes. */
-const AIR_COLOUR: RGB = hexToRgb(C.ink2);
 /** The side panel goes beside the canvas from this pane width (Tailwind @3xl = 48rem). */
 const WIDE_PANE_PX = 768;
 /** In a narrow pane the canvas may take this share of the pane's height. */
 const NARROW_HEIGHT_SHARE = 0.7;
-
-function hexToRgb(hex: string): RGB {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
 
 export default function Page() {
   const [engine, setEngine] = useState<Engine | null>(null);

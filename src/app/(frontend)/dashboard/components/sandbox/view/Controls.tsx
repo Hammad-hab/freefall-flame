@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
 import { VIEWS, SCALES, sample, type View } from './colors';
+import { AIR_COLOUR } from './theme';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 export const TOOLS = ['paint', 'erase', 'ignite'] as const;
@@ -257,7 +258,11 @@ export function BuildPanel({ engine, c }: { engine: Engine; c: Controls }) {
             >
               <span
                 className="h-3 w-3 shrink-0 rounded-[3px] border"
-                style={{ background: `rgb(${m.r},${m.g},${m.b})`, borderColor: 'rgba(255,255,255,0.18)' }}
+                style={{
+                  // Air shows the colour it has on the canvas (the dashboard's panel colour).
+                  background: m.id === MAT.AIR ? `rgb(${AIR_COLOUR.join(',')})` : `rgb(${m.r},${m.g},${m.b})`,
+                  borderColor: 'rgba(255,255,255,0.18)',
+                }}
               />
               <span className="truncate">{m.name}</span>
             </button>
