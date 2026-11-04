@@ -29,6 +29,19 @@ async function getClient() {
   return getPayload({ config: await config })
 }
 
+/**
+ * Local preview of an UNPUBLISHED dataset, before its published flag is
+ * switched: start the dev server with DATASET_PREVIEW_IDS=4 (comma-separated
+ * ids) and /dashboard?dataset=4 shows it. Never in a production build, and
+ * nothing a visitor sends can turn it on; without the variable, unpublished
+ * datasets stay "not found" as before.
+ */
+function isPreviewDataset(id: number | string): boolean {
+  if (process.env.NODE_ENV === 'production') return false
+  const ids = (process.env.DATASET_PREVIEW_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  return ids.includes(String(id))
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toMeta(doc: any): DatasetMeta {
   return {
@@ -95,7 +108,7 @@ export async function getDataset(id: number | string): Promise<DatasetMeta | nul
       collection: 'datasets',
       id,
       depth: 1,
-      overrideAccess: false,
+      overrideAccess: isPreviewDataset(id),
     })
     return doc ? toMeta(doc) : null
   } catch {
