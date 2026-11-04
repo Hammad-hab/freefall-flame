@@ -28,6 +28,8 @@ export default buildConfig({
     pool: { connectionString: process.env.DATABASE_URL || '' },
   }),
   sharp,
+  // No anonymous usage data sent to Payload (on by default).
+  telemetry: false,
   plugins: [
     s3Storage({
       collections: {

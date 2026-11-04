@@ -5,6 +5,7 @@ import type { PaperRef } from "@/lib/types";
 import type { ShareResult } from "@/lib/shares";
 import type { InterpretationSummary } from "@/lib/combustion";
 import { C } from "../ui/chart-theme";
+import { QUESTION_MAX_CHARS } from "@/lib/ai-limits";
 /* ----------------------------- helpers ----------------------------- */
 
 const hatch =
@@ -481,6 +482,7 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
+            maxLength={QUESTION_MAX_CHARS}
             placeholder="Ask about this dataset…"
             className="min-w-0 flex-1 rounded-lg border border-white/10 px-3 py-2 text-[12px] leading-5 outline-none focus:border-blue"
             style={{ color: C.fg, background: C.panel2, borderColor: C.line }}
