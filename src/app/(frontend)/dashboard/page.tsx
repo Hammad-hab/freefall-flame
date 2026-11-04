@@ -1,4 +1,4 @@
-import { getDataset, getAllRows, type DataRow, type DatasetMeta } from "@/components/util"
+import { getDataset, getAllRows, getPublishedDatasets, type DataRow, type DatasetMeta } from "@/components/util"
 import { DatasetNotFound } from "./components/ui/DatasetNotFound"
 import Workspace from "./components/workspace/Workspace"
 import type { TabId } from "./components/workspace/layout-reducer"
@@ -18,6 +18,19 @@ function parseForDataset(dataset: LoadedDataset, rows: DataRow[]): ParsedRow[] {
   return parseRows(rows, buildRowMapping(resolveBass2Columns(dataset.columns).resolutions))
 }
 
+/**
+ * The dataset id to show, or null for DatasetNotFound.
+ * With no ?dataset=, falls back to the first published dataset, preferring a BASS one.
+ */
+async function resolveDatasetId(param: string | string[] | undefined): Promise<string | null> {
+  if (param === undefined) {
+    const published = await getPublishedDatasets()
+    const pick = published.find((d) => /bass/i.test(d.name)) ?? published[0]
+    return pick ? String(pick.id) : null
+  }
+  return typeof param === 'string' && /^\d+$/.test(param) ? param : null
+}
+
 export default async function Page({ searchParams }: SearchPageProps) {
   const filters = await searchParams
   const dataset_id = filters.dataset
@@ -26,9 +39,15 @@ export default async function Page({ searchParams }: SearchPageProps) {
     ? (rawTab as TabId)
     : "overview"
 
-  const ds: LoadedDataset | null = await getDataset(dataset_id as string)
-  const rows = await getAllRows(dataset_id as string)
+  // Resolve the id before touching the database: a bad id must show
+  // DatasetNotFound, never reach a query (a missing id became NaN in SQL).
+  const datasetId = await resolveDatasetId(dataset_id)
+  if (datasetId === null) return <DatasetNotFound/>
+
+  const ds: LoadedDataset | null = await getDataset(datasetId)
   if (!ds) return <DatasetNotFound/>
+  // Rows skip access checks, so fetch them only once the dataset is known to be published.
+  const rows = await getAllRows(datasetId)
   const dataset: DatasetMeta = ds
 
   // The statistics card breaks the dataset down by whoever ran the tests,
@@ -43,7 +62,7 @@ export default async function Page({ searchParams }: SearchPageProps) {
       rows={rows}
       parsedRows={parsedRows}
       shares={shares}
-      datasetId={dataset_id as string}
+      datasetId={datasetId}
       initialTab={initialTab}
     />
   )
