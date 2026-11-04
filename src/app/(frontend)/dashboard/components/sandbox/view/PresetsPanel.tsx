@@ -6,14 +6,21 @@
 // (search + material / outcome / fidelity pickers).
 //
 // Light and play behaviour: `engine.loadPreset(id, lighting)` starts the
-// preset's timeline (it does NOT auto-step, so the caller must set `playing`
-// true, which the Sandbox RunBar does). `engine.stopPreset()` aborts the
-// timeline and keeps the world intact. When the timeline reaches `runSteps`
-// the preset is finished and the RunBar auto-pauses.
+// preset's timeline (it does NOT auto-step). "Load & Run" then plays it;
+// "Load (standby)" leaves it paused. `engine.stopPreset()` aborts the
+// timeline and keeps the world intact. The sandbox never steps past the end
+// of the timeline: it pauses exactly at `runSteps`.
+//
+// The live block (status line, our outcome, NASA's outcome, the match) is
+// read from the engine four times a second while a preset is loaded.
 
-import { useMemo, useState } from 'react';
-import { Engine, NASA, FIDELITY, type Light, LIGHT, type PresetInfo, type PresetStatus } from '../engine/Engine';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Engine, NASA, FIDELITY, NO_READING, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { matchVerdict, type Verdict } from '../engine/scoring';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
+
+/** How often the live block re-reads the engine. */
+const LIVE_MS = 250;
 
 // ---- Filter pickers ----------------------------------------------------
 
@@ -96,15 +103,56 @@ function matches(p: PresetInfo, f: FilterState): boolean {
   return true;
 }
 
-/** One-line status readout shown while a preset is playing. */
-function StatusLine({ status, total }: { status: PresetStatus | null; total?: number }) {
-  if (!status) return <span style={{ color: C.muted }}>Select a preset, then Load &amp; Run.</span>;
-  const run = status.finished ? 'finished' : 'still burning';
+/** What the live block shows, read from the engine. */
+interface Live {
+  id: number;
+  step: number;
+  runSteps: number;
+  finished: boolean;
+  airCmS: number;
+  outcomeCode: number;
+  outcomeName: string;
+  outcomeStep: number;
+}
+
+function readLive(engine: Engine): Live | null {
+  const s = engine.presetStatus();
+  if (!s) return null;
+  const o = engine.outcome();
+  return {
+    id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
+    outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
+  };
+}
+
+const sameLive = (a: Live | null, b: Live | null) =>
+  a === b || (!!a && !!b && (Object.keys(a) as (keyof Live)[]).every((k) => a[k] === b[k]));
+
+/** One-line status readout for the loaded preset. */
+function StatusLine({ live, playing }: { live: Live | null; playing: boolean }) {
+  if (!live) return <span style={{ color: C.muted }}>Select a preset, then Load &amp; Run.</span>;
+  const run = live.finished ? 'finished' : playing ? 'running' : 'paused';
   return (
     <span className="tabular-nums" style={{ color: C.fg }}>
-      {status.step}{total ? ` / ${total}` : ''} &nbsp;·&nbsp; {status.airCmS.toFixed(1)} cm/s &nbsp;·&nbsp; {run}
+      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.airCmS.toFixed(1)} cm/s &nbsp;·&nbsp; {run}
     </span>
   );
+}
+
+const VERDICT_TONE: Record<Verdict, 'green' | 'red' | 'muted'> = {
+  match: 'green', 'no match': 'red', pending: 'muted', 'not scored': 'muted',
+};
+const VERDICT_NOTE: Record<Verdict, string> = {
+  match: '',
+  'no match': '',
+  pending: 'decided when the fire goes out or the run ends',
+  'not scored': 'NASA states no outcome for this test',
+};
+
+/** A NASA reading, or "not recorded" where the table has none (FC_NO_READING). */
+function reading(v: number | undefined, digits: number, unit: string): string {
+  if (v === undefined || v === NO_READING || !Number.isFinite(v)) return 'not recorded';
+  return `${v.toFixed(digits)}${unit}`;
 }
 /** Small tinted tag. */
 function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue' | 'red' | 'green' }) {
@@ -128,17 +176,32 @@ function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue'
 
 interface PresetsPanelProps {
   engine: Engine;
-  /** Called with (presetId, lighting). The Sandbox starts playback after a
-   * successful load. */
-  onLoad: (id: number, lighting: Light) => void;
+  /** Whether the sandbox is playing (for the status line). */
+  playing: boolean;
+  /** Called with (presetId, lighting, play): play true for "Load & Run",
+   * false for "Load (standby)". */
+  onLoad: (id: number, lighting: Light, play: boolean) => void;
   /** Called to abort the running preset's timeline; the world is left intact. */
   onStop?: () => void;
 }
 
-export default function PresetsPanel({ engine, onLoad, onStop }: PresetsPanelProps) {
+export default function PresetsPanel({ engine, playing, onLoad, onStop }: PresetsPanelProps) {
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
+  const [live, setLive] = useState<Live | null>(() => readLive(engine));
+
+  // Re-read the engine while the panel is open, so the readout follows the run.
+  const refresh = useCallback(() => {
+    setLive((prev) => { const next = readLive(engine); return sameLive(prev, next) ? prev : next; });
+  }, [engine]);
+  useEffect(() => {
+    const id = setInterval(refresh, LIVE_MS);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  const load = (id: number, play: boolean) => { onLoad(id, lighting, play); refresh(); };
+  const stop = () => { onStop?.(); refresh(); };
 
   const count = engine.presetCount();
   const catalogue = useMemo(() => {
@@ -154,8 +217,13 @@ export default function PresetsPanel({ engine, onLoad, onStop }: PresetsPanelPro
     [catalogue, selected]
   );
 
-  const status = engine.presetStatus();
-  const H = { height: 'calc(100vh - 260px)', minHeight: 240 };
+  // The loaded preset (may differ from the selected row) and its verdict.
+  const livePreset = useMemo(
+    () => (live ? catalogue.find((p) => p.id === live.id) ?? null : null),
+    [catalogue, live],
+  );
+  const verdict: Verdict | null =
+    live && livePreset ? matchVerdict(livePreset.nasaCode, live.outcomeCode, live.finished) : null;
 
   const select = (value: string, key: keyof FilterState, opts: { value: string; label: string }[]) => (
     <select
@@ -207,7 +275,7 @@ export default function PresetsPanel({ engine, onLoad, onStop }: PresetsPanelPro
               return (
                 <button
                   key={p.id}
-                  onClick={() => setSelected(p.id)}
+                  onClick={() => { setSelected(p.id); setLighting(p.defaultLighting); }}
                   className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[11px] transition-colors ${
                     on ? 'bg-line text-fg' : 'text-muted hover:bg-line/50 hover:text-fg'
                   }`}
@@ -230,25 +298,46 @@ export default function PresetsPanel({ engine, onLoad, onStop }: PresetsPanelPro
             })}
           </div>
   
-          {/* Detail */}
+          {/* Live: the loaded preset, read from the engine while it runs */}
+          {live && livePreset && verdict && (
+            <div id="preset-live" className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
+              <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                <span className="font-medium" style={{ color: C.fg }}>{livePreset.testId}</span>
+                <StatusLine live={live} playing={playing} />
+              </div>
+              <div className="space-y-1 text-[11px] leading-5">
+                {row('Our outcome',
+                  live.outcomeCode === 0 || live.outcomeStep === 0
+                    ? live.outcomeName
+                    : `${live.outcomeName} (step ${live.outcomeStep})`)}
+                {row('NASA outcome', livePreset.nasaOutcome)}
+                {row('Match', (
+                  <span data-verdict={verdict}>
+                    <Tag value={verdict} tone={VERDICT_TONE[verdict]} />
+                    {VERDICT_NOTE[verdict] && (
+                      <span className="mt-0.5 block text-[10px]" style={{ color: C.muted }}>{VERDICT_NOTE[verdict]}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detail: the selected row */}
           {activePreset ? (
             <div className="flex flex-col gap-3 border-t pt-3" style={{ borderColor: C.line }}>
-              <div className="text-[12px]">
-                <StatusLine status={status} total={activePreset.runSteps} />
-              </div>
-  
               <div className="space-y-1 text-[11px] leading-5">
-                {row('Outcome', status ? (status.finished ? 'finished' : engine.outcome().name) : '—')}
+                {row('Selected', activePreset.testId)}
                 {row('Sample', `${activePreset.materialName} ${activePreset.kindName}, ${activePreset.shapeName}`)}
                 {row('Conditions', `${activePreset.thicknessMm > 0 ? activePreset.thicknessMm.toFixed(2) : '—'} mm · ${activePreset.oxygenPct.toFixed(1)} % O2`)}
                 {row('Fidelity', activePreset.fidelityName)}
                 {row('Rule', activePreset.rule || '—')}
                 {row('Run', `${activePreset.runSteps} steps`)}
                 {row('NASA readings',
-                  `O2 ${activePreset.readings[0]?.toFixed(2)}→${activePreset.readings[1]?.toFixed(2)}% / ` +
-                  `CO2 ${activePreset.readings[2]?.toFixed(2)}→${activePreset.readings[3]?.toFixed(2)}% / ` +
-                  `CO ${activePreset.readings[4]?.toFixed(1)}→${activePreset.readings[5]?.toFixed(1)} ppm / ` +
-                  `CO2/O2 ${activePreset.readings[6]?.toFixed(2)}`
+                  `O2 ${reading(activePreset.readings[0], 2, '%')} → ${reading(activePreset.readings[1], 2, '%')} / ` +
+                  `CO2 ${reading(activePreset.readings[2], 2, '%')} → ${reading(activePreset.readings[3], 2, '%')} / ` +
+                  `CO ${reading(activePreset.readings[4], 1, ' ppm')} → ${reading(activePreset.readings[5], 1, ' ppm')} / ` +
+                  `CO2/O2 ${reading(activePreset.readings[6], 2, '')}`
                 )}
               </div>
   
@@ -277,21 +366,21 @@ export default function PresetsPanel({ engine, onLoad, onStop }: PresetsPanelPro
   
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => onLoad(activePreset.id, lighting)}
+                  onClick={() => load(activePreset.id, true)}
                   className="rounded-full border bg-amber/15 px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-amber/25"
                   style={{ borderColor: C.blue, color: C.fg }}
                 >
                   Load &amp; Run
                 </button>
                 <button
-                  onClick={() => onLoad(activePreset.id, LIGHT.DEFAULT)}
+                  onClick={() => load(activePreset.id, false)}
                   className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
                   style={{ borderColor: C.line, color: C.muted }}
                 >
                   Load (standby)
                 </button>
                 <button
-                  onClick={onStop}
+                  onClick={stop}
                   className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
                   style={{ borderColor: C.line, color: C.muted }}
                 >

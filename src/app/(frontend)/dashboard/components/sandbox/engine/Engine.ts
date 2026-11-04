@@ -133,6 +133,7 @@ export interface PresetInfo {
 export interface PresetStatus {
   id: number;
   step: number;
+  runSteps: number;      // the timeline's length; finished when step reaches it
   finished: boolean;
   lighting: number;
   airCmS: number;
@@ -155,9 +156,7 @@ export class Engine {
 
   constructor(fc: FlameCoreModule) {
     this.fc = fc;
-    console.log(Object.keys(fc).filter(k => k.startsWith('_')));
-    
-    fc._fc_create();                       // default parameters, empty chamber
+    fc._fc_create();                      // default parameters, empty chamber
     this.width = fc._fc_width();
     this.height = fc._fc_height();
     this.cells = this.width * this.height;
@@ -315,6 +314,7 @@ export class Engine {
     const step = fc._fc_preset_step();
     return {
       id, step,
+      runSteps: fc._fc_preset_run_steps(id),
       finished: fc._fc_preset_finished() === 1,
       lighting: fc._fc_preset_active_lighting(),
       airCmS: fc._fc_preset_air_at(id, step),

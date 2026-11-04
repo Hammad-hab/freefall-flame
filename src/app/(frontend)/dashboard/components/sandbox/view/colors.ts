@@ -3,7 +3,9 @@
 // No DOM here: fillView() writes into any Uint8ClampedArray (an
 // ImageData's .data in the browser, a plain array in Node).
 
-import { KIND } from '../engine/Engine';
+import { KIND, MAT } from '../engine/Engine';
+
+const AIR = MAT.AIR;
 
 export const VIEWS = ['material', 'temperature', 'oxygen', 'co2', 'flow', 'camera'] as const;
 export type View = (typeof VIEWS)[number];
@@ -106,7 +108,9 @@ function put(out: Pixels, p: number, lut: Lut, v: number): void {
 }
 
 // Fill `out` (cells * 4 bytes, RGBA) with one view of the engine's grid.
-export function fillView(engine: ColorEngine, view: View, out: Pixels): void {
+// `airColour`, if given, paints empty (air) cells in the material view, so the
+// chamber matches the dashboard's background; no other colour changes.
+export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null): void {
   const { material, temperature, oxygen, co2, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;
   const glow = view === 'camera' ? engine.camera() : null;   // fc_camera_intensity()
@@ -142,6 +146,7 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels): void {
         break;
       }
       default:                                                   // 'material'
+        if (airColour && material[i] === AIR) { setRgb(out, p, airColour); break; }
         out[p] = m.r; out[p + 1] = m.g; out[p + 2] = m.b; out[p + 3] = 255;
     }
   }

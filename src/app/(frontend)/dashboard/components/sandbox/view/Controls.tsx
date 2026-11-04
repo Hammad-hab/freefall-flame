@@ -105,10 +105,12 @@ export function Tabs({ tabs, active, onChange }: {
 }
 
 // ---- Run bar --------------------------------------------------------------------
-export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, onReset }: {
+export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, onReset, behind = false }: {
   playing: boolean; setPlaying: (p: boolean) => void;
   speed: number; setSpeed: (s: number) => void; speeds: readonly number[];
   onStep: () => void; onReset: () => void;
+  /** The clock can't keep up at this speed (it runs as fast as it can instead). */
+  behind?: boolean;
 }) {
   const step = useCallback(() => { setPlaying(false); onStep(); }, [setPlaying, onStep]);
 
@@ -140,6 +142,11 @@ export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, o
       >
         {speeds.map((s) => <option key={s} value={s}>{s}x</option>)}
       </select>
+      {playing && behind && (
+        <span id="slower-note" className="text-[10px]" style={{ color: C.muted }}>
+          slower than real time
+        </span>
+      )}
     </div>
   );
 }
