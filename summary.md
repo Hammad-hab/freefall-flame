@@ -49,7 +49,7 @@ The product has two surface levels:
 | Build/test | pnpm, vitest (unit), Playwright (E2E) |
 
 Environment variables actually in use
-(`src/.env`, not shown to the public):
+(`.env` in the repo root, not shown to the public):
 `PAYLOAD_SECRET`, `DATABASE_URL` (a Supabase Postgres pooler endpoint), `OPEN_ROUTER`
 (OpenRouter AI key, used only by an optional interpretation endpoint).
 
@@ -209,7 +209,7 @@ flow filters, and all derived chart data (reused from pure `chartData.ts`, no Re
 
 - **Deterministic observations** — always present, computed server-side from the compact
   validated summary (`/api/interpretation?dataset=<id>`).
-- **AI-assisted interpretation** — shown *only* when `OPEN_ROUTER_API_KEY` is configured;
+- **AI-assisted interpretation** — shown *only* when `OPEN_ROUTER` is configured;
   the model is named in the heading and the panel warns that AI output is an interpretation
   aid (verified against the measured values and cited papers), not ground truth.
 - **Fallback** — when no AI is configured, a deterministic reading is shown and clearly
@@ -375,8 +375,14 @@ with sharp/esbuild/unrs-resolver built specially).
 - **Storage**: `@payloadcms/storage-s3` with `clientUploads: true` → files upload straight to
   S3; requires `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (see
   `.env.example`).
-- **AI integration**: optional `/api/interpretation` + `/api/openrouter` route, gated on
-  `OPEN_ROUTER_API_KEY`. When absent, the deterministic fallback is used.
+- **AI integration**: optional `/api/interpretation` route (the Overview assistant and the
+  Interpretation tab), gated on `OPEN_ROUTER`. When absent, the deterministic fallback is
+  used. The old open `/api/openrouter` route was removed (fix/security). Limits, in
+  `src/lib/ai-guard.ts`: the model is fixed on the server (`openai/gpt-4o-mini`); a
+  question is at most 500 characters; each visitor (by IP address) gets at most 10 new
+  requests every 10 minutes; each interpretation and answer is cached in memory, keyed by
+  what the model is sent, so repeats are free and don't count (the cache is lost when the
+  server restarts).
 - **Toolchain note** (from the project's own history): the repo pins pnpm and the local
   global pnpm can corrupt the pnpm 12 lockfile (`ERR_PNPM_BROKEN_LOCKFILE`); the README /
   `.npmrc` style tooling expects pnpm 12.x under Node >= 20.18.1. The `next.config.ts`

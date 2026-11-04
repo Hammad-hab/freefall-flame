@@ -7,9 +7,73 @@ import {
   summarizeForInterpretation,
   type InterpretationSummary,
 } from '@/lib/combustion'
+import {
+  AI_MODEL,
+  RATE_LIMIT_MAX,
+  RATE_LIMIT_WINDOW_MS,
+  aiLimiter,
+  cacheKey,
+  cachedCall,
+  checkQuestion,
+  isKnown,
+  visitorId,
+} from '@/lib/ai-guard'
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const DEFAULT_MODEL = 'openai/gpt-4o-mini'
+
+const INTERPRET_SYSTEM = [
+  'You are a careful scientific data interpreter for a fire-safety dashboard.',
+  'STRICT RULES:',
+  '1. Use ONLY the numerical summary and paper metadata provided in the user message. Never invent measurements, sample sizes, or findings.',
+  '2. Distinguish measured results from interpretations. Label interpretations as interpretations.',
+  '3. When the summary is insufficient to support a question, say so explicitly.',
+  '4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.',
+  '5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.',
+  '6. Cite research claims using the paper titles and years provided. Do not fabricate citations.',
+  '7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.',
+  '8. Be concise; use short sentences, not long paragraphs.',
+  '9. Do not send or echo the raw dataset.',
+].join('\n')
+
+const QUESTION_SYSTEM = `You are a careful scientific data interpreter for a fire-safety dashboard.
+
+STRICT RULES:
+1. Use ONLY the numerical summary and paper metadata provided in the user message. Never invent measurements, sample sizes, or findings.
+2. Distinguish measured results from interpretations. Label interpretations as interpretations.
+3. When the summary is insufficient to support a question, say so explicitly.
+4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.
+5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.
+6. Cite research claims using the paper titles and years provided. Do not fabricate citations.
+7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.
+8. Be concise; use short sentences, not long paragraphs.`
+
+/** One chat call with the fixed model. Null on any failure: AI is an enhancement, never a hard dependency. */
+async function callModel(apiKey: string, system: string, user: string): Promise<string | null> {
+  try {
+    const upstream = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+        usage: { include: true }, // OpenRouter adds the call's cost to `usage`
+      }),
+    })
+    const data = (await upstream.json().catch(() => null)) as {
+      choices?: Array<{ message?: { content?: string | null } }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number }
+    } | null
+    // One line per paid call, so spending can be checked in the server log.
+    const u = data?.usage
+    console.log(
+      `[ai] ${AI_MODEL} HTTP ${upstream.status}: ${u?.prompt_tokens ?? '?'} prompt + ${u?.completion_tokens ?? '?'} completion tokens` +
+        (typeof u?.cost === 'number' ? `, cost ${u.cost} credits (USD)` : ''),
+    )
+    return upstream.ok && data?.choices?.[0]?.message?.content ? data.choices[0].message.content : null
+  } catch {
+    return null
+  }
+}
 
 interface FallbackSection {
   observations: string[]
@@ -68,10 +132,17 @@ function buildFallback(summary: InterpretationSummary): FallbackSection {
 }
 
 export async function GET(request: Request) {
-  const datasetId = new URL(request.url).searchParams.get('dataset')
+  const params = new URL(request.url).searchParams
+  const datasetId = params.get('dataset')
   if (!datasetId) {
     return NextResponse.json({ error: 'Query parameter `dataset` is required' }, { status: 400 })
   }
+  // The length limit comes before any database or AI work.
+  const checked = checkQuestion(params.get('question'))
+  if (!checked.ok) {
+    return NextResponse.json({ error: checked.error }, { status: 400 })
+  }
+  const question = checked.question
 
   const ds = await getDataset(datasetId)
   if (!ds) {
@@ -83,7 +154,7 @@ export async function GET(request: Request) {
   const mapping = buildRowMapping(resolutions)
   const parsedAll = parseRows(rows, mapping)
   // Regenerate the interpretation when the material filter changes.
-  const material = new URL(request.url).searchParams.get('material')
+  const material = params.get('material')
   const parsed =
     material && material !== 'all' ? parsedAll.filter((r) => r.material === material) : parsedAll
   const summary = summarizeForInterpretation(parsed, ds.name)
@@ -97,46 +168,25 @@ export async function GET(request: Request) {
     sourceUrl: p.sourceUrl,
   }))
 
-  const question = new URL(request.url).searchParams.get('question')
-  let ai: string | null = null
-  let model: string | null = null
-  let answer: string | null = null
-  let answerModel: string | null = null
-  const apiKey = process.env.OPEN_ROUTER
-
   // Original interpretation AI + free-text question AI. Both write into the
-  // same summary + papers, so the answer can be grounded and cited.
-  if (apiKey) {
-    try {
-      const system = [
-        'You are a careful scientific data interpreter for a fire-safety dashboard.',
-        'STRICT RULES:',
-        '1. Use ONLY the numerical summary and paper metadata provided in the user message. Never invent measurements, sample sizes, or findings.',
-        '2. Distinguish measured results from interpretations. Label interpretations as interpretations.',
-        '3. When the summary is insufficient to support a question, say so explicitly.',
-        '4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.',
-        '5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.',
-        '6. Cite research claims using the paper titles and years provided. Do not fabricate citations.',
-        '7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.',
-        '8. Be concise; use short sentences, not long paragraphs.',
-        '9. Do not send or echo the raw dataset.',
-      ].join('\n')
-      const user = JSON.stringify({ summary, papers }, null, 2)
-      const upstream = await fetch(OPENROUTER_URL, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: DEFAULT_MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
-      })
-      const data = (await upstream.json().catch(() => null)) as {
-        choices?: Array<{ message?: { content?: string | null } }>
-        error?: { message?: string }
-      } | null
-      if (upstream.ok && data?.choices?.[0]?.message?.content) {
-        ai = data.choices[0].message.content
-        model = DEFAULT_MODEL
-      }
-    } catch {
-      // Original AI is an enhancement, never a hard dependency: fall through to the deterministic summary.
+  // same summary + papers, so the answer can be grounded and cited. Each is
+  // cached by exactly what the model is sent (src/lib/ai-guard.ts).
+  const apiKey = process.env.OPEN_ROUTER
+  const interpretKey = cacheKey('interpretation', { summary, papers })
+  const answerKey = question ? cacheKey('answer', { summary, papers, question }) : null
+  const interpretNew = !isKnown(interpretKey)
+  const answerNew = answerKey !== null && !isKnown(answerKey)
+
+  // The per-visitor limit counts only requests the server hasn't answered before.
+  if (interpretNew || answerNew) {
+    const taken = aiLimiter.take(visitorId(request.headers))
+    if (!taken.ok) {
+      return NextResponse.json(
+        {
+          error: `Too many new questions: at most ${RATE_LIMIT_MAX} every ${RATE_LIMIT_WINDOW_MS / 60_000} minutes. Try again in ${taken.retryAfterS} s.`,
+        },
+        { status: 429, headers: { 'Retry-After': String(taken.retryAfterS) } },
+      )
     }
   }
 
@@ -145,39 +195,22 @@ export async function GET(request: Request) {
   // routed to OpenRouter. The answer is labelled as an interpretation and is
   // returned alongside the deterministic fallback, so a question is never
   // answered without an associated measured summary.
-  if (question && apiKey) {
-    try {
-      const system = `You are a careful scientific data interpreter for a fire-safety dashboard.
+  const [ai, answer] = await Promise.all([
+    cachedCall(interpretKey, apiKey ? () => callModel(apiKey, INTERPRET_SYSTEM, JSON.stringify({ summary, papers }, null, 2)) : null),
+    answerKey
+      ? cachedCall(answerKey, apiKey ? () => callModel(apiKey, QUESTION_SYSTEM, JSON.stringify({ summary, papers, question }, null, 2)) : null)
+      : Promise.resolve(null),
+  ])
 
-STRICT RULES:
-1. Use ONLY the numerical summary and paper metadata provided in the user message. Never invent measurements, sample sizes, or findings.
-2. Distinguish measured results from interpretations. Label interpretations as interpretations.
-3. When the summary is insufficient to support a question, say so explicitly.
-4. Never describe a material as safe, unsafe, high-risk, or low-risk based on descriptive combustion measurements.
-5. State when conclusions are limited by small sample sizes, missing values, censored sensor readings, or microgravity-only conditions.
-6. Cite research claims using the paper titles and years provided. Do not fabricate citations.
-7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.
-8. Be concise; use short sentences, not long paragraphs.`
-
-      const user = JSON.stringify({ summary, papers, question }, null, 2)
-      const upstream = await fetch(OPENROUTER_URL, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: DEFAULT_MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
-      })
-      const data = (await upstream.json().catch(() => null)) as {
-        choices?: Array<{ message?: { content?: string | null } }>
-        error?: { message?: string }
-      } | null
-      if (upstream.ok && data?.choices?.[0]?.message?.content) {
-        answer = data.choices[0].message.content
-        answerModel = DEFAULT_MODEL
-      }
-    } catch {
-      // Question answering is an enhancement, never a hard dependency; keep the
-      // deterministic summary so the ask panel still renders something.
-    }
-  }
-
-  return NextResponse.json({ summary, papers, fallback, ai, model, answer, answerModel, allMaterials: [...new Set(parsedAll.map((r) => r.material))].sort() })
+  return NextResponse.json({
+    summary,
+    papers,
+    fallback,
+    ai,
+    model: ai ? AI_MODEL : null,
+    answer,
+    answerModel: answer ? AI_MODEL : null,
+    cache: { interpretation: interpretNew ? 'new' : 'cached', answer: answerKey ? (answerNew ? 'new' : 'cached') : null },
+    allMaterials: [...new Set(parsedAll.map((r) => r.material))].sort(),
+  })
 }
