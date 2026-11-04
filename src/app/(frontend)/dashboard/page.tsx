@@ -1,4 +1,11 @@
-import { getDataset, getAllRows, getPublishedDatasets, type DataRow, type DatasetMeta } from "@/components/util"
+import {
+  getDataset,
+  getAllRows,
+  getPublishedDatasets,
+  getPublishedDatasetsUncached,
+  type DataRow,
+  type DatasetMeta,
+} from "@/components/util"
 import { DatasetNotFound } from "./components/ui/DatasetNotFound"
 import Workspace from "./components/workspace/Workspace"
 import type { TabId } from "./components/workspace/layout-reducer"
@@ -18,16 +25,18 @@ function parseForDataset(dataset: LoadedDataset, rows: DataRow[]): ParsedRow[] {
   return parseRows(rows, buildRowMapping(resolveBass2Columns(dataset.columns).resolutions))
 }
 
+/** The default dataset: the first published one, preferring a BASS one. */
+function pickDefault(published: DatasetMeta[]): string | null {
+  const pick = published.find((d) => /bass/i.test(d.name)) ?? published[0]
+  return pick ? String(pick.id) : null
+}
+
 /**
  * The dataset id to show, or null for DatasetNotFound.
  * With no ?dataset=, falls back to the first published dataset, preferring a BASS one.
  */
 async function resolveDatasetId(param: string | string[] | undefined): Promise<string | null> {
-  if (param === undefined) {
-    const published = await getPublishedDatasets()
-    const pick = published.find((d) => /bass/i.test(d.name)) ?? published[0]
-    return pick ? String(pick.id) : null
-  }
+  if (param === undefined) return pickDefault(await getPublishedDatasets())
   return typeof param === 'string' && /^\d+$/.test(param) ? param : null
 }
 
@@ -41,10 +50,20 @@ export default async function Page({ searchParams }: SearchPageProps) {
 
   // Resolve the id before touching the database: a bad id must show
   // DatasetNotFound, never reach a query (a missing id became NaN in SQL).
-  const datasetId = await resolveDatasetId(dataset_id)
+  let datasetId = await resolveDatasetId(dataset_id)
   if (datasetId === null) return <DatasetNotFound/>
 
-  const ds: LoadedDataset | null = await getDataset(datasetId)
+  let ds: LoadedDataset | null = await getDataset(datasetId)
+  if (!ds && dataset_id === undefined) {
+    // The cached list of published datasets can be stale right after a
+    // published flag changes, and name a dataset that is no longer public.
+    // Ask the database again without the cache and pick again.
+    const fresh = pickDefault(await getPublishedDatasetsUncached())
+    if (fresh !== null && fresh !== datasetId) {
+      datasetId = fresh
+      ds = await getDataset(fresh)
+    }
+  }
   if (!ds) return <DatasetNotFound/>
   // Rows skip access checks, so fetch them only once the dataset is known to be published.
   const rows = await getAllRows(datasetId)

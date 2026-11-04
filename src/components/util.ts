@@ -82,23 +82,30 @@ function toRow(doc: any): DataRow {
 /* Fetchers                                                            */
 /* ------------------------------------------------------------------ */
 
-/** All published datasets, for index pages and dataset pickers. */
-export const getPublishedDatasets = unstable_cache(
-  async (): Promise<DatasetMeta[]> => {
-    const payload = await getClient()
-    const res = await payload.find({
-      collection: 'datasets',
-      where: { published: { equals: true } },
-      sort: 'name',
-      limit: 100,
-      depth: 1,
-      overrideAccess: false, // enforce the public access rules (published only)
-    })
-    return res.docs.map(toMeta)
-  },
-  ['published-datasets'],
-  { tags: ['datasets'], revalidate: REVALIDATE_SECONDS },
-)
+/** All published datasets, straight from the database (no cache). */
+export async function getPublishedDatasetsUncached(): Promise<DatasetMeta[]> {
+  const payload = await getClient()
+  const res = await payload.find({
+    collection: 'datasets',
+    where: { published: { equals: true } },
+    sort: 'name',
+    limit: 100,
+    depth: 1,
+    overrideAccess: false, // enforce the public access rules (published only)
+  })
+  return res.docs.map(toMeta)
+}
+
+/**
+ * All published datasets, for index pages and dataset pickers. Cached for
+ * REVALIDATE_SECONDS; Next serves the old list while it refreshes, so right
+ * after a published flag changes it can name a dataset that is no longer
+ * public (the dashboard page then asks getPublishedDatasetsUncached).
+ */
+export const getPublishedDatasets = unstable_cache(getPublishedDatasetsUncached, ['published-datasets'], {
+  tags: ['datasets'],
+  revalidate: REVALIDATE_SECONDS,
+})
 
 /** One published dataset's definition (columns, papers). Returns null if missing or unpublished. */
 export async function getDataset(id: number | string): Promise<DatasetMeta | null> {
