@@ -23,6 +23,7 @@ import { C, panelCls, panelStyle } from "../ui/chart-theme";
 import GenericCompare from "./GenericCompare";
 import { DataTable } from "./DataTable";
 import { FilterPill, Notice, StatCard } from "./primitives";
+import type { WorkspaceLinks } from "../workspace/links";
 import {
   TestsPerMaterialChart,
   MeanO2ByMaterialChart,
@@ -47,9 +48,12 @@ import {
 export default function Visualization({
   dataset,
   rows,
+  links,
 }: {
   dataset: DatasetMeta
   rows: DataRow[];
+  /** Links between the Data Table and the sandbox (workspace/links.ts). */
+  links?: WorkspaceLinks;
 }) {
   // Resolve every combustion role through the shared, validated resolver.
   const { resolutions, warnings } = useMemo(() => resolveBass2Columns(dataset.columns), [dataset.columns]);
@@ -275,7 +279,7 @@ export default function Visualization({
           </div>
 
           {/* Data table — shows censored/out-of-range markers instead of hiding them */}
-          <DataTable filtered={filtered} rows={rows} resolutions={resolutions} />
+          <DataTable filtered={filtered} rows={rows} resolutions={resolutions} all={parsed} links={links} />
         </>
       ) : (
         /* Graceful degradation: required BASS-II columns are missing. */

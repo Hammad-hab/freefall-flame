@@ -277,3 +277,28 @@ describe('helpers', () => {
     expect(findParent(s, 'n2')).toBeNull()
   })
 })
+
+/* ------------------------------------------------------------------ */
+/* showTab (links between tabs)                                        */
+/* ------------------------------------------------------------------ */
+
+describe('showTab', () => {
+  it('opens the tab in the focused pane when no pane has it', () => {
+    const s = layoutReducer(createInitialState(4, 'visualization'), { type: 'showTab', tab: 'sandbox' })
+    expect(leaf(s, 'n1').tabs).toEqual(['visualization', 'sandbox'])
+    expect(leaf(s, 'n1').activeTab).toBe('sandbox')
+  })
+
+  it('activates the tab where it already is, without opening a second copy', () => {
+    // n1 has visualization + sandbox; split right puts overview in n3, focused.
+    let s = layoutReducer(createInitialState(4, 'visualization'), { type: 'openTab', tab: 'sandbox' })
+    s = layoutReducer(s, { type: 'splitPane', paneId: 'n1', direction: 'row', tab: 'overview' })
+    expect(s.focusedPane).toBe('n3')
+    s = layoutReducer(s, { type: 'showTab', tab: 'sandbox' })
+    expect(s.focusedPane).toBe('n1')
+    expect(leaf(s, 'n1').activeTab).toBe('sandbox')
+    expect(leaf(s, 'n3').tabs).toEqual(['overview'])
+    const copies = Object.values(s.nodes).filter((n) => n.kind === 'leaf' && n.tabs.includes('sandbox' as TabId))
+    expect(copies).toHaveLength(1)
+  })
+})

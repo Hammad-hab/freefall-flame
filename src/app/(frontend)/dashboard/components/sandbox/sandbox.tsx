@@ -10,6 +10,7 @@ import PresetsPanel from './view/PresetsPanel';
 import { fitCell } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
 import { buildReadingIndex } from './view/nasaReadings';
+import type { WorkspaceLinks } from '../workspace/links';
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TABS = [{ id: 'build', label: 'Build' }, { id: 'world', label: 'World' }, { id: 'presets', label: 'Presets' }];
@@ -23,9 +24,11 @@ interface SandboxProps {
   /** The dashboard's dataset: NASA's readings for each preset come from its row for the same test. */
   dataset?: DatasetMeta;
   rows?: DataRow[];
+  /** Links with the Data Table: a request to load a test's preset, and the way back to its row. */
+  links?: WorkspaceLinks;
 }
 
-export default function Page({ dataset, rows }: SandboxProps) {
+export default function Page({ dataset, rows, links }: SandboxProps) {
   const [engine, setEngine] = useState<Engine | null>(null);
   const readingIndex = useMemo(
     () => (dataset && rows ? buildReadingIndex(dataset.columns, rows) : null),
@@ -91,6 +94,22 @@ export default function Page({ dataset, rows }: SandboxProps) {
     clock.current.reset();
     cr.current.setPlaying(play);
   }, [engine]);
+
+  // A link from the Data Table ("Open in sandbox", or ?tab=sandbox&preset=B14):
+  // select that test's preset in the Presets tab and load it in standby, with
+  // its default lighting.
+  const [focus, setFocus] = useState<{ id: number | null; testId: string; nonce: number } | null>(null);
+  const request = links?.sandboxRequest ?? null;
+  const requestDone = links?.sandboxRequestDone;
+  useEffect(() => {
+    if (!engine || !request) return;
+    let id: number | null = null;
+    for (let i = 0; i < engine.presetCount(); i++) if (engine.preset(i).testId === request.testId) id = i;
+    if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
+    setFocus({ id, testId: request.testId, nonce: request.nonce });
+    cr.current.setTab('presets');
+    requestDone?.();
+  }, [engine, request, requestDone, loadPreset]);
 
   const stopPreset = useCallback(() => {
     engine?.stopPreset();
@@ -170,6 +189,7 @@ export default function Page({ dataset, rows }: SandboxProps) {
                 <PresetsPanel
                   engine={engine} playing={c.playing} onLoad={loadPreset} onStop={stopPreset}
                   readingIndex={readingIndex} datasetName={dataset?.name ?? null}
+                  focus={focus} onFocusDone={() => setFocus(null)} links={links}
                 />
               )}
             </div>

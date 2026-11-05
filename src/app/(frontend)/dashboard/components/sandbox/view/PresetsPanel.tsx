@@ -23,6 +23,7 @@ import { Engine, NASA, type Light, LIGHT, type PresetInfo } from '../engine/Engi
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
+import { isPlainClick, type WorkspaceLinks } from '../../workspace/links';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 /** How often the live block re-reads the engine. */
@@ -193,9 +194,36 @@ interface PresetsPanelProps {
   readingIndex?: ReadingIndex | null;
   /** The dataset's name, to say where the readings come from. */
   datasetName?: string | null;
+  /** A link asked for this test's preset (id null: no preset has that test id). */
+  focus?: { id: number | null; testId: string; nonce: number } | null;
+  /** Called once the panel has acted on `focus`, so reopening the tab doesn't repeat it. */
+  onFocusDone?: () => void;
+  /** Links back to the Data Table. */
+  links?: WorkspaceLinks;
 }
 
-export default function PresetsPanel({ engine, playing, onLoad, onStop, readingIndex = null, datasetName = null }: PresetsPanelProps) {
+/** "Show in data table": a real link to ?tab=visualization&test=…, handled in the page on a plain click. */
+function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string }) {
+  return (
+    <a
+      href={links.tableHref(testId)}
+      data-show-in-table={testId}
+      onClick={(e) => {
+        if (!isPlainClick(e)) return;
+        e.preventDefault();
+        links.showInTable(testId);
+      }}
+      className="text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
+      style={{ color: C.amber }}
+    >
+      Show in data table
+    </a>
+  );
+}
+
+export default function PresetsPanel({
+  engine, playing, onLoad, onStop, readingIndex = null, datasetName = null, focus = null, onFocusDone, links,
+}: PresetsPanelProps) {
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
@@ -221,6 +249,28 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
   }, [engine, count]);
 
   const shown = useMemo(() => catalogue.filter((p) => matches(p, f)), [catalogue, f]);
+
+  // A link asked for a test's preset (the sandbox has loaded it in standby):
+  // clear the filters so its row is listed, select it, and scroll to it.
+  const [missingTest, setMissingTest] = useState<string | null>(null);
+  const focusNonce = focus?.nonce;
+  useEffect(() => {
+    if (!focus) return;
+    onFocusDone?.();
+    if (focus.id === null) { setMissingTest(focus.testId); return; }
+    const p = catalogue.find((x) => x.id === focus.id);
+    if (!p) return;
+    setMissingTest(null);
+    setF({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
+    setSelected(p.id);
+    setLighting(p.defaultLighting);
+    refresh();
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-preset-id="${p.id}"]`)?.scrollIntoView({ block: 'nearest' });
+    });
+    // Only a new request (a new nonce) moves the selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusNonce]);
 
   const activePreset = useMemo(
     () => (selected === null ? null : catalogue.find((p) => p.id === selected) ?? null),
@@ -270,6 +320,12 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
         {select(f.fidelity, 'fidelity', FIDELITY_PICK)}
       </div>
 
+      {missingTest && (
+        <p className="mt-2 text-[11px]" style={{ color: C.amber }}>
+          The link asked for test {missingTest}, which has no preset in the sandbox.
+        </p>
+      )}
+
       {/* The honest scorecard: how many NASA-scored tests the engine matches. */}
       <div id="preset-scorecard" className="mt-2 text-[11px] leading-5" title={SCORECARD_TITLE}>
         <div className="tabular-nums" style={{ color: C.fg }}>
@@ -297,6 +353,7 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
               return (
                 <button
                   key={p.id}
+                  data-preset-id={p.id}
                   onClick={() => { setSelected(p.id); setLighting(p.defaultLighting); }}
                   className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[11px] transition-colors ${
                     on ? 'bg-line text-fg' : 'text-muted hover:bg-line/50 hover:text-fg'
@@ -347,6 +404,9 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
                   </span>
                 ))}
               </div>
+              {links && readingIndex?.has(livePreset.testId) && (
+                <div><TableLink links={links} testId={livePreset.testId} /></div>
+              )}
             </div>
           )}
 
@@ -376,6 +436,9 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
                   {row('CO before → after', `${formatReading(activeReadings.readings[4], 1, ' ppm')} → ${formatReading(activeReadings.readings[5], 1, ' ppm')}`)}
                   {row('CO2 made per O2 used', formatReading(activeReadings.readings[6], 2, ''))}
                   {activeReadings.flags && row('Flags', activeReadings.flags)}
+                  {links && activeReadings.source === 'dataset' && (
+                    <div className="text-right"><TableLink links={links} testId={activePreset.testId} /></div>
+                  )}
                 </div>
               )}
   

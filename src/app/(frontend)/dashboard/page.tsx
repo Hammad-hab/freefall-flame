@@ -11,6 +11,7 @@ import Workspace from "./components/workspace/Workspace"
 import type { TabId } from "./components/workspace/layout-reducer"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion"
 import { computeShares } from "@/lib/shares"
+import { cleanTestId } from "./components/workspace/links"
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -82,7 +83,12 @@ export default async function Page({ searchParams }: SearchPageProps) {
       parsedRows={parsedRows}
       shares={shares}
       datasetId={datasetId}
+      datasetParam={dataset_id === undefined ? null : datasetId}
       initialTab={initialTab}
+      // Links from the Data Table and the sandbox (workspace/links.ts):
+      // ?tab=sandbox&preset=B14 and ?tab=visualization&test=B14.
+      initialPreset={initialTab === 'sandbox' ? cleanTestId(filters.preset) : null}
+      initialTest={cleanTestId(filters.test)}
     />
   )
 }
