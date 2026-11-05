@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
-import { Engine, loadEngine, type Light } from './engine/Engine';
+import { Engine, FIDELITY, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
 import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
 import PresetsPanel from './view/PresetsPanel';
@@ -103,8 +103,10 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   const requestDone = links?.sandboxRequestDone;
   useEffect(() => {
     if (!engine || !request) return;
-    let id: number | null = null;
-    for (let i = 0; i < engine.presetCount(); i++) if (engine.preset(i).testId === request.testId) id = i;
+    // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
+    const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
+    let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
+    if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
     if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
     setFocus({ id, testId: request.testId, nonce: request.nonce });
     cr.current.setTab('presets');

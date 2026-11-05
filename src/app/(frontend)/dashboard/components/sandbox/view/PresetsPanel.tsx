@@ -1,5 +1,8 @@
-// PresetsPanel.tsx - the flame-core preset browser: a filterable list of all
-// 129 NASA BASS-II presets, a detail card, and Load / Stop controls.
+// PresetsPanel.tsx - the flame-core preset browser: a filterable list of the
+// presets in two groups, NASA's 129 BASS-II tests and the 10 Saffire tests
+// (flame-core 1.1.0, ids 1000+; the 4 silicone ones are listed but can't
+// load, and none is scored: NASA gives a burn time, not an outcome code),
+// a detail card, and Load / Stop controls.
 //
 // The catalogue is re-read from the `Engine` object on each render; filters
 // below are client-side over that catalogue. The panel owns its own state
@@ -19,7 +22,7 @@
 // "no reading" marker (-1.0) is also a real CO reading in 11 tests.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Engine, NASA, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { Engine, NASA, FIDELITY, SAFFIRE_FIRST, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
@@ -161,6 +164,18 @@ const VERDICT_NOTE: Record<Verdict, string> = {
   'not scored': 'NASA states no outcome for this test',
 };
 
+// ---- Saffire (flame-core 1.1.0) -----------------------------------------
+
+type Group = 'bass' | 'saffire';
+const isSaffire = (p: PresetInfo) => p.id >= SAFFIRE_FIRST;
+/** Listed but cannot load (the 4 silicone tests: no silicone in the sandbox). */
+const cannotLoad = (p: PresetInfo) => p.fidelity === FIDELITY.NOT_MODELLED;
+const SAFFIRE_NOT_SCORED = 'NASA gives a burn time, not an outcome code';
+// The Saffire runs compared with NASA's results by hand (engine project,
+// docs/13a and exports/saffire_outcomes.csv). No rule scores them.
+const SAFFIRE_NOTE =
+  "Compared by hand: 0 of 6 reproduce NASA's result. Our SIBAL flames spread at least 3.2–4× faster, the opposed SF1-S2 flame didn't survive, and our PMMA flames spread instead of staying anchored at the base.";
+
 /** Small tinted tag. */
 function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue' | 'red' | 'green' }) {
   const toneStyle: Record<string, React.CSSProperties> = {
@@ -241,14 +256,22 @@ export default function PresetsPanel({
   const load = (id: number, play: boolean) => { onLoad(id, lighting, play); refresh(); };
   const stop = () => { onStop?.(); refresh(); };
 
-  const count = engine.presetCount();
-  const catalogue = useMemo(() => {
+  // Two groups: the 129 BASS-II presets (ids 0..128) and the 10 Saffire ones (ids 1000+).
+  const [group, setGroup] = useState<Group>('bass');
+  const bass = useMemo(() => {
     const list: PresetInfo[] = [];
-    for (let i = 0; i < count; i++) list.push(engine.preset(i));
+    for (let i = 0; i < engine.presetCount(); i++) list.push(engine.preset(i));
     return list;
-  }, [engine, count]);
+  }, [engine]);
+  const saffire = useMemo(() => {
+    const list: PresetInfo[] = [];
+    for (let i = 0; i < engine.saffireCount(); i++) list.push(engine.preset(SAFFIRE_FIRST + i));
+    return list;
+  }, [engine]);
+  const catalogue = useMemo(() => [...bass, ...saffire], [bass, saffire]);
+  const groupList = group === 'bass' ? bass : saffire;
 
-  const shown = useMemo(() => catalogue.filter((p) => matches(p, f)), [catalogue, f]);
+  const shown = useMemo(() => groupList.filter((p) => matches(p, f)), [groupList, f]);
 
   // A link asked for a test's preset (the sandbox has loaded it in standby):
   // clear the filters so its row is listed, select it, and scroll to it.
@@ -261,6 +284,7 @@ export default function PresetsPanel({
     const p = catalogue.find((x) => x.id === focus.id);
     if (!p) return;
     setMissingTest(null);
+    setGroup(isSaffire(p) ? 'saffire' : 'bass');
     setF({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
     setSelected(p.id);
     setLighting(p.defaultLighting);
@@ -306,17 +330,37 @@ export default function PresetsPanel({
 
   return (
     <div className={panelCls} style={panelStyle}>
+      {/* Groups: NASA's BASS-II tests, and the Saffire tests */}
+      <div className="mb-2 flex w-fit rounded-full border p-0.5" style={{ borderColor: C.line, background: C.ink }}>
+        {([['bass', `BASS-II (${bass.length})`], ['saffire', `Saffire (${saffire.length})`]] as const).map(([g, label]) => {
+          const on = group === g;
+          return (
+            <button
+              key={g}
+              data-group={g}
+              aria-pressed={on}
+              onClick={() => { setGroup(g); setF({ ...f, outcome: 'all' }); }}
+              className="rounded-full px-3 py-1 text-[11px] transition-colors"
+              style={on ? { background: C.line, color: C.fg } : { color: C.muted }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-wrap gap-2">
         <input
           value={f.search}
           onChange={(e) => setF({ ...f, search: e.target.value })}
-          placeholder={`search ${catalogue.length} presets`}
+          placeholder={`search ${groupList.length} presets`}
           className="min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-3 py-2 text-[12px] leading-5 outline-none focus:border-blue"
           style={{ color: C.fg, background: C.panel2, borderColor: C.line }}
         />
         {select(f.material, 'material', MATERIAL_PICK)}
-        {select(f.outcome, 'outcome', OUTCOME_PICK)}
+        {/* NASA gives Saffire tests a burn time, not an outcome code, so no outcome filter there. */}
+        {group === 'bass' && select(f.outcome, 'outcome', OUTCOME_PICK)}
         {select(f.fidelity, 'fidelity', FIDELITY_PICK)}
       </div>
 
@@ -327,15 +371,21 @@ export default function PresetsPanel({
       )}
 
       {/* The honest scorecard: how many NASA-scored tests the engine matches. */}
-      <div id="preset-scorecard" className="mt-2 text-[11px] leading-5" title={SCORECARD_TITLE}>
-        <div className="tabular-nums" style={{ color: C.fg }}>
-          {scorecard.matched} of {scorecard.scored} scored tests match NASA ({scorecard.matchedTests.join(', ')})
+      {group === 'bass' ? (
+        <div id="preset-scorecard" className="mt-2 text-[11px] leading-5" title={SCORECARD_TITLE}>
+          <div className="tabular-nums" style={{ color: C.fg }}>
+            {scorecard.matched} of {scorecard.scored} scored tests match NASA ({scorecard.matchedTests.join(', ')})
+          </div>
+          <div className="text-[10px]" style={{ color: C.muted }}>
+            scored: NASA&apos;s table says how the test ended ({scorecard.scored} of {scorecard.presets}); the
+            other {scorecard.presets - scorecard.scored} can&apos;t be scored.
+          </div>
         </div>
-        <div className="text-[10px]" style={{ color: C.muted }}>
-          scored: NASA&apos;s table says how the test ended ({scorecard.scored} of {scorecard.presets}); the
-          other {scorecard.presets - scorecard.scored} can&apos;t be scored.
-        </div>
-      </div>
+      ) : (
+        <p id="saffire-note" className="mt-2 text-[11px] leading-5" style={{ color: C.fg }}>
+          {SAFFIRE_NOTE}
+        </p>
+      )}
 
       {shown.length === 0 ? (
         <p className="mt-2 text-[11px]" style={{ color: C.muted }}>
@@ -350,13 +400,16 @@ export default function PresetsPanel({
               const tone: 'muted' | 'red' | 'green' =
                 p.nasaOutcome.includes('blow-off') ? 'red' :
                 p.nasaOutcome.includes('would not stay lit') ? 'green' : 'muted';
+              const off = cannotLoad(p);
               return (
                 <button
                   key={p.id}
                   data-preset-id={p.id}
+                  disabled={off}
+                  title={off ? p.rule : undefined}
                   onClick={() => { setSelected(p.id); setLighting(p.defaultLighting); }}
                   className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[11px] transition-colors ${
-                    on ? 'bg-line text-fg' : 'text-muted hover:bg-line/50 hover:text-fg'
+                    off ? 'cursor-not-allowed opacity-45' : on ? 'bg-line text-fg' : 'text-muted hover:bg-line/50 hover:text-fg'
                   }`}
                   style={on ? { borderLeft: '2px solid rgba(255,166,77,0.5)' } : {}}
                 >
@@ -368,10 +421,13 @@ export default function PresetsPanel({
                       {p.testId}: {p.summary}
                     </span>
                     <span className="block truncate text-[10px] tabular-nums" style={{ color: C.muted }}>
-                      {p.fidelityName} · {p.shapeName}
+                      {p.fidelityName} · {p.shapeName}{isSaffire(p) && !off ? ` · NASA: ${p.nasaOutcome}` : ''}
                     </span>
                   </span>
-                  <span className="shrink-0"><Tag value={p.nasaOutcome} tone={tone} /></span>
+                  <span className="shrink-0">
+                    {off ? <Tag value={/silicone/.test(p.rule) ? 'not modelled: no silicone' : 'not modelled'} /> :
+                      isSaffire(p) ? <Tag value="not scored" /> : <Tag value={p.nasaOutcome} tone={tone} />}
+                  </span>
                   {SCORECARD.has(p.testId) && (
                     <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
                       <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
@@ -394,12 +450,14 @@ export default function PresetsPanel({
                   live.outcomeCode === 0 || live.outcomeStep === 0
                     ? live.outcomeName
                     : `${live.outcomeName} (step ${live.outcomeStep})`)}
-                {row('NASA outcome', livePreset.nasaOutcome)}
+                {row(isSaffire(livePreset) ? 'NASA result' : 'NASA outcome', livePreset.nasaOutcome)}
                 {row('Match', (
                   <span data-verdict={verdict}>
                     <Tag value={verdict} tone={VERDICT_TONE[verdict]} />
-                    {VERDICT_NOTE[verdict] && (
-                      <span className="mt-0.5 block text-[10px]" style={{ color: C.muted }}>{VERDICT_NOTE[verdict]}</span>
+                    {(isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]) && (
+                      <span className="mt-0.5 block text-[10px]" style={{ color: C.muted }}>
+                        {isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]}
+                      </span>
                     )}
                   </span>
                 ))}
@@ -422,7 +480,14 @@ export default function PresetsPanel({
                 {row('Run', `${activePreset.runSteps} steps`)}
               </div>
 
-              {activeReadings && (
+              {isSaffire(activePreset) && (
+                <div className="space-y-1 text-[11px] leading-5">
+                  {row('NASA result', activePreset.nasaOutcome)}
+                  {row('Match', <span style={{ color: C.muted }}>not scored: {SAFFIRE_NOT_SCORED}</span>)}
+                </div>
+              )}
+
+              {activeReadings && !isSaffire(activePreset) && (
                 <div id="preset-readings" data-source={activeReadings.source} className="space-y-1 text-[11px] leading-5">
                   {row('NASA readings', (
                     <span style={{ color: C.muted }}>

@@ -59,6 +59,7 @@ export const READING = Object.freeze({
 } as const);
 export const LIGHT = Object.freeze({ DEFAULT: 0, OPPOSED: 1, CONCURRENT: 2 } as const);
 export const NO_READING = -1;          // FC_NO_READING
+export const SAFFIRE_FIRST = 1000;     // FC_PRESET_SAFFIRE_FIRST: the first Saffire preset id
 export const WIND_PER_CM_S = 0.012;    // FC_WIND_PER_CM_S: the working scale, not physics
 
 export type Mat = Values<typeof MAT>;
@@ -258,7 +259,11 @@ export class Engine {
   }
 
   // ---- Presets ---------------------------------------------------------------------
+  // BASS-II ids are 0 .. presetCount() - 1. The Saffire presets (flame-core
+  // 1.1.0) have ids of their own, SAFFIRE_FIRST .. SAFFIRE_FIRST +
+  // saffireCount() - 1; every preset method below takes them.
   presetCount(): number { return this.fc._fc_preset_count(); }
+  saffireCount(): number { return this.fc._fc_preset_saffire_count(); }
 
   // Everything a preset says about itself, as one object.
   preset(id: number): PresetInfo {
