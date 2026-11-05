@@ -22,10 +22,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Engine, NASA, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
+import scorecard from '../scorecard.json';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 /** How often the live block re-reads the engine. */
 const LIVE_MS = 250;
+
+// The precomputed scorecard (src/scripts/sandbox-scorecard.ts): each scored
+// test's result with its default lighting, run to the end of its timeline.
+const SCORECARD = new Map(scorecard.tests.map((t) => [t.testId, t.verdict as Verdict]));
+const SCORECARD_TITLE = 'Precomputed: this preset with its default lighting, run to the end of its timeline';
 
 // ---- Filter pickers ----------------------------------------------------
 
@@ -263,7 +269,18 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
         {select(f.outcome, 'outcome', OUTCOME_PICK)}
         {select(f.fidelity, 'fidelity', FIDELITY_PICK)}
       </div>
-  
+
+      {/* The honest scorecard: how many NASA-scored tests the engine matches. */}
+      <div id="preset-scorecard" className="mt-2 text-[11px] leading-5" title={SCORECARD_TITLE}>
+        <div className="tabular-nums" style={{ color: C.fg }}>
+          {scorecard.matched} of {scorecard.scored} scored tests match NASA ({scorecard.matchedTests.join(', ')})
+        </div>
+        <div className="text-[10px]" style={{ color: C.muted }}>
+          scored: NASA&apos;s table says how the test ended ({scorecard.scored} of {scorecard.presets}); the
+          other {scorecard.presets - scorecard.scored} can&apos;t be scored.
+        </div>
+      </div>
+
       {shown.length === 0 ? (
         <p className="mt-2 text-[11px]" style={{ color: C.muted }}>
           No presets match the current filters.
@@ -298,6 +315,11 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop, readingI
                     </span>
                   </span>
                   <span className="shrink-0"><Tag value={p.nasaOutcome} tone={tone} /></span>
+                  {SCORECARD.has(p.testId) && (
+                    <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
+                      <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
+                    </span>
+                  )}
                 </button>
               );
             })}
