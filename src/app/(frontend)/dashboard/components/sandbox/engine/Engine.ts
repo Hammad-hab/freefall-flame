@@ -60,6 +60,8 @@ export const READING = Object.freeze({
 export const LIGHT = Object.freeze({ DEFAULT: 0, OPPOSED: 1, CONCURRENT: 2 } as const);
 export const NO_READING = -1;          // FC_NO_READING
 export const SAFFIRE_FIRST = 1000;     // FC_PRESET_SAFFIRE_FIRST: the first Saffire preset id
+export const CFIG_VISUAL_DEMO = 2999;  // FC_CFIG_VISUAL_DEMO: the gas flame visual demo, not NASA-scored
+export const CFIG_RUN_STEPS = 1500;    // FC_CFIG_RUN_STEPS: the burner's flow is cut at this step
 export const WIND_PER_CM_S = 0.012;    // FC_WIND_PER_CM_S: the working scale, not physics
 
 export type Mat = Values<typeof MAT>;
@@ -138,6 +140,13 @@ export interface PresetStatus {
   finished: boolean;
   lighting: number;
   airCmS: number;
+}
+
+export interface CfigStatus {
+  id: number;
+  step: number;          // steps since loading
+  runSteps: number;      // CFIG_RUN_STEPS: the flow cut
+  finished: boolean;     // step >= runSteps
 }
 
 // Load the module and create the engine. Each call gives a separate,
@@ -324,6 +333,24 @@ export class Engine {
       lighting: fc._fc_preset_active_lighting(),
       airCmS: fc._fc_preset_air_at(id, step),
     };
+  }
+
+  // ---- CFI-G gas flames (flame-core 1.1.0) -------------------------------------------
+  // Only the visual demo is offered: CFIG_VISUAL_DEMO, a VISUAL DEMO, NOT
+  // NASA-SCORED (radiation off; no NASA facts). Loading it resets the world,
+  // paints the burner and plays its timeline: the igniter, then the flow cut
+  // at CFIG_RUN_STEPS. It stops any BASS-II or Saffire preset, and loading a
+  // preset (or reset()) stops it.
+  cfigLoad(id: number): boolean { return this.fc._fc_cfig_load(id) === 0; }
+  cfigStop(): void { this.fc._fc_cfig_stop(); }
+
+  // The CFI-G run playing now, or null. The engine keeps counting steps after
+  // the flow cut; finished means the cut has been reached.
+  cfigStatus(): CfigStatus | null {
+    const id = this.fc._fc_cfig_active();
+    if (id < 0) return null;
+    const step = this.fc._fc_cfig_step();
+    return { id, step, runSteps: CFIG_RUN_STEPS, finished: step >= CFIG_RUN_STEPS };
   }
 
   // ---- Snapshot -----------------------------------------------------------------------

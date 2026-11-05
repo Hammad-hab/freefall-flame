@@ -120,6 +120,8 @@ function matches(p: PresetInfo, f: FilterState): boolean {
 
 /** What the live block shows, read from the engine. */
 interface Live {
+  /** True for the gas flame demo (no wind, no outcome, no match). */
+  demo: boolean;
   id: number;
   step: number;
   runSteps: number;
@@ -132,9 +134,16 @@ interface Live {
 
 function readLive(engine: Engine): Live | null {
   const s = engine.presetStatus();
-  if (!s) return null;
+  if (!s) {
+    const d = engine.cfigStatus();
+    return d && {
+      demo: true, id: d.id, step: d.step, runSteps: d.runSteps, finished: d.finished, airCmS: 0,
+      outcomeCode: 0, outcomeName: '', outcomeStep: 0,
+    };
+  }
   const o = engine.outcome();
   return {
+    demo: false,
     id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
     outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
   };
@@ -149,7 +158,7 @@ function StatusLine({ live, playing }: { live: Live | null; playing: boolean }) 
   const run = live.finished ? 'finished' : playing ? 'running' : 'paused';
   return (
     <span className="tabular-nums" style={{ color: C.fg }}>
-      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.airCmS.toFixed(1)} cm/s &nbsp;·&nbsp; {run}
+      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.demo ? 'flow cut at ' + live.runSteps : `${live.airCmS.toFixed(1)} cm/s`} &nbsp;·&nbsp; {run}
     </span>
   );
 }
@@ -215,7 +224,14 @@ interface PresetsPanelProps {
   onFocusDone?: () => void;
   /** Links back to the Data Table. */
   links?: WorkspaceLinks;
+  /** Load and play the gas flame demo (CFI-G visual demo, not NASA-scored). */
+  onLoadDemo?: () => void;
 }
+
+// The CFI-G visual demo's label (engine project docs/15-gas-flames.md: radiation
+// off, hottest cell 3656 K against line 2's calculated flame temperature of 2719 K).
+const DEMO_LABEL =
+  'visual demo, not NASA-scored. Radiation off; temperatures run above a real flame (peak 3656 K vs 2719 K).';
 
 /** "Show in data table": a real link to ?tab=visualization&test=…, handled in the page on a plain click. */
 function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string }) {
@@ -237,7 +253,7 @@ function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string })
 }
 
 export default function PresetsPanel({
-  engine, playing, onLoad, onStop, readingIndex = null, datasetName = null, focus = null, onFocusDone, links,
+  engine, playing, onLoad, onStop, readingIndex = null, datasetName = null, focus = null, onFocusDone, links, onLoadDemo,
 }: PresetsPanelProps) {
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
@@ -560,6 +576,35 @@ export default function PresetsPanel({
               <p className="text-[11px]">Pick a row to load and run it.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* The gas flame demo: one CFI-G burner, shown for the look of a gas flame.
+          Not a preset and not scored; Burner stays out of the Build palette. */}
+      {onLoadDemo && (
+        <div id="cfig-demo" className="mt-3 flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: C.line }}>
+          <div>
+            <button
+              onClick={() => { onLoadDemo(); refresh(); }}
+              className="rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-line/50"
+              style={{ borderColor: C.line, color: C.fg }}
+            >
+              Gas flame demo
+            </button>
+          </div>
+          <p className="text-[10px] leading-4" style={{ color: C.muted }}>{DEMO_LABEL}</p>
+          <p className="text-[10px] leading-4" style={{ color: C.muted }}>Opens in the Temperature view: the flame is hot gas round the burner.</p>
+        </div>
+      )}
+      {live?.demo && (
+        <div id="preset-live" data-demo="cfig" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
+          <div className="flex items-baseline justify-between gap-2 text-[12px]">
+            <span className="font-medium" style={{ color: C.fg }}>Gas flame demo</span>
+            <StatusLine live={live} playing={playing} />
+          </div>
+          <div className="space-y-1 text-[11px] leading-5">
+            {row('What it is', 'visual demo, not NASA-scored')}
+          </div>
         </div>
       )}
     </div>
