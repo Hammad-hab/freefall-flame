@@ -116,7 +116,7 @@ export const TAB_REGISTRY: Record<
   sandbox: {
     label: 'Sandbox',
     icon: 'M9 3h6M10 3v6L4.5 18.5A2 2 0 006.4 21.5h11.2a2 2 0 001.9-3L14 9V3M7 15h10',
-    render: () => <Sandbox />,
+    render: (d) => <Sandbox dataset={d.dataset} rows={d.rows} />,
   },
 }
 

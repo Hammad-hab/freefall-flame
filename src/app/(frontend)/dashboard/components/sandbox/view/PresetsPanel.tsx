@@ -13,10 +13,15 @@
 //
 // The live block (status line, our outcome, NASA's outcome, the match) is
 // read from the engine four times a second while a preset is loaded.
+//
+// NASA's gas readings in the detail card come from the dashboard's dataset
+// row for the same test (nasaReadings.ts), not from the engine: the engine's
+// "no reading" marker (-1.0) is also a real CO reading in 11 tests.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Engine, NASA, FIDELITY, NO_READING, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { Engine, NASA, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
+import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 /** How often the live block re-reads the engine. */
@@ -149,11 +154,6 @@ const VERDICT_NOTE: Record<Verdict, string> = {
   'not scored': 'NASA states no outcome for this test',
 };
 
-/** A NASA reading, or "not recorded" where the table has none (FC_NO_READING). */
-function reading(v: number | undefined, digits: number, unit: string): string {
-  if (v === undefined || v === NO_READING || !Number.isFinite(v)) return 'not recorded';
-  return `${v.toFixed(digits)}${unit}`;
-}
 /** Small tinted tag. */
 function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue' | 'red' | 'green' }) {
   const toneStyle: Record<string, React.CSSProperties> = {
@@ -183,9 +183,13 @@ interface PresetsPanelProps {
   onLoad: (id: number, lighting: Light, play: boolean) => void;
   /** Called to abort the running preset's timeline; the world is left intact. */
   onStop?: () => void;
+  /** NASA's readings by test id, from the dashboard's dataset (null: use the engine's). */
+  readingIndex?: ReadingIndex | null;
+  /** The dataset's name, to say where the readings come from. */
+  datasetName?: string | null;
 }
 
-export default function PresetsPanel({ engine, playing, onLoad, onStop }: PresetsPanelProps) {
+export default function PresetsPanel({ engine, playing, onLoad, onStop, readingIndex = null, datasetName = null }: PresetsPanelProps) {
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
@@ -216,6 +220,7 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop }: Preset
     () => (selected === null ? null : catalogue.find((p) => p.id === selected) ?? null),
     [catalogue, selected]
   );
+  const activeReadings = activePreset ? readingsFor(readingIndex, activePreset.testId, activePreset.readings) : null;
 
   // The loaded preset (may differ from the selected row) and its verdict.
   const livePreset = useMemo(
@@ -333,13 +338,24 @@ export default function PresetsPanel({ engine, playing, onLoad, onStop }: Preset
                 {row('Fidelity', activePreset.fidelityName)}
                 {row('Rule', activePreset.rule || '—')}
                 {row('Run', `${activePreset.runSteps} steps`)}
-                {row('NASA readings',
-                  `O2 ${reading(activePreset.readings[0], 2, '%')} → ${reading(activePreset.readings[1], 2, '%')} / ` +
-                  `CO2 ${reading(activePreset.readings[2], 2, '%')} → ${reading(activePreset.readings[3], 2, '%')} / ` +
-                  `CO ${reading(activePreset.readings[4], 1, ' ppm')} → ${reading(activePreset.readings[5], 1, ' ppm')} / ` +
-                  `CO2/O2 ${reading(activePreset.readings[6], 2, '')}`
-                )}
               </div>
+
+              {activeReadings && (
+                <div id="preset-readings" data-source={activeReadings.source} className="space-y-1 text-[11px] leading-5">
+                  {row('NASA readings', (
+                    <span style={{ color: C.muted }}>
+                      {activeReadings.source === 'dataset'
+                        ? `from ${datasetName ?? 'the dataset'}, test ${activePreset.testId}`
+                        : 'from the engine\'s preset table (no dataset row for this test)'}
+                    </span>
+                  ))}
+                  {row('O2 before → after', `${formatReading(activeReadings.readings[0], 2, '%')} → ${formatReading(activeReadings.readings[1], 2, '%')}`)}
+                  {row('CO2 before → after', `${formatReading(activeReadings.readings[2], 2, '%')} → ${formatReading(activeReadings.readings[3], 2, '%')}`)}
+                  {row('CO before → after', `${formatReading(activeReadings.readings[4], 1, ' ppm')} → ${formatReading(activeReadings.readings[5], 1, ' ppm')}`)}
+                  {row('CO2 made per O2 used', formatReading(activeReadings.readings[6], 2, ''))}
+                  {activeReadings.flags && row('Flags', activeReadings.flags)}
+                </div>
+              )}
   
               <div className="flex flex-wrap gap-2">
                 {[

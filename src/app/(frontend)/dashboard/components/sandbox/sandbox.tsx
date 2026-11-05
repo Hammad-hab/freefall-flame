@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
 import { Engine, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
@@ -8,6 +9,7 @@ import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './vi
 import PresetsPanel from './view/PresetsPanel';
 import { fitCell } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
+import { buildReadingIndex } from './view/nasaReadings';
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TABS = [{ id: 'build', label: 'Build' }, { id: 'world', label: 'World' }, { id: 'presets', label: 'Presets' }];
@@ -17,8 +19,18 @@ const WIDE_PANE_PX = 768;
 /** In a narrow pane the canvas may take this share of the pane's height. */
 const NARROW_HEIGHT_SHARE = 0.7;
 
-export default function Page() {
+interface SandboxProps {
+  /** The dashboard's dataset: NASA's readings for each preset come from its row for the same test. */
+  dataset?: DatasetMeta;
+  rows?: DataRow[];
+}
+
+export default function Page({ dataset, rows }: SandboxProps) {
   const [engine, setEngine] = useState<Engine | null>(null);
+  const readingIndex = useMemo(
+    () => (dataset && rows ? buildReadingIndex(dataset.columns, rows) : null),
+    [dataset, rows],
+  );
   const [presetPlaying, setPresetPlaying] = useState(false);
   const [behind, setBehind] = useState(false);
   const [cell, setCell] = useState(4);
@@ -155,7 +167,10 @@ export default function Page() {
               {c.tab === 'build' && <BuildPanel engine={engine} c={c} />}
               {c.tab === 'world' && <WorldPanel engine={engine} presetPlaying={presetPlaying} />}
               {c.tab === 'presets' && (
-                <PresetsPanel engine={engine} playing={c.playing} onLoad={loadPreset} onStop={stopPreset} />
+                <PresetsPanel
+                  engine={engine} playing={c.playing} onLoad={loadPreset} onStop={stopPreset}
+                  readingIndex={readingIndex} datasetName={dataset?.name ?? null}
+                />
               )}
             </div>
           </aside>
