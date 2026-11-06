@@ -11,6 +11,7 @@ import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, rank, type PsiCatalogue, type Ps
 import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
 import { Assumptions, RankingList, WeightsPanel } from './Ranking'
+import AiSummary from './AiSummary'
 import { C } from '../ui/chart-theme'
 
 const catalogue = data as PsiCatalogue
@@ -64,6 +65,7 @@ export default function Investigations() {
   }
 
   const ranked = useMemo(() => rank(catalogue.investigations, weights), [weights])
+  const isDefault = CRITERIA.every((c) => weights[c.key] === DEFAULT_WEIGHTS[c.key])
   const byId = useMemo(() => new Map(catalogue.investigations.map((i) => [i.id, i])), [])
   const ordered = ranked ? ranked.map((r) => ({ inv: byId.get(r.id)!, r })) : catalogue.investigations.map((inv) => ({ inv, r: null }))
 
@@ -81,7 +83,18 @@ export default function Investigations() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-[1fr_1fr]">
-        <RankingList ranked={ranked} onPick={pick} />
+        <div className="space-y-4">
+          <RankingList ranked={ranked} onPick={pick} />
+          <div id="psi-overall" className="space-y-2">
+            <AiSummary id="overall" auto title="the ranking" />
+            {!isDefault && ranked && (
+              <p className="text-[11px]" style={{ color: C.muted }}>
+                The summary above is for equal weights. With your weights the top three are{' '}
+                {ranked.slice(0, 3).map((r) => `${r.name} (${r.score})`).join(', ')}.
+              </p>
+            )}
+          </div>
+        </div>
         <div className="space-y-4">
           <WeightsPanel weights={weights} onChange={changeWeights} />
           <Assumptions reference={catalogue.reference} />
@@ -99,7 +112,12 @@ export default function Investigations() {
                 <span className="block text-[10px]" style={{ color: C.muted }}>rank {r.rank}</span>
               </span>
             )}
-            footer={<Criteria inv={inv} />}
+            footer={(
+              <>
+                <Criteria inv={inv} />
+                <AiSummary id={inv.id} title={inv.name} />
+              </>
+            )}
           />
         ))}
       </div>

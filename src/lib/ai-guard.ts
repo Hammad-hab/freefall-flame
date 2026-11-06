@@ -149,7 +149,7 @@ export class LruCache<V> {
 }
 
 /** The cache key: a hash of everything the model would be sent. */
-export function cacheKey(kind: 'interpretation' | 'answer', payload: unknown): string {
+export function cacheKey(kind: 'interpretation' | 'answer' | 'psi', payload: unknown): string {
   return createHash('sha256')
     .update(JSON.stringify({ v: PROMPT_VERSION, model: AI_MODEL, kind, payload }))
     .digest('hex')

@@ -74,6 +74,24 @@ Flame 0. A score is relevance to habitat fire safety, not fire risk.
 criterion is 0-2 with a reason, the ranking with equal weights, reweighting,
 and that moving a slider reorders the list on screen.
 
+## AI summaries
+
+`/api/psi-interpretation?id=<investigation>` (or `id=overall`, the ranking at
+equal weights) gives a plain-language summary. The model is sent only that
+card's facts from psi.json (`psiFacts()` in `src/lib/psi-ai.ts`). If the
+answer contains any number that is not in those facts, it is not shown; the
+plain summary built from the same facts is shown instead, with a note. It
+uses the same guard as the dataset interpretation: the fixed model, 10 new
+requests per visitor per 10 minutes, 300 paid calls a day, and the in-memory
+cache (one paid call per summary per server process).
+
+The tab asks for the overall summary at once (1 paid call on the first
+visit after a server start) and for a card's summary only when its "Explain"
+button is pressed (1 each, at most 14). With custom weights there is no AI
+call: a plain sentence gives the top three. Checked on 6 Nov 2026 with 3 real
+calls (overall, BASS-II, FLEX): $0.0006642 together, every answer passed the
+number check, and a repeat came from the cache.
+
 ## Choices
 
 - SPICE's air coflow range leaves out the 8 slightly negative readings the

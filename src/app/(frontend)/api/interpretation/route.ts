@@ -20,8 +20,7 @@ import {
   isKnown,
   visitorId,
 } from '@/lib/ai-guard'
-
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+import { callModel } from '@/lib/ai-call'
 
 const INTERPRET_SYSTEM = [
   'You are a careful scientific data interpreter for a fire-safety dashboard.',
@@ -48,34 +47,6 @@ STRICT RULES:
 6. Cite research claims using the paper titles and years provided. Do not fabricate citations.
 7. Keep the answer under 120 words, structured as: What the data shows / What it may mean / What remains uncertain.
 8. Be concise; use short sentences, not long paragraphs.`
-
-/** One chat call with the fixed model. Null on any failure: AI is an enhancement, never a hard dependency. */
-async function callModel(apiKey: string, system: string, user: string): Promise<string | null> {
-  try {
-    const upstream = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        usage: { include: true }, // OpenRouter adds the call's cost to `usage`
-      }),
-    })
-    const data = (await upstream.json().catch(() => null)) as {
-      choices?: Array<{ message?: { content?: string | null } }>
-      usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number }
-    } | null
-    // One line per paid call, so spending can be checked in the server log.
-    const u = data?.usage
-    console.log(
-      `[ai] ${AI_MODEL} HTTP ${upstream.status}: ${u?.prompt_tokens ?? '?'} prompt + ${u?.completion_tokens ?? '?'} completion tokens` +
-        (typeof u?.cost === 'number' ? `, cost ${u.cost} credits (USD)` : ''),
-    )
-    return upstream.ok && data?.choices?.[0]?.message?.content ? data.choices[0].message.content : null
-  } catch {
-    return null
-  }
-}
 
 interface FallbackSection {
   observations: string[]
