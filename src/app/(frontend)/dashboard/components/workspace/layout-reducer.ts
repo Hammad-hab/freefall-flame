@@ -44,6 +44,7 @@ export interface LayoutState {
 
 export type LayoutAction =
   | { type: 'openTab'; tab: TabId }
+  | { type: 'showTab'; tab: TabId }
   | { type: 'activateTab'; paneId: NodeId; tab: TabId }
   | { type: 'closeTab'; paneId: NodeId; tab: TabId }
   | { type: 'focusPane'; paneId: NodeId }
@@ -82,6 +83,8 @@ export function layoutReducer(state: LayoutState, action: LayoutAction): LayoutS
   switch (action.type) {
     case 'openTab':
       return openTab(state, action.tab)
+    case 'showTab':
+      return showTab(state, action.tab)
     case 'activateTab':
       return activateTab(state, action.paneId, action.tab)
     case 'closeTab':
@@ -124,6 +127,25 @@ function openTab(state: LayoutState, tab: TabId): LayoutState {
     nodes: { ...state.nodes, [paneId]: updated },
     focusedPane: paneId,
   }
+}
+
+/**
+ * Bring a tab into view for a link: if a pane already has it, activate it
+ * there (so a link never opens a second copy, e.g. a second sandbox engine);
+ * otherwise open it like openTab.
+ */
+function showTab(state: LayoutState, tab: TabId): LayoutState {
+  const leaves = Object.values(state.nodes).filter((n): n is LeafNode => n.kind === 'leaf')
+  const focused = state.focusedPane ? state.nodes[state.focusedPane] : null
+  const holder =
+    focused && focused.kind === 'leaf' && focused.tabs.includes(tab)
+      ? focused
+      : leaves.find((n) => n.tabs.includes(tab) && isReachable(state, n.id))
+  return holder ? activateTab(state, holder.id, tab) : openTab(state, tab)
+}
+
+function isReachable(state: LayoutState, id: NodeId): boolean {
+  return id === state.root || findParent(state, id) !== null
 }
 
 function activateTab(state: LayoutState, paneId: NodeId, tab: TabId): LayoutState {

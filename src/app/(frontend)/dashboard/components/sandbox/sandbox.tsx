@@ -1,13 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
-import { Engine, loadEngine, type Light } from './engine/Engine';
+import { Engine, CFIG_VISUAL_DEMO, FIDELITY, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
 import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
 import PresetsPanel from './view/PresetsPanel';
 import { fitCell } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
+import { buildReadingIndex } from './view/nasaReadings';
+import type { WorkspaceLinks } from '../workspace/links';
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TABS = [{ id: 'build', label: 'Build' }, { id: 'world', label: 'World' }, { id: 'presets', label: 'Presets' }];
@@ -17,8 +20,25 @@ const WIDE_PANE_PX = 768;
 /** In a narrow pane the canvas may take this share of the pane's height. */
 const NARROW_HEIGHT_SHARE = 0.7;
 
-export default function Page() {
+/** The playing timeline: a preset's, or the gas flame demo's (stopped at its flow cut), or null. */
+function timeline(e: Engine): { step: number; runSteps: number; finished: boolean } | null {
+  return e.presetStatus() ?? e.cfigStatus();
+}
+
+interface SandboxProps {
+  /** The dashboard's dataset: NASA's readings for each preset come from its row for the same test. */
+  dataset?: DatasetMeta;
+  rows?: DataRow[];
+  /** Links with the Data Table: a request to load a test's preset, and the way back to its row. */
+  links?: WorkspaceLinks;
+}
+
+export default function Page({ dataset, rows, links }: SandboxProps) {
   const [engine, setEngine] = useState<Engine | null>(null);
+  const readingIndex = useMemo(
+    () => (dataset && rows ? buildReadingIndex(dataset.columns, rows) : null),
+    [dataset, rows],
+  );
   const [presetPlaying, setPresetPlaying] = useState(false);
   const [behind, setBehind] = useState(false);
   const [cell, setCell] = useState(4);
@@ -41,7 +61,7 @@ export default function Page() {
   useEffect(() => {
     if (!engine) return;
     const id = setInterval(() => {
-      const s = engine.presetStatus();
+      const s = timeline(engine);
       setPresetPlaying(!!s && !s.finished);
     }, 200);
     return () => clearInterval(id);
@@ -66,11 +86,23 @@ export default function Page() {
     return () => { ro.disconnect(); window.removeEventListener('resize', fit); };
   }, [engine]);
 
-  // Steps left in the playing preset's timeline (Infinity when none is playing).
+  // Steps left in the playing timeline, a preset's or the gas flame demo's
+  // (Infinity when none is playing).
   const stepsLeft = useCallback((e: Engine) => {
-    const s = e.presetStatus();
+    const s = timeline(e);
     return s ? Math.max(0, s.runSteps - s.step) : Infinity;
   }, []);
+
+  // The gas flame demo (CFI-G visual demo, not NASA-scored): load and play it,
+  // in the Temperature view, because a gas flame is hot gas, not a material
+  // (the Material view shows only the burner).
+  const loadDemo = useCallback(() => {
+    if (!engine) return;
+    engine.cfigLoad(CFIG_VISUAL_DEMO);
+    clock.current.reset();
+    cr.current.setView('temperature');
+    cr.current.setPlaying(true);
+  }, [engine]);
 
   // Load a preset. "Load & Run" plays it; "Load (standby)" only loads it.
   const loadPreset = useCallback((id: number, lighting: Light, play: boolean) => {
@@ -79,6 +111,24 @@ export default function Page() {
     clock.current.reset();
     cr.current.setPlaying(play);
   }, [engine]);
+
+  // A link from the Data Table ("Open in sandbox", or ?tab=sandbox&preset=B14):
+  // select that test's preset in the Presets tab and load it in standby, with
+  // its default lighting.
+  const [focus, setFocus] = useState<{ id: number | null; testId: string; nonce: number } | null>(null);
+  const request = links?.sandboxRequest ?? null;
+  const requestDone = links?.sandboxRequestDone;
+  useEffect(() => {
+    if (!engine || !request) return;
+    // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
+    const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
+    let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
+    if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
+    if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
+    setFocus({ id, testId: request.testId, nonce: request.nonce });
+    cr.current.setTab('presets');
+    requestDone?.();
+  }, [engine, request, requestDone, loadPreset]);
 
   const stopPreset = useCallback(() => {
     engine?.stopPreset();
@@ -100,8 +150,7 @@ export default function Page() {
       behindRef.current = clock.current.behind;
       setBehind(clock.current.behind);
     }
-    const s = engine.presetStatus();
-    if (s?.finished) ctl.setPlaying(false);
+    if (timeline(engine)?.finished) ctl.setPlaying(false);
   }, [engine, stepsLeft]);
 
   const onStep = useCallback(() => {
@@ -155,7 +204,12 @@ export default function Page() {
               {c.tab === 'build' && <BuildPanel engine={engine} c={c} />}
               {c.tab === 'world' && <WorldPanel engine={engine} presetPlaying={presetPlaying} />}
               {c.tab === 'presets' && (
-                <PresetsPanel engine={engine} playing={c.playing} onLoad={loadPreset} onStop={stopPreset} />
+                <PresetsPanel
+                  engine={engine} playing={c.playing} onLoad={loadPreset} onStop={stopPreset}
+                  readingIndex={readingIndex} datasetName={dataset?.name ?? null}
+                  focus={focus} onFocusDone={() => setFocus(null)} links={links}
+                  onLoadDemo={loadDemo}
+                />
               )}
             </div>
           </aside>

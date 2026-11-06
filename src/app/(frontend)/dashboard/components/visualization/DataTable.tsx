@@ -7,9 +7,15 @@
  * their original source text (e.g. ">500") instead of being hidden or replaced
  * with a blank, so a reader can see exactly what the source sheet said.
  */
+import { useEffect, useRef } from "react";
 import type { ColumnResolution, ParsedRow, ReadingClass } from "@/lib/combustion";
-import type { DataRow, DatasetMeta } from "@/lib/types";
+import type { DataRow } from "@/lib/types";
 import { C, panelCls, panelStyle } from "../ui/chart-theme";
+import { isPlainClick, type WorkspaceLinks } from "../workspace/links";
+import scorecard from "../sandbox/scorecard.json";
+
+/** Test ids that have a sandbox preset (written with the scorecard by src/scripts/sandbox-scorecard.ts). */
+const PRESET_TESTS = new Set<string>(scorecard.presetTestIds);
 
 const READING_LABEL: Record<ReadingClass, string> = {
   valid: "valid",
@@ -25,11 +31,24 @@ export function DataTable({
   filtered,
   rows,
   resolutions,
+  all,
+  links,
 }: {
   filtered: ParsedRow[];
   rows: DataRow[];
   resolutions: Record<string, ColumnResolution>;
+  /** Every parsed row, so a linked test is pinned even when the filters hide it. */
+  all?: ParsedRow[];
+  /** Links to the sandbox, and the test whose row to pin (from the sandbox's link back). */
+  links?: WorkspaceLinks;
 }) {
+  const linkedTest = links?.tableTest ?? null;
+  const pinned = linkedTest ? (all ?? filtered).find((r) => r.testNo === linkedTest) ?? null : null;
+  const shown = [...(pinned ? [pinned] : []), ...filtered.filter((r) => r !== pinned).slice(0, 10)];
+  const pinnedRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    pinnedRef.current?.scrollIntoView?.({ block: "center" });
+  }, [linkedTest]);
   const col = (role: string) => resolutions[role]?.column ?? null;
   const testNoCol = col("testNo");
   const materialCol = col("material");
@@ -87,6 +106,13 @@ export function DataTable({
         readings appear as amber markers with their original source text; they are excluded from all
         statistics above.
       </p>
+      {linkedTest && (
+        <p id="table-linked" className="mt-1 text-[11px]" style={{ color: pinned ? C.amber : C.muted }}>
+          {pinned
+            ? `Test ${linkedTest}, linked from the sandbox, is pinned at the top.`
+            : `Test ${linkedTest}, linked from the sandbox, has no row in this dataset.`}
+        </p>
+      )}
       <div className="mt-4 overflow-x-auto rounded-xl border" style={{ borderColor: C.line }}>
         <table className="w-max min-w-full border-collapse text-left text-[11px]">
           <thead>
@@ -96,11 +122,22 @@ export function DataTable({
                   {c.label}
                 </th>
               ))}
+              {links && (
+                <th className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
+                  Sandbox
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {filtered.slice(0, 10).map((r, i) => (
-              <tr key={i} className="border-t" style={{ borderColor: C.line }}>
+            {shown.map((r, i) => (
+              <tr
+                key={r === pinned ? "pinned" : i}
+                ref={r === pinned ? pinnedRef : undefined}
+                data-linked-test={r === pinned ? linkedTest ?? undefined : undefined}
+                className="border-t"
+                style={r === pinned ? { borderColor: C.line, background: `${C.amber}1f`, outline: `1px solid ${C.amber}88` } : { borderColor: C.line }}
+              >
                 {testNoCol && (
                   <td className="whitespace-nowrap px-3 py-1.5 tabular-nums" style={{ color: C.fg }}>
                     {r.testNo ?? `—`}
@@ -154,6 +191,27 @@ export function DataTable({
                 {piCol && (
                   <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.muted }}>
                     {r.pi ?? "—"}
+                  </td>
+                )}
+                {links && (
+                  <td className="whitespace-nowrap px-3 py-1.5">
+                    {r.testNo && PRESET_TESTS.has(r.testNo) ? (
+                      <a
+                        href={links.sandboxHref(r.testNo)}
+                        data-open-in-sandbox={r.testNo}
+                        onClick={(e) => {
+                          if (!isPlainClick(e)) return;
+                          e.preventDefault();
+                          links.openInSandbox(r.testNo!);
+                        }}
+                        className="underline decoration-dotted underline-offset-2 hover:opacity-80"
+                        style={{ color: C.amber }}
+                      >
+                        Open in sandbox
+                      </a>
+                    ) : (
+                      <span style={{ color: C.muted }}>—</span>
+                    )}
                   </td>
                 )}
               </tr>

@@ -21,8 +21,9 @@ import Visualization from '../visualization/Visualization'
 import InterpretationPanel from '../interpretation/InterpretationPanel'
 import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
+import type { WorkspaceLinks } from './links'
 
-/** Serializable props passed from the server component to the workspace. */
+/** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
   dataset: DatasetMeta
   rows: DataRow[]
@@ -30,6 +31,7 @@ export interface TabData {
   shares: ShareResult
   datasetId: string
   datasetName: string
+  links?: WorkspaceLinks
 }
 
 function OverviewContent({ data }: { data: TabData }) {
@@ -68,7 +70,7 @@ function EvidenceContent({ data }: { data: TabData }) {
 }
 
 function VisualizationContent({ data }: { data: TabData }) {
-  return <Visualization dataset={data.dataset} rows={data.rows} />
+  return <Visualization dataset={data.dataset} rows={data.rows} links={data.links} />
 }
 
 function AiSummaryContent({ data }: { data: TabData }) {
@@ -116,7 +118,7 @@ export const TAB_REGISTRY: Record<
   sandbox: {
     label: 'Sandbox',
     icon: 'M9 3h6M10 3v6L4.5 18.5A2 2 0 006.4 21.5h11.2a2 2 0 001.9-3L14 9V3M7 15h10',
-    render: () => <Sandbox />,
+    render: (d) => <Sandbox dataset={d.dataset} rows={d.rows} links={d.links} />,
   },
 }
 
