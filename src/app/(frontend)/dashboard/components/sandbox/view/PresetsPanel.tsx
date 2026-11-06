@@ -195,7 +195,7 @@ function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue'
   };
   return (
     <span
-      className="inline-block rounded-[3px] px-1.5 py-0.5 text-[10px] tabular-nums"
+      className="inline-block max-w-full truncate rounded-[3px] px-1.5 py-0.5 align-middle text-[10px] tabular-nums"
       style={toneStyle[tone]}
     >
       {value}
@@ -436,19 +436,23 @@ export default function PresetsPanel({
                     <span className="block truncate font-medium" style={{ color: C.fg }}>
                       {p.testId}: {p.summary}
                     </span>
-                    <span className="block truncate text-[10px] tabular-nums" style={{ color: C.muted }}>
-                      {p.fidelityName} · {p.shapeName}{isSaffire(p) && !off ? ` · NASA: ${p.nasaOutcome}` : ''}
+                    <span className="flex items-center gap-1.5 truncate text-[10px] tabular-nums" style={{ color: C.muted }}>
+                      <span className="truncate">
+                        {p.fidelityName} · {p.shapeName}{isSaffire(p) && !off ? ` · NASA: ${p.nasaOutcome}` : ''}
+                      </span>
+                      {/* The scorecard tag sits on this second line, so the title keeps its room. */}
+                      {SCORECARD.has(p.testId) && (
+                        <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
+                          <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
+                        </span>
+                      )}
                     </span>
                   </span>
-                  <span className="shrink-0">
+                  {/* NASA's words can be long ("went out as the flow was lowered"): cap the tag, full text on hover. */}
+                  <span className="min-w-0 max-w-[8.5rem] shrink-0 truncate" title={off ? p.rule : isSaffire(p) ? SAFFIRE_NOT_SCORED : p.nasaOutcome}>
                     {off ? <Tag value={/silicone/.test(p.rule) ? 'not modelled: no silicone' : 'not modelled'} /> :
                       isSaffire(p) ? <Tag value="not scored" /> : <Tag value={p.nasaOutcome} tone={tone} />}
                   </span>
-                  {SCORECARD.has(p.testId) && (
-                    <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
-                      <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
-                    </span>
-                  )}
                 </button>
               );
             })}
