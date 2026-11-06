@@ -6,7 +6,7 @@ import GridCanvas from './view/GridCanvas';
 import { Engine, CFIG_VISUAL_DEMO, FIDELITY, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
 import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
-import PresetsPanel from './view/PresetsPanel';
+import PresetsPanel, { type PresetFocus } from './view/PresetsPanel';
 import { fitCell } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
 import { buildReadingIndex } from './view/nasaReadings';
@@ -112,23 +112,31 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     cr.current.setPlaying(play);
   }, [engine]);
 
-  // A link from the Data Table ("Open in sandbox", or ?tab=sandbox&preset=B14):
-  // select that test's preset in the Presets tab and load it in standby, with
-  // its default lighting.
-  const [focus, setFocus] = useState<{ id: number | null; testId: string; nonce: number } | null>(null);
+  // A link from another tab:
+  //  - a preset ("Open in sandbox", ?preset=B14): select it in the Presets tab
+  //    and load it in standby, with its default lighting;
+  //  - a group (?group=saffire, from the PSI catalogue): show that group;
+  //  - the gas flame demo (?demo=cfig, from the CFI-G card): play it.
+  const [focus, setFocus] = useState<PresetFocus | null>(null);
   const request = links?.sandboxRequest ?? null;
   const requestDone = links?.sandboxRequestDone;
   useEffect(() => {
     if (!engine || !request) return;
-    // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
-    const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
-    let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
-    if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
-    if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
-    setFocus({ id, testId: request.testId, nonce: request.nonce });
+    if (request.kind === 'preset') {
+      // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
+      const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
+      let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
+      if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
+      if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
+      setFocus({ id, testId: request.testId, nonce: request.nonce });
+    } else if (request.kind === 'group') {
+      setFocus({ group: request.group, nonce: request.nonce });
+    } else {
+      loadDemo();
+    }
     cr.current.setTab('presets');
     requestDone?.();
-  }, [engine, request, requestDone, loadPreset]);
+  }, [engine, request, requestDone, loadPreset, loadDemo]);
 
   const stopPreset = useCallback(() => {
     engine?.stopPreset();

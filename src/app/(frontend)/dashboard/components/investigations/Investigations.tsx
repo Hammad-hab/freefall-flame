@@ -12,6 +12,7 @@ import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
 import { Assumptions, RankingList, WeightsPanel } from './Ranking'
 import AiSummary from './AiSummary'
+import { linkProps, type WorkspaceLinks } from '../workspace/links'
 import { C } from '../ui/chart-theme'
 
 const catalogue = data as PsiCatalogue
@@ -56,8 +57,40 @@ function Criteria({ inv }: { inv: PsiInvestigation }) {
   )
 }
 
-export default function Investigations() {
+/** Where an investigation's card leads in this dashboard (links.ts). */
+function CardLinks({ id, links }: { id: string; links: WorkspaceLinks }) {
+  const items: { label: string; href: string; go: () => void; key: string }[] = []
+  if (id === 'bass-ii') {
+    items.push({ key: 'table', label: 'BASS-II charts and Data Table', href: links.visualizationHref(), go: links.openVisualization })
+    items.push({ key: 'bass', label: 'BASS-II presets in the sandbox', href: links.groupHref('bass'), go: () => links.openGroup('bass') })
+  }
+  if (id === 'saffire-i-iii') items.push({ key: 'saffire', label: 'Saffire presets in the sandbox', href: links.groupHref('saffire'), go: () => links.openGroup('saffire') })
+  if (id === 'cfi-g') items.push({ key: 'demo', label: 'Gas flame demo in the sandbox (visual demo, not NASA-scored)', href: links.demoHref(), go: links.openDemo })
+  if (!items.length) return null
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+      {items.map((l) => (
+        <a key={l.key} {...linkProps(l.href, l.go)} data-card-goes={l.key} className="underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: C.amber }}>
+          {l.label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
+export default function Investigations({ links }: { links?: WorkspaceLinks }) {
   const [weights, setWeights] = useState<Weights>({ ...DEFAULT_WEIGHTS })
+  // A link asked for one card (?card=flex, or "About these tests" in the sandbox): bring it into view.
+  const [focused, setFocused] = useState<string | null>(null)
+  const cardNonce = links?.card?.nonce
+  useEffect(() => {
+    const id = links?.card?.id
+    if (!id) return
+    setFocused(id)
+    requestAnimationFrame(() => document.getElementById(`psi-${id}`)?.scrollIntoView({ block: 'start' }))
+    // Only a new request (a new nonce) moves the view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardNonce])
   useEffect(() => setWeights(loadWeights()), [])
   const changeWeights = (w: Weights) => {
     setWeights(w)
@@ -112,9 +145,11 @@ export default function Investigations() {
                 <span className="block text-[10px]" style={{ color: C.muted }}>rank {r.rank}</span>
               </span>
             )}
+            focused={focused === inv.id}
             footer={(
               <>
                 <Criteria inv={inv} />
+                {links && <CardLinks id={inv.id} links={links} />}
                 <AiSummary id={inv.id} title={inv.name} />
               </>
             )}

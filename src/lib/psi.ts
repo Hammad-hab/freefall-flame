@@ -81,7 +81,7 @@ export const HABITAT_REFERENCE: HabitatReference = {
     label: 'Exploration atmosphere',
     text: '32-34% O2 at 8.0-8.2 psia (0.54-0.56 atm). The Exploration Atmospheres Working Group recommended 8.0 psia / 32%; 8.2 psia / 34% is a proposed refinement.',
     source: 'Norcross et al. 2013, "Effects of the 8 psia / 32% O2 Atmosphere on the Human in the Spaceflight Environment", NTRS 20130013505',
-    rule: 'at least 30% O2 or at most 0.7 atm somewhere in the table',
+    rule: 'the table goes to at least 30% O2 or down to at most 0.7 atm',
     /** Criterion b counts a table as reaching it at this oxygen or more ... */
     minO2Pct: 30,
     /** ... or at this pressure or less. */

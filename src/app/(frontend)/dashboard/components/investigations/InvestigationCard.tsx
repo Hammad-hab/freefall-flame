@@ -38,8 +38,11 @@ export default function InvestigationCard({
   inv,
   header,
   footer,
+  focused = false,
 }: {
   inv: PsiInvestigation
+  /** Highlighted because a link asked for this card. */
+  focused?: boolean
   /** Extra content beside the title (the ranking adds its score here). */
   header?: ReactNode
   /** Extra content at the end (the ranking's criteria, the AI summary, links). */
@@ -50,7 +53,13 @@ export default function InvestigationCard({
       ? `${inv.tests} (${inv.granularity})`
       : `${inv.rows} rows (${inv.granularity}); no single tests in the table`
   return (
-    <article id={`psi-${inv.id}`} data-psi={inv.id} className={`${panelCls} flex flex-col gap-3`} style={panelStyle}>
+    <article
+      id={`psi-${inv.id}`}
+      data-psi={inv.id}
+      data-focused={focused || undefined}
+      className={`${panelCls} flex scroll-mt-4 flex-col gap-3`}
+      style={focused ? { ...panelStyle, borderColor: C.amber } : panelStyle}
+    >
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[15px] font-medium leading-tight" style={{ color: C.fg }}>{inv.name}</h3>
@@ -63,7 +72,8 @@ export default function InvestigationCard({
 
       <div className="space-y-0.5 text-[11px]">
         <Row label="What was burned">{inv.fuels}</Row>
-        <Row label="Oxygen">{inv.o2Pct === 'not in table' ? 'not in the table' : `${inv.o2Pct} %`}</Row>
+        {/* "13.6-22.2" -> "13.6-22.2 %"; "21 (air)" -> "21 % (air)". */}
+        <Row label="Oxygen">{inv.o2Pct === 'not in table' ? 'not in the table' : inv.o2Pct.replace(/^([\d.]+(?:-[\d.]+)?)/, '$1 %')}</Row>
         <Row label="Pressure">{inv.pressure === 'not in table' ? 'not in the table' : inv.pressure}</Row>
         <Row label="Flow">{inv.flowCmS === 'not in table' ? 'not in the table' : /\d/.test(inv.flowCmS) && !/mg/.test(inv.flowCmS) ? `${inv.flowCmS} cm/s` : inv.flowCmS}</Row>
         <Row label="Tests">{testsText}</Row>

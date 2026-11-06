@@ -26,7 +26,7 @@ import { Engine, NASA, FIDELITY, SAFFIRE_FIRST, type Light, LIGHT, type PresetIn
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
-import { isPlainClick, type WorkspaceLinks } from '../../workspace/links';
+import { isPlainClick, linkProps, type WorkspaceLinks } from '../../workspace/links';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 /** How often the live block re-reads the engine. */
@@ -205,6 +205,29 @@ function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue'
 
 // ---- Panel -------------------------------------------------------------
 
+/** What a link asks the panel to show: a preset by test id, or a group (nonce: new per click). */
+export type PresetFocus =
+  | { id: number | null; testId: string; group?: undefined; nonce: number }
+  | { group: Group; id?: undefined; testId?: undefined; nonce: number };
+
+// The PSI catalogue card for each group, and for the gas flame demo (CFI-G).
+const GROUP_CARD: Record<Group, string> = { bass: 'bass-ii', saffire: 'saffire-i-iii' };
+const DEMO_CARD = 'cfi-g';
+
+/** "About these tests": a link to the investigation's card in the PSI catalogue. */
+function CardLink({ links, card, children }: { links: WorkspaceLinks; card: string; children: React.ReactNode }) {
+  return (
+    <a
+      {...linkProps(links.cardHref(card), () => links.showCard(card))}
+      data-card-link={card}
+      className="text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
+      style={{ color: C.amber }}
+    >
+      {children}
+    </a>
+  );
+}
+
 interface PresetsPanelProps {
   engine: Engine;
   /** Whether the sandbox is playing (for the status line). */
@@ -218,8 +241,8 @@ interface PresetsPanelProps {
   readingIndex?: ReadingIndex | null;
   /** The dataset's name, to say where the readings come from. */
   datasetName?: string | null;
-  /** A link asked for this test's preset (id null: no preset has that test id). */
-  focus?: { id: number | null; testId: string; nonce: number } | null;
+  /** A link asked for a test's preset (id null: no preset has that test id), or for a group. */
+  focus?: PresetFocus | null;
   /** Called once the panel has acted on `focus`, so reopening the tab doesn't repeat it. */
   onFocusDone?: () => void;
   /** Links back to the Data Table. */
@@ -296,6 +319,7 @@ export default function PresetsPanel({
   useEffect(() => {
     if (!focus) return;
     onFocusDone?.();
+    if (focus.group) { setMissingTest(null); setGroup(focus.group); setF({ search: '', material: 'all', outcome: 'all', fidelity: 'all' }); return; }
     if (focus.id === null) { setMissingTest(focus.testId); return; }
     const p = catalogue.find((x) => x.id === focus.id);
     if (!p) return;
@@ -401,6 +425,13 @@ export default function PresetsPanel({
         <p id="saffire-note" className="mt-2 text-[11px] leading-5" style={{ color: C.fg }}>
           {SAFFIRE_NOTE}
         </p>
+      )}
+      {links && (
+        <div className="mt-1">
+          <CardLink links={links} card={GROUP_CARD[group]}>
+            About these tests: {group === 'bass' ? 'BASS-II' : 'Saffire I-III'} in the PSI catalogue
+          </CardLink>
+        </div>
       )}
 
       {shown.length === 0 ? (
@@ -598,6 +629,7 @@ export default function PresetsPanel({
           </div>
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>{DEMO_LABEL}</p>
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>Opens in the Temperature view: the flame is hot gas round the burner.</p>
+          {links && <div><CardLink links={links} card={DEMO_CARD}>About CFI-G in the PSI catalogue</CardLink></div>}
         </div>
       )}
       {live?.demo && (

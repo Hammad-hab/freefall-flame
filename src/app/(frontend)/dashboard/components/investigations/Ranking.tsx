@@ -70,7 +70,7 @@ export function Assumptions({ reference }: { reference: HabitatReference }) {
         <li><span style={{ color: C.fg }}>{r.iss.label}:</span> <span style={{ color: C.muted }}>{r.iss.text}. Counted as covered when the {r.iss.rule}.</span></li>
         <li>
           <span style={{ color: C.fg }}>{r.exploration.label}:</span>{' '}
-          <span style={{ color: C.muted }}>{r.exploration.text} Source: {r.exploration.source}. Counted as reached at {r.exploration.rule}.</span>
+          <span style={{ color: C.muted }}>{r.exploration.text} Source: {r.exploration.source}. Counted as reached when {r.exploration.rule}.</span>
         </li>
         <li>
           <span style={{ color: C.fg }}>{r.ventilation.label}:</span>{' '}

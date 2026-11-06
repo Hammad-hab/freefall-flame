@@ -21,7 +21,8 @@ import Visualization from '../visualization/Visualization'
 import InterpretationPanel from '../interpretation/InterpretationPanel'
 import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
-import type { WorkspaceLinks } from './links'
+import Investigations from '../investigations/Investigations'
+import { linkProps, type WorkspaceLinks } from './links'
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
@@ -43,6 +44,18 @@ function OverviewContent({ data }: { data: TabData }) {
           {data.datasetName}
         </h1>
       </div>
+      {data.links && (
+        <p className="text-[12px]" style={{ color: '#a89e90' }}>
+          <a
+            {...linkProps(data.links.cardHref('bass-ii'), () => data.links!.showCard('bass-ii'))}
+            data-link-investigations
+            className="underline decoration-dotted underline-offset-2 hover:opacity-80"
+            style={{ color: '#ffa64d' }}
+          >
+            How BASS-II ranks among NASA&apos;s 14 PSI combustion investigations for habitat fire safety
+          </a>
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[1fr_380px]">
         <SummaryAndChart dataset={data.dataset} rows={data.rows} />
         <Vulnerability />
@@ -95,6 +108,11 @@ export const TAB_REGISTRY: Record<
     icon: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
     render: (d) => <OverviewContent data={d} />,
   },
+  investigations: {
+    label: 'Investigations',
+    icon: 'M4 6h16M4 12h10M4 18h6M17 14l2 2 3-4',
+    render: (d) => <Investigations links={d.links} />,
+  },
   evidence: {
     label: 'Evidence',
     icon: 'M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z',
@@ -122,4 +140,4 @@ export const TAB_REGISTRY: Record<
   },
 }
 
-export const TAB_ORDER: TabId[] = ['overview', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
+export const TAB_ORDER: TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
