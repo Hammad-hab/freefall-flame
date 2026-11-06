@@ -1,0 +1,17 @@
+{
+  "about": "Hand-checked sources per investigation, merged into psi.json by src/scripts/psi-catalogue.ts. Every card already cites its PSI id; add a paper here only after checking its title, NTRS id and link. Keys are the investigation names in investigations_catalogue.csv.",
+  "papers": {
+    "BASS-II": [
+      {
+        "title": "Burning and Suppression of Solids–II (BASS-II) Summary Report",
+        "ntrsId": "20210011385",
+        "url": "https://ntrs.nasa.gov/citations/20210011385"
+      },
+      {
+        "title": "Results from On-Board CSA-CP and CDM Sensor Readings During the Burning and Suppression of Solids II (BASS-II) Experiment in the Microgravity Science Glovebox (MSG)",
+        "ntrsId": "20150019858",
+        "url": "https://ntrs.nasa.gov/citations/20150019858"
+      }
+    ]
+  }
+}

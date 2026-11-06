@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
-import { Engine, CFIG_VISUAL_DEMO, FIDELITY, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
+import { Engine, CFIG_VISUAL_DEMO, FIDELITY, LIGHT, PARAM, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
 import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
-import PresetsPanel from './view/PresetsPanel';
+import PresetsPanel, { type PresetFocus } from './view/PresetsPanel';
 import { fitCell } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
 import { buildReadingIndex } from './view/nasaReadings';
@@ -20,9 +20,23 @@ const WIDE_PANE_PX = 768;
 /** In a narrow pane the canvas may take this share of the pane's height. */
 const NARROW_HEIGHT_SHARE = 0.7;
 
-/** The playing timeline: a preset's, or the gas flame demo's (stopped at its flow cut), or null. */
-function timeline(e: Engine): { step: number; runSteps: number; finished: boolean } | null {
-  return e.presetStatus() ?? e.cfigStatus();
+/**
+ * The Moon-base what-if, an EXTRAPOLATION: BASS-II test B1 (PMMA film 0.1 mm,
+ * air 5 cm/s) as NASA ran it, with only the oxygen raised to 34% (the top of
+ * the exploration range) and gravity set to the Moon's 0.17 g. The engine is
+ * not validated above 22.2% O2 and does not model pressure (it runs at 1 atm).
+ * The preset loads, its timeline stops (the wind stays), the two parameters
+ * change and the chamber air is refilled at 34%; it plays for B1's own length.
+ */
+export const MOON = { testId: 'B1', o2: 0.34, gravity: 0.17 } as const;
+type Scenario = { start: number; runSteps: number } | null;
+
+/** The playing timeline: a preset's, the gas flame demo's (stopped at its flow cut), the what-if's, or null. */
+function timeline(e: Engine, sc: Scenario): { step: number; runSteps: number; finished: boolean } | null {
+  const p = e.presetStatus() ?? e.cfigStatus();
+  if (p || !sc) return p;
+  const step = e.stepCount - sc.start;
+  return { step, runSteps: sc.runSteps, finished: step >= sc.runSteps };
 }
 
 interface SandboxProps {
@@ -58,10 +72,11 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   cr.current = c;
   const behindRef = useRef(false);
 
+  const scenario = useRef<Scenario>(null);
   useEffect(() => {
     if (!engine) return;
     const id = setInterval(() => {
-      const s = timeline(engine);
+      const s = timeline(engine, scenario.current);
       setPresetPlaying(!!s && !s.finished);
     }, 200);
     return () => clearInterval(id);
@@ -89,7 +104,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   // Steps left in the playing timeline, a preset's or the gas flame demo's
   // (Infinity when none is playing).
   const stepsLeft = useCallback((e: Engine) => {
-    const s = timeline(e);
+    const s = timeline(e, scenario.current);
     return s ? Math.max(0, s.runSteps - s.step) : Infinity;
   }, []);
 
@@ -98,6 +113,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   // (the Material view shows only the burner).
   const loadDemo = useCallback(() => {
     if (!engine) return;
+    scenario.current = null;
     engine.cfigLoad(CFIG_VISUAL_DEMO);
     clock.current.reset();
     cr.current.setView('temperature');
@@ -107,28 +123,60 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   // Load a preset. "Load & Run" plays it; "Load (standby)" only loads it.
   const loadPreset = useCallback((id: number, lighting: Light, play: boolean) => {
     if (!engine) return;
+    scenario.current = null;
     engine.loadPreset(id, lighting);
     clock.current.reset();
     cr.current.setPlaying(play);
   }, [engine]);
 
-  // A link from the Data Table ("Open in sandbox", or ?tab=sandbox&preset=B14):
-  // select that test's preset in the Presets tab and load it in standby, with
-  // its default lighting.
-  const [focus, setFocus] = useState<{ id: number | null; testId: string; nonce: number } | null>(null);
+  // The Moon-base what-if (see MOON): B1, then only oxygen and gravity changed.
+  const loadMoon = useCallback(() => {
+    if (!engine) return;
+    let id = -1;
+    for (let i = 0; i < engine.presetCount(); i++) if (engine.preset(i).testId === MOON.testId) id = i;
+    if (id < 0) return;
+    engine.loadPreset(id, LIGHT.DEFAULT);
+    engine.stopPreset();
+    engine.setParam(PARAM.AMBIENT_OXYGEN, MOON.o2);
+    engine.setParam(PARAM.GRAVITY, MOON.gravity);
+    engine.refillAir();
+    scenario.current = { start: engine.stepCount, runSteps: engine.preset(id).runSteps };
+    clock.current.reset();
+    cr.current.setPlaying(true);
+  }, [engine]);
+
+  const reset = useCallback(() => {
+    scenario.current = null;
+    engine?.reset();
+  }, [engine]);
+
+  // A link from another tab:
+  //  - a preset ("Open in sandbox", ?preset=B14): select it in the Presets tab
+  //    and load it in standby, with its default lighting;
+  //  - a group (?group=saffire, from the PSI catalogue): show that group;
+  //  - the gas flame demo (?demo=cfig, from the CFI-G card): play it.
+  const [focus, setFocus] = useState<PresetFocus | null>(null);
   const request = links?.sandboxRequest ?? null;
   const requestDone = links?.sandboxRequestDone;
   useEffect(() => {
     if (!engine || !request) return;
-    // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
-    const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
-    let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
-    if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
-    if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
-    setFocus({ id, testId: request.testId, nonce: request.nonce });
+    if (request.kind === 'preset') {
+      // BASS-II ids 0.., then the Saffire ids SAFFIRE_FIRST..; a NOT MODELLED one can't load.
+      const ids = [...Array(engine.presetCount()).keys(), ...[...Array(engine.saffireCount()).keys()].map((k) => SAFFIRE_FIRST + k)];
+      let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
+      if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
+      if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
+      setFocus({ id, testId: request.testId, nonce: request.nonce });
+    } else if (request.kind === 'group') {
+      setFocus({ group: request.group, nonce: request.nonce });
+    } else if (request.kind === 'moon') {
+      loadMoon();
+    } else {
+      loadDemo();
+    }
     cr.current.setTab('presets');
     requestDone?.();
-  }, [engine, request, requestDone, loadPreset]);
+  }, [engine, request, requestDone, loadPreset, loadDemo, loadMoon]);
 
   const stopPreset = useCallback(() => {
     engine?.stopPreset();
@@ -150,7 +198,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
       behindRef.current = clock.current.behind;
       setBehind(clock.current.behind);
     }
-    if (timeline(engine)?.finished) ctl.setPlaying(false);
+    if (timeline(engine, scenario.current)?.finished) ctl.setPlaying(false);
   }, [engine, stepsLeft]);
 
   const onStep = useCallback(() => {
@@ -177,7 +225,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
               <RunBar
                 playing={c.playing} setPlaying={c.setPlaying}
                 speed={c.speed} setSpeed={c.setSpeed} speeds={SPEEDS}
-                onStep={onStep} onReset={() => engine.reset()}
+                onStep={onStep} onReset={reset}
                 behind={behind}
               />
               <ViewBar view={c.view} setView={c.setView} />
@@ -209,6 +257,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                   readingIndex={readingIndex} datasetName={dataset?.name ?? null}
                   focus={focus} onFocusDone={() => setFocus(null)} links={links}
                   onLoadDemo={loadDemo}
+                  scenarioStatus={() => (engine && scenario.current ? timeline(engine, scenario.current) : null)}
                 />
               )}
             </div>

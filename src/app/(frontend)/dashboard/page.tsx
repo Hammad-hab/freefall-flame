@@ -11,13 +11,13 @@ import Workspace from "./components/workspace/Workspace"
 import type { TabId } from "./components/workspace/layout-reducer"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion"
 import { computeShares } from "@/lib/shares"
-import { cleanTestId } from "./components/workspace/links"
+import { cleanCardId, cleanGroup, cleanTestId } from "./components/workspace/links"
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-const VALID_TABS: readonly TabId[] = ['overview', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
+const VALID_TABS: readonly TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
 
 type LoadedDataset = NonNullable<Awaited<ReturnType<typeof getDataset>>>
 
@@ -85,10 +85,15 @@ export default async function Page({ searchParams }: SearchPageProps) {
       datasetId={datasetId}
       datasetParam={dataset_id === undefined ? null : datasetId}
       initialTab={initialTab}
-      // Links from the Data Table and the sandbox (workspace/links.ts):
-      // ?tab=sandbox&preset=B14 and ?tab=visualization&test=B14.
+      // Links between the tabs (workspace/links.ts): ?tab=sandbox&preset=B14,
+      // &group=saffire or &demo=cfig; ?tab=visualization&test=B14;
+      // ?tab=investigations&card=flex.
       initialPreset={initialTab === 'sandbox' ? cleanTestId(filters.preset) : null}
+      initialGroup={initialTab === 'sandbox' ? cleanGroup(filters.group) : null}
+      initialDemo={initialTab === 'sandbox' && filters.demo === 'cfig'}
+      initialMoon={initialTab === 'sandbox' && filters.scenario === 'moon'}
       initialTest={cleanTestId(filters.test)}
+      initialCard={initialTab === 'investigations' ? cleanCardId(filters.card) : null}
     />
   )
 }

@@ -1,0 +1,9 @@
+sample,material,air_flow_cm_s,weight_loss_mg_min,aging_min,flags
+1,Teflon,5.0,2.0,1.0,
+2,Teflon,5.0,1.0,1.0,
+3,Teflon,5.0,2.0,20.0,
+4,Teflon,10.0,2.0,1.0,
+5,Kapton,,,,"source says ""same conditions as 1-4"" (4 separate conditions, not expanded)"
+6,Silicone Rubber,,,,"source says ""same conditions as 1-4"" (4 separate conditions, not expanded)"
+7,Lampwick,,,,"source says ""same conditions as 1-4"" (4 separate conditions, not expanded)"
+8,Dibutyl Phthalate,,,,"source says ""same conditions as 1-4"" (4 separate conditions, not expanded)"

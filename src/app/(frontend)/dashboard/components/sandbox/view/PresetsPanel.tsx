@@ -21,12 +21,12 @@
 // row for the same test (nasaReadings.ts), not from the engine: the engine's
 // "no reading" marker (-1.0) is also a real CO reading in 11 tests.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Engine, NASA, FIDELITY, SAFFIRE_FIRST, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Engine, NASA, FIDELITY, OUTCOME, PARAM, SAFFIRE_FIRST, WIND_PER_CM_S, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
-import { isPlainClick, type WorkspaceLinks } from '../../workspace/links';
+import { isPlainClick, linkProps, type WorkspaceLinks } from '../../workspace/links';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
 /** How often the live block re-reads the engine. */
@@ -120,8 +120,8 @@ function matches(p: PresetInfo, f: FilterState): boolean {
 
 /** What the live block shows, read from the engine. */
 interface Live {
-  /** True for the gas flame demo (no wind, no outcome, no match). */
-  demo: boolean;
+  /** preset; demo: the gas flame demo (no wind, no outcome, no match); moon: the Moon-base what-if (no NASA result, no match). */
+  kind: 'preset' | 'demo' | 'moon';
   id: number;
   step: number;
   runSteps: number;
@@ -132,21 +132,35 @@ interface Live {
   outcomeStep: number;
 }
 
-function readLive(engine: Engine): Live | null {
+type ScenarioStatus = () => { step: number; runSteps: number; finished: boolean } | null;
+
+function readLive(engine: Engine, scenarioStatus?: ScenarioStatus): Live | null {
   const s = engine.presetStatus();
-  if (!s) {
-    const d = engine.cfigStatus();
-    return d && {
-      demo: true, id: d.id, step: d.step, runSteps: d.runSteps, finished: d.finished, airCmS: 0,
+  if (s) {
+    const o = engine.outcome();
+    return {
+      kind: 'preset',
+      id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
+      outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
+    };
+  }
+  const d = engine.cfigStatus();
+  if (d) {
+    return {
+      kind: 'demo', id: d.id, step: d.step, runSteps: d.runSteps, finished: d.finished, airCmS: 0,
       outcomeCode: 0, outcomeName: '', outcomeStep: 0,
     };
   }
-  const o = engine.outcome();
-  return {
-    demo: false,
-    id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
-    outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
-  };
+  const m = scenarioStatus?.();
+  if (m) {
+    const o = engine.outcome();
+    return {
+      kind: 'moon', id: -1, step: m.step, runSteps: m.runSteps, finished: m.finished,
+      airCmS: engine.getParam(PARAM.WIND) / WIND_PER_CM_S,
+      outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
+    };
+  }
+  return null;
 }
 
 const sameLive = (a: Live | null, b: Live | null) =>
@@ -158,7 +172,7 @@ function StatusLine({ live, playing }: { live: Live | null; playing: boolean }) 
   const run = live.finished ? 'finished' : playing ? 'running' : 'paused';
   return (
     <span className="tabular-nums" style={{ color: C.fg }}>
-      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.demo ? 'flow cut at ' + live.runSteps : `${live.airCmS.toFixed(1)} cm/s`} &nbsp;·&nbsp; {run}
+      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.kind === 'demo' ? 'flow cut at ' + live.runSteps : `${live.airCmS.toFixed(1)} cm/s`} &nbsp;·&nbsp; {run}
     </span>
   );
 }
@@ -195,7 +209,7 @@ function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue'
   };
   return (
     <span
-      className="inline-block rounded-[3px] px-1.5 py-0.5 text-[10px] tabular-nums"
+      className="inline-block max-w-full truncate rounded-[3px] px-1.5 py-0.5 align-middle text-[10px] tabular-nums"
       style={toneStyle[tone]}
     >
       {value}
@@ -204,6 +218,29 @@ function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue'
 }
 
 // ---- Panel -------------------------------------------------------------
+
+/** What a link asks the panel to show: a preset by test id, or a group (nonce: new per click). */
+export type PresetFocus =
+  | { id: number | null; testId: string; group?: undefined; nonce: number }
+  | { group: Group; id?: undefined; testId?: undefined; nonce: number };
+
+// The PSI catalogue card for each group, and for the gas flame demo (CFI-G).
+const GROUP_CARD: Record<Group, string> = { bass: 'bass-ii', saffire: 'saffire-i-iii' };
+const DEMO_CARD = 'cfi-g';
+
+/** "About these tests": a link to the investigation's card in the PSI catalogue. */
+function CardLink({ links, card, children }: { links: WorkspaceLinks; card: string; children: React.ReactNode }) {
+  return (
+    <a
+      {...linkProps(links.cardHref(card), () => links.showCard(card))}
+      data-card-link={card}
+      className="text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
+      style={{ color: C.amber }}
+    >
+      {children}
+    </a>
+  );
+}
 
 interface PresetsPanelProps {
   engine: Engine;
@@ -218,15 +255,20 @@ interface PresetsPanelProps {
   readingIndex?: ReadingIndex | null;
   /** The dataset's name, to say where the readings come from. */
   datasetName?: string | null;
-  /** A link asked for this test's preset (id null: no preset has that test id). */
-  focus?: { id: number | null; testId: string; nonce: number } | null;
+  /** A link asked for a test's preset (id null: no preset has that test id), or for a group. */
+  focus?: PresetFocus | null;
   /** Called once the panel has acted on `focus`, so reopening the tab doesn't repeat it. */
   onFocusDone?: () => void;
   /** Links back to the Data Table. */
   links?: WorkspaceLinks;
   /** Load and play the gas flame demo (CFI-G visual demo, not NASA-scored). */
   onLoadDemo?: () => void;
+  /** The Moon-base what-if's timeline when it is loaded, else null (see MOON in sandbox.tsx). */
+  scenarioStatus?: ScenarioStatus;
 }
+
+const MOON_LABEL =
+  'extrapolation: not validated above 22.2% O2; pressure is not modelled (the engine runs at 1 atm)';
 
 // The CFI-G visual demo's label (engine project docs/15-gas-flames.md: radiation
 // off, hottest cell 3656 K against line 2's calculated flame temperature of 2719 K).
@@ -254,15 +296,18 @@ function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string })
 
 export default function PresetsPanel({
   engine, playing, onLoad, onStop, readingIndex = null, datasetName = null, focus = null, onFocusDone, links, onLoadDemo,
+  scenarioStatus,
 }: PresetsPanelProps) {
+  const scenarioRef = useRef(scenarioStatus);
+  scenarioRef.current = scenarioStatus;
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
-  const [live, setLive] = useState<Live | null>(() => readLive(engine));
+  const [live, setLive] = useState<Live | null>(() => readLive(engine, scenarioStatus));
 
   // Re-read the engine while the panel is open, so the readout follows the run.
   const refresh = useCallback(() => {
-    setLive((prev) => { const next = readLive(engine); return sameLive(prev, next) ? prev : next; });
+    setLive((prev) => { const next = readLive(engine, scenarioRef.current); return sameLive(prev, next) ? prev : next; });
   }, [engine]);
   useEffect(() => {
     const id = setInterval(refresh, LIVE_MS);
@@ -296,6 +341,7 @@ export default function PresetsPanel({
   useEffect(() => {
     if (!focus) return;
     onFocusDone?.();
+    if (focus.group) { setMissingTest(null); setGroup(focus.group); setF({ search: '', material: 'all', outcome: 'all', fidelity: 'all' }); return; }
     if (focus.id === null) { setMissingTest(focus.testId); return; }
     const p = catalogue.find((x) => x.id === focus.id);
     if (!p) return;
@@ -402,6 +448,13 @@ export default function PresetsPanel({
           {SAFFIRE_NOTE}
         </p>
       )}
+      {links && (
+        <div className="mt-1">
+          <CardLink links={links} card={GROUP_CARD[group]}>
+            About these tests: {group === 'bass' ? 'BASS-II' : 'Saffire I-III'} in the PSI catalogue
+          </CardLink>
+        </div>
+      )}
 
       {shown.length === 0 ? (
         <p className="mt-2 text-[11px]" style={{ color: C.muted }}>
@@ -436,19 +489,23 @@ export default function PresetsPanel({
                     <span className="block truncate font-medium" style={{ color: C.fg }}>
                       {p.testId}: {p.summary}
                     </span>
-                    <span className="block truncate text-[10px] tabular-nums" style={{ color: C.muted }}>
-                      {p.fidelityName} · {p.shapeName}{isSaffire(p) && !off ? ` · NASA: ${p.nasaOutcome}` : ''}
+                    <span className="flex items-center gap-1.5 truncate text-[10px] tabular-nums" style={{ color: C.muted }}>
+                      <span className="truncate">
+                        {p.fidelityName} · {p.shapeName}{isSaffire(p) && !off ? ` · NASA: ${p.nasaOutcome}` : ''}
+                      </span>
+                      {/* The scorecard tag sits on this second line, so the title keeps its room. */}
+                      {SCORECARD.has(p.testId) && (
+                        <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
+                          <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
+                        </span>
+                      )}
                     </span>
                   </span>
-                  <span className="shrink-0">
+                  {/* NASA's words can be long ("went out as the flow was lowered"): cap the tag, full text on hover. */}
+                  <span className="min-w-0 max-w-[8.5rem] shrink-0 truncate" title={off ? p.rule : isSaffire(p) ? SAFFIRE_NOT_SCORED : p.nasaOutcome}>
                     {off ? <Tag value={/silicone/.test(p.rule) ? 'not modelled: no silicone' : 'not modelled'} /> :
                       isSaffire(p) ? <Tag value="not scored" /> : <Tag value={p.nasaOutcome} tone={tone} />}
                   </span>
-                  {SCORECARD.has(p.testId) && (
-                    <span className="shrink-0" data-scorecard={SCORECARD.get(p.testId)} title={SCORECARD_TITLE}>
-                      <Tag value={SCORECARD.get(p.testId)!} tone={VERDICT_TONE[SCORECARD.get(p.testId)!]} />
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -594,9 +651,28 @@ export default function PresetsPanel({
           </div>
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>{DEMO_LABEL}</p>
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>Opens in the Temperature view: the flame is hot gas round the burner.</p>
+          {links && <div><CardLink links={links} card={DEMO_CARD}>About CFI-G in the PSI catalogue</CardLink></div>}
         </div>
       )}
-      {live?.demo && (
+      {live?.kind === 'moon' && (
+        <div id="preset-live" data-scenario="moon" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
+          <div className="flex items-baseline justify-between gap-2 text-[12px]">
+            <span className="font-medium" style={{ color: C.fg }}>Moon-base what-if</span>
+            <StatusLine live={live} playing={playing} />
+          </div>
+          <div className="space-y-1 text-[11px] leading-5">
+            {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
+            {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
+            {/* "burned out" reads like "went out": say plainly that the sample was used up. */}
+            {row('Our outcome',
+              live.outcomeCode === OUTCOME.BURNED_OUT
+                ? `the sample was fully consumed by step ${live.outcomeStep}`
+                : live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
+            {row('NASA result', 'none: no test was run at these conditions')}
+          </div>
+        </div>
+      )}
+      {live?.kind === 'demo' && (
         <div id="preset-live" data-demo="cfig" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
           <div className="flex items-baseline justify-between gap-2 text-[12px]">
             <span className="font-medium" style={{ color: C.fg }}>Gas flame demo</span>
