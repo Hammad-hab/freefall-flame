@@ -92,6 +92,27 @@ call: a plain sentence gives the top three. Checked on 6 Nov 2026 with 3 real
 calls (overall, BASS-II, FLEX): $0.0006642 together, every answer passed the
 number check, and a repeat came from the cache.
 
+## Moon-base scenario (an extrapolation)
+
+A card for 34% O2 (the top of the exploration range) and the Moon's 0.17 g.
+It says first that no solid-material test in these tables goes above
+22.2% O2 (BASS-II; Saffire's highest is 22.1%) and that pressure isn't
+modelled. The script then counts, from the cleaned tables, the tests at 30%
+O2 or more: how many, how many at 34%, how many at 0.7 atm or less, and
+their outcomes where the table has them (psi.json `moonBase`). At present:
+CFI-G 115 normal flames (20 at 0.7 atm or less; 61 self-extinguished, 30
+flow-terminated, 24 no ignition), FLEX 24 droplets (18 disruption, 4
+completion, 2 extinction), Flame Design 131, BRE 17 test days, s-Flame 8
+test days, FLEX-2 8 fuels (ranges only). All gas flames or droplets.
+
+Its sandbox what-if (`?tab=sandbox&scenario=moon`) loads BASS-II test B1
+(PMMA film 0.1 mm, air 5 cm/s) as NASA ran it, stops its timeline, sets only
+the oxygen to 34% and gravity to 0.17 g, refills the chamber air, and plays
+B1's own 1500 steps. No engine change. On 6 Nov 2026: burned out at step
+1271, where B1 at NASA's conditions (22.2%, 0 g) is still burning at step
+1500. Labelled "extrapolation: not validated above 22.2% O2; pressure is not
+modelled (the engine runs at 1 atm)".
+
 ## Choices
 
 - SPICE's air coflow range leaves out the 8 slightly negative readings the

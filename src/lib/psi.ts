@@ -51,6 +51,29 @@ export interface PsiCatalogue {
   /** The habitat reference values the scores were computed against (HABITAT_REFERENCE). */
   reference: HabitatReference
   investigations: PsiInvestigation[]
+  /** What the tables hold near the Moon-base scenario's oxygen (an extrapolation card). */
+  moonBase: MoonBase
+}
+
+/** The Moon-base scenario card: 34% O2 (the top of the exploration range) and 0.17 g. */
+export interface MoonBase {
+  o2Pct: number
+  gravityG: number
+  /** The highest oxygen in any solid-material test (BASS-II), and Saffire's highest. */
+  solidMaxO2Pct: number
+  saffireMaxO2Pct: number
+  /** Tables with tests at 30% O2 or more. */
+  near: {
+    investigation: string
+    what: string
+    unit: string
+    atLeast30: number
+    /** Of those, at 34% O2 (within 0.5 points). */
+    at34: number
+    /** Of those, at 0.7 atm or less (null: pressure not in the table, or about 1 atm). */
+    lowPressure: number | null
+    outcomes: { value: string; count: number }[] | null
+  }[]
 }
 
 /* ------------------------------------------------------------------ */

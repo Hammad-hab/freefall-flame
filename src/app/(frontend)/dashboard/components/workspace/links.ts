@@ -4,6 +4,7 @@
  *   /dashboard?tab=sandbox&preset=B14          the sandbox, preset B14 loaded in standby
  *   /dashboard?tab=sandbox&group=saffire       the sandbox's Saffire presets
  *   /dashboard?tab=sandbox&demo=cfig           the sandbox, the gas flame demo playing
+ *   /dashboard?tab=sandbox&scenario=moon       the sandbox, the Moon-base what-if playing
  *   /dashboard?tab=visualization&test=B14      the Data Table, row B14 pinned and highlighted
  *   /dashboard?tab=investigations&card=flex    the PSI catalogue, the FLEX card in view
  *
@@ -73,6 +74,12 @@ export type SandboxRequest =
   | { kind: 'preset'; testId: string; nonce: number }
   | { kind: 'group'; group: SandboxGroup; nonce: number }
   | { kind: 'demo'; nonce: number }
+  | { kind: 'moon'; nonce: number }
+
+/** The sandbox running the Moon-base what-if (an extrapolation). */
+export function moonHref(datasetParam: string | null = null): string {
+  return href({ tab: 'sandbox', scenario: 'moon' }, datasetParam)
+}
 
 /** What the workspace passes to the tabs for the links. */
 export interface WorkspaceLinks {
@@ -91,6 +98,9 @@ export interface WorkspaceLinks {
   openGroup: (group: SandboxGroup) => void
   /** Show the sandbox and play the gas flame demo. */
   openDemo: () => void
+  moonHref: () => string
+  /** Show the sandbox and run the Moon-base what-if. */
+  openMoon: () => void
   /** Show the Data Table with this test's row pinned. */
   showInTable: (testId: string) => void
   /** Show the PSI catalogue with this card in view. */

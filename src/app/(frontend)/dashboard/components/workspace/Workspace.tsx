@@ -10,6 +10,7 @@ import {
   cardHref,
   demoHref,
   groupHref,
+  moonHref,
   sandboxHref,
   tableHref,
   visualizationHref,
@@ -40,6 +41,8 @@ interface WorkspaceProps {
   initialDemo?: boolean
   /** ?tab=investigations&card=flex: bring that card into view. */
   initialCard?: string | null
+  /** ?tab=sandbox&scenario=moon: run the Moon-base what-if. */
+  initialMoon?: boolean
 }
 
 export default function Workspace({
@@ -55,6 +58,7 @@ export default function Workspace({
   initialGroup = null,
   initialDemo = false,
   initialCard = null,
+  initialMoon = false,
 }: WorkspaceProps) {
   const [state, dispatch] = useReducer(layoutReducer, initialTab, (tab) => createInitialState(4, tab))
   const dragRef = useRef<DragState | null>(null)
@@ -64,6 +68,7 @@ export default function Workspace({
     initialPreset ? { kind: 'preset', testId: initialPreset, nonce: 1 }
       : initialGroup ? { kind: 'group', group: initialGroup, nonce: 1 }
       : initialDemo ? { kind: 'demo', nonce: 1 }
+      : initialMoon ? { kind: 'moon', nonce: 1 }
       : null,
   )
   const [tableTest, setTableTest] = useState<string | null>(initialTest)
@@ -98,6 +103,11 @@ export default function Workspace({
     openDemo: () => {
       setSandboxRequest({ kind: 'demo', nonce: next() })
       go('sandbox', toDemo())
+    },
+    moonHref: () => moonHref(datasetParam),
+    openMoon: () => {
+      setSandboxRequest({ kind: 'moon', nonce: next() })
+      go('sandbox', moonHref(datasetParam))
     },
     showInTable: (testId) => {
       setTableTest(testId)

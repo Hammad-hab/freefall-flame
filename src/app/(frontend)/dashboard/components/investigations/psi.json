@@ -1280,5 +1280,93 @@
         }
       }
     }
-  ]
+  ],
+  "moonBase": {
+    "o2Pct": 34,
+    "gravityG": 0.17,
+    "solidMaxO2Pct": 22.2,
+    "saffireMaxO2Pct": 22.1,
+    "near": [
+      {
+        "investigation": "CFI-G (ACME)",
+        "what": "normal gas flames",
+        "unit": "tests",
+        "atLeast30": 115,
+        "at34": 1,
+        "lowPressure": 20,
+        "outcomes": [
+          {
+            "value": "self extinguished",
+            "count": 61
+          },
+          {
+            "value": "flow terminated",
+            "count": 30
+          },
+          {
+            "value": "no ignition",
+            "count": 24
+          }
+        ]
+      },
+      {
+        "investigation": "FLEX",
+        "what": "fuel droplets",
+        "unit": "tests",
+        "atLeast30": 24,
+        "at34": 9,
+        "lowPressure": 0,
+        "outcomes": [
+          {
+            "value": "disruption",
+            "count": 18
+          },
+          {
+            "value": "completion",
+            "count": 4
+          },
+          {
+            "value": "extinction",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "investigation": "Flame Design (ACME)",
+        "what": "normal gas flames",
+        "unit": "tests",
+        "atLeast30": 131,
+        "at34": 0,
+        "lowPressure": 0,
+        "outcomes": null
+      },
+      {
+        "investigation": "BRE (ACME)",
+        "what": "gas flames standing in for solids, still air",
+        "unit": "test days",
+        "atLeast30": 17,
+        "at34": 13,
+        "lowPressure": null,
+        "outcomes": null
+      },
+      {
+        "investigation": "s-Flame (ACME)",
+        "what": "spherical gas flames",
+        "unit": "test days",
+        "atLeast30": 8,
+        "at34": 0,
+        "lowPressure": null,
+        "outcomes": null
+      },
+      {
+        "investigation": "FLEX-2",
+        "what": "fuel droplets (ranges only)",
+        "unit": "fuels",
+        "atLeast30": 8,
+        "at34": 0,
+        "lowPressure": null,
+        "outcomes": null
+      }
+    ]
+  }
 }

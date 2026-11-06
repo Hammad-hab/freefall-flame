@@ -19,6 +19,7 @@ import Papa from 'papaparse'
 import {
   HABITAT_REFERENCE,
   type CriterionScore,
+  type MoonBase,
   type PsiCatalogue,
   type PsiFact,
   type PsiInvestigation,
@@ -210,6 +211,45 @@ function scores(c: Row): PsiScores {
   return { materials: scoreMaterials(c), atmosphere: scoreAtmosphere(c), airflow: scoreAirflow(c), richness: scoreRichness(c), decision }
 }
 
+// ---- Moon-base scenario: what the tables hold near 34% O2 (an extrapolation card) ----
+
+const ATM_PER_BAR = 1 / 1.01325
+const listMax = (s: string | undefined) => Math.max(...(s ?? '').split(';').map((x) => Number(x.trim())).filter(Number.isFinite))
+const near34 = (frac: number | null) => frac !== null && Math.abs(frac - 0.34) <= 0.005
+
+function moonBase(): MoonBase {
+  const bass2 = readCsv('bass2_tests_clean.csv')
+  const saffire = readCsv('saffire_tests_clean.csv')
+  const solidMax = (rows: Row[], col: string) => Math.max(...rows.map((r) => num(r[col])).filter((v): v is number => v !== null))
+  const outcomes = (rows: Row[]) => {
+    const m = new Map<string, number>()
+    for (const r of rows) m.set(r.outcome.replace(/_/g, ' '), (m.get(r.outcome.replace(/_/g, ' ')) ?? 0) + 1)
+    return [...m].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+  }
+
+  const flex = readCsv('flex_tests_clean.csv').filter((r) => (num(r.x_o2) ?? 0) >= 0.3)
+  const cfig = readCsv('cfig_tests_clean.csv').filter((r) => r.flame_type.startsWith('normal') && (num(r.x_o2) ?? 0) >= 0.3)
+  const design = readCsv('flame_design_tests_clean.csv').filter((r) => r.flame_type === 'normal' && (num(r.x_o2) ?? 0) >= 0.3)
+  const bre = readCsv('acme_bre_days_clean.csv').filter((r) => listMax(r.o2_pct_values) >= 30)
+  const sflame = readCsv('acme_sflame_days_clean.csv').filter((r) => /~30%/.test(r.atmosphere))
+  const flex2 = readCsv('flex2_summary_clean.csv').filter((r) => listMax(r.x_o2_values) >= 0.3)
+
+  return {
+    o2Pct: 34,
+    gravityG: 0.17,
+    solidMaxO2Pct: solidMax(bass2, 'o2_initial_pct'),
+    saffireMaxO2Pct: solidMax(saffire, 'o2_pct'),
+    near: [
+      { investigation: 'CFI-G (ACME)', what: 'normal gas flames', unit: 'tests', atLeast30: cfig.length, at34: cfig.filter((r) => near34(num(r.x_o2))).length, lowPressure: cfig.filter((r) => (num(r.pressure_bar) ?? 9) * ATM_PER_BAR <= 0.7).length, outcomes: outcomes(cfig) },
+      { investigation: 'FLEX', what: 'fuel droplets', unit: 'tests', atLeast30: flex.length, at34: flex.filter((r) => near34(num(r.x_o2))).length, lowPressure: flex.filter((r) => (num(r.pressure_atm) ?? 9) <= 0.7).length, outcomes: outcomes(flex) },
+      { investigation: 'Flame Design (ACME)', what: 'normal gas flames', unit: 'tests', atLeast30: design.length, at34: design.filter((r) => near34(num(r.x_o2))).length, lowPressure: design.filter((r) => (num(r.pressure_atm) ?? 9) <= 0.7).length, outcomes: null },
+      { investigation: 'BRE (ACME)', what: 'gas flames standing in for solids, still air', unit: 'test days', atLeast30: bre.length, at34: bre.filter((r) => r.o2_pct_values.split(';').map((x) => x.trim()).includes('34')).length, lowPressure: null, outcomes: null },
+      { investigation: 's-Flame (ACME)', what: 'spherical gas flames', unit: 'test days', atLeast30: sflame.length, at34: 0, lowPressure: null, outcomes: null },
+      { investigation: 'FLEX-2', what: 'fuel droplets (ranges only)', unit: 'fuels', atLeast30: flex2.length, at34: 0, lowPressure: null, outcomes: null },
+    ],
+  }
+}
+
 // Granularities where each row is one test, so the catalogue's count must equal the rows.
 const PER_TEST = /^per (test|sample|run|flame condition)$/
 
@@ -280,6 +320,7 @@ export function build(): PsiCatalogue {
     catalogueSha256: crypto.createHash('sha256').update(catalogueText.toString('utf8').replace(/\r\n/g, '\n')).digest('hex'),
     reference: HABITAT_REFERENCE,
     investigations,
+    moonBase: moonBase(),
   }
 }
 

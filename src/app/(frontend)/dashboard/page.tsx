@@ -91,6 +91,7 @@ export default async function Page({ searchParams }: SearchPageProps) {
       initialPreset={initialTab === 'sandbox' ? cleanTestId(filters.preset) : null}
       initialGroup={initialTab === 'sandbox' ? cleanGroup(filters.group) : null}
       initialDemo={initialTab === 'sandbox' && filters.demo === 'cfig'}
+      initialMoon={initialTab === 'sandbox' && filters.scenario === 'moon'}
       initialTest={cleanTestId(filters.test)}
       initialCard={initialTab === 'investigations' ? cleanCardId(filters.card) : null}
     />

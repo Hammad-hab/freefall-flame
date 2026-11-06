@@ -12,6 +12,7 @@ import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
 import { Assumptions, RankingList, WeightsPanel } from './Ranking'
 import AiSummary from './AiSummary'
+import MoonBaseCard from './MoonBaseCard'
 import { linkProps, type WorkspaceLinks } from '../workspace/links'
 import { C } from '../ui/chart-theme'
 
@@ -133,6 +134,8 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
           <Assumptions reference={catalogue.reference} />
         </div>
       </div>
+
+      <MoonBaseCard moon={catalogue.moonBase} links={links} />
 
       <div id="psi-cards" className="grid grid-cols-1 gap-4 @3xl:grid-cols-2 @6xl:grid-cols-3">
         {ordered.map(({ inv, r }) => (

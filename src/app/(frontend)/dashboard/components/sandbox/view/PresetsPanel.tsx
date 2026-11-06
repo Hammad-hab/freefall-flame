@@ -21,8 +21,8 @@
 // row for the same test (nasaReadings.ts), not from the engine: the engine's
 // "no reading" marker (-1.0) is also a real CO reading in 11 tests.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Engine, NASA, FIDELITY, SAFFIRE_FIRST, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Engine, NASA, FIDELITY, PARAM, SAFFIRE_FIRST, WIND_PER_CM_S, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
@@ -120,8 +120,8 @@ function matches(p: PresetInfo, f: FilterState): boolean {
 
 /** What the live block shows, read from the engine. */
 interface Live {
-  /** True for the gas flame demo (no wind, no outcome, no match). */
-  demo: boolean;
+  /** preset; demo: the gas flame demo (no wind, no outcome, no match); moon: the Moon-base what-if (no NASA result, no match). */
+  kind: 'preset' | 'demo' | 'moon';
   id: number;
   step: number;
   runSteps: number;
@@ -132,21 +132,35 @@ interface Live {
   outcomeStep: number;
 }
 
-function readLive(engine: Engine): Live | null {
+type ScenarioStatus = () => { step: number; runSteps: number; finished: boolean } | null;
+
+function readLive(engine: Engine, scenarioStatus?: ScenarioStatus): Live | null {
   const s = engine.presetStatus();
-  if (!s) {
-    const d = engine.cfigStatus();
-    return d && {
-      demo: true, id: d.id, step: d.step, runSteps: d.runSteps, finished: d.finished, airCmS: 0,
+  if (s) {
+    const o = engine.outcome();
+    return {
+      kind: 'preset',
+      id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
+      outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
+    };
+  }
+  const d = engine.cfigStatus();
+  if (d) {
+    return {
+      kind: 'demo', id: d.id, step: d.step, runSteps: d.runSteps, finished: d.finished, airCmS: 0,
       outcomeCode: 0, outcomeName: '', outcomeStep: 0,
     };
   }
-  const o = engine.outcome();
-  return {
-    demo: false,
-    id: s.id, step: s.step, runSteps: s.runSteps, finished: s.finished, airCmS: s.airCmS,
-    outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
-  };
+  const m = scenarioStatus?.();
+  if (m) {
+    const o = engine.outcome();
+    return {
+      kind: 'moon', id: -1, step: m.step, runSteps: m.runSteps, finished: m.finished,
+      airCmS: engine.getParam(PARAM.WIND) / WIND_PER_CM_S,
+      outcomeCode: o.code, outcomeName: o.name, outcomeStep: o.step,
+    };
+  }
+  return null;
 }
 
 const sameLive = (a: Live | null, b: Live | null) =>
@@ -158,7 +172,7 @@ function StatusLine({ live, playing }: { live: Live | null; playing: boolean }) 
   const run = live.finished ? 'finished' : playing ? 'running' : 'paused';
   return (
     <span className="tabular-nums" style={{ color: C.fg }}>
-      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.demo ? 'flow cut at ' + live.runSteps : `${live.airCmS.toFixed(1)} cm/s`} &nbsp;·&nbsp; {run}
+      {live.step} / {live.runSteps} &nbsp;·&nbsp; {live.kind === 'demo' ? 'flow cut at ' + live.runSteps : `${live.airCmS.toFixed(1)} cm/s`} &nbsp;·&nbsp; {run}
     </span>
   );
 }
@@ -249,7 +263,12 @@ interface PresetsPanelProps {
   links?: WorkspaceLinks;
   /** Load and play the gas flame demo (CFI-G visual demo, not NASA-scored). */
   onLoadDemo?: () => void;
+  /** The Moon-base what-if's timeline when it is loaded, else null (see MOON in sandbox.tsx). */
+  scenarioStatus?: ScenarioStatus;
 }
+
+const MOON_LABEL =
+  'extrapolation: not validated above 22.2% O2; pressure is not modelled (the engine runs at 1 atm)';
 
 // The CFI-G visual demo's label (engine project docs/15-gas-flames.md: radiation
 // off, hottest cell 3656 K against line 2's calculated flame temperature of 2719 K).
@@ -277,15 +296,18 @@ function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string })
 
 export default function PresetsPanel({
   engine, playing, onLoad, onStop, readingIndex = null, datasetName = null, focus = null, onFocusDone, links, onLoadDemo,
+  scenarioStatus,
 }: PresetsPanelProps) {
+  const scenarioRef = useRef(scenarioStatus);
+  scenarioRef.current = scenarioStatus;
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
-  const [live, setLive] = useState<Live | null>(() => readLive(engine));
+  const [live, setLive] = useState<Live | null>(() => readLive(engine, scenarioStatus));
 
   // Re-read the engine while the panel is open, so the readout follows the run.
   const refresh = useCallback(() => {
-    setLive((prev) => { const next = readLive(engine); return sameLive(prev, next) ? prev : next; });
+    setLive((prev) => { const next = readLive(engine, scenarioRef.current); return sameLive(prev, next) ? prev : next; });
   }, [engine]);
   useEffect(() => {
     const id = setInterval(refresh, LIVE_MS);
@@ -632,7 +654,22 @@ export default function PresetsPanel({
           {links && <div><CardLink links={links} card={DEMO_CARD}>About CFI-G in the PSI catalogue</CardLink></div>}
         </div>
       )}
-      {live?.demo && (
+      {live?.kind === 'moon' && (
+        <div id="preset-live" data-scenario="moon" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
+          <div className="flex items-baseline justify-between gap-2 text-[12px]">
+            <span className="font-medium" style={{ color: C.fg }}>Moon-base what-if</span>
+            <StatusLine live={live} playing={playing} />
+          </div>
+          <div className="space-y-1 text-[11px] leading-5">
+            {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
+            {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
+            {row('Our outcome',
+              live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
+            {row('NASA result', 'none: no test was run at these conditions')}
+          </div>
+        </div>
+      )}
+      {live?.kind === 'demo' && (
         <div id="preset-live" data-demo="cfig" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
           <div className="flex items-baseline justify-between gap-2 text-[12px]">
             <span className="font-medium" style={{ color: C.fg }}>Gas flame demo</span>
