@@ -1,0 +1,110 @@
+material,test_id,record_type,base_test,description,date_2016,inlet_velocity_cm_s,heater_ratio_rt_r0,duration_s,primary_aging_s,primary_mixing_s,net_aging_s,flags
+Kapton,51,smoke generation run,51,B.L. new formula,21-Jul,8.1,1.38,60.0,11.0,8.0,38.0,year not given in source
+Kapton,51a,aged smoke reading,51,B.L. new formula,22-Jul,8.1,1.38,60.0,,,261.0,year not given in source
+Kapton,61,smoke generation run,61,Baseline Aging,2-Aug,8.1,1.38,60.0,11.0,8.0,38.0,year not given in source
+Kapton,61a,aged smoke reading,61,aged,2-Aug,8.1,1.38,,,,807.0,year not given in source
+Kapton,62,smoke generation run,62,High Temp aging,2-Aug,8.1,1.48,60.0,11.0,8.0,39.0,year not given in source
+Kapton,62a,aged smoke reading,62,aged,2-Aug,8.1,1.48,,,,808.0,year not given in source
+Kapton,70,smoke generation run,70,High temp aged STS det,24-Aug,8.1,1.48,60.0,720.0,8.0,747.0,year not given in source
+Kapton,73,smoke generation run,73,Baseline Aging,26-Aug,8.1,1.38,60.0,11.0,8.0,33.0,year not given in source
+Kapton,73a,aged smoke reading,73,aged,26-Aug,8.1,1.38,,,,560.0,year not given in source
+Kapton,75,smoke generation run,75,Mid Temp aging (no Ptrak),26-Aug,8.1,1.43,60.0,11.0,8.0,32.0,year not given in source
+Kapton,75a,aged smoke reading,75,aged,26-Aug,8.1,1.43,,,,563.0,year not given in source
+Kapton,77,smoke generation run,77,High Temp aging,26-Aug,8.1,1.48,60.0,11.0,8.0,31.0,year not given in source
+Kapton,77a,aged smoke reading,77,aged,26-Aug,8.1,1.48,,,,559.0,year not given in source
+Kapton,85,smoke generation run,85,Mid Temp aging run. Repeat 75,30-Aug,8.1,1.43,60.0,11.0,8.0,33.0,year not given in source
+Kapton,85a,aged smoke reading,85,aged,30-Aug,8.1,1.43,,,,563.0,year not given in source
+Kapton,90,smoke generation run,90,Mid Temp aging reburn 85,30-Aug,8.1,1.43,60.0,11.0,8.0,38.0,year not given in source
+Kapton,90a,aged smoke reading,90,aged,30-Aug,8.1,1.43,,,,569.0,year not given in source
+Kapton,92,smoke generation run,92,Baseline STS det,7-Sep,8.1,1.38,60.0,11.0,8.0,35.0,year not given in source
+Kapton,93,smoke generation run,93,Mid Temp aging run 75 repeat,7-Sep,8.1,1.43,60.0,11.0,8.0,36.0,year not given in source
+Kapton,93a,aged smoke reading,93,aged,7-Sep,8.1,1.43,,,,568.0,year not given in source
+Kapton,94,smoke generation run,94,Mid Temp aging run mid high,7-Sep,8.1,1.45,60.0,11.0,8.0,42.0,year not given in source
+Kapton,94a,aged smoke reading,94,aged,7-Sep,8.1,1.45,,,,567.0,year not given in source
+Kapton,101,smoke generation run,101,No flow run w/ aging,8-Sep,0.0,1.48,60.0,11.0,8.0,29.0,year not given in source
+Kapton,101a,aged smoke reading,101,aged,8-Sep,0.0,1.48,,,,561.0,year not given in source
+Kapton,102,smoke generation run,102,No flow run w/ aging,8-Sep,0.0,1.48,120.0,11.0,8.0,28.0,year not given in source
+Kapton,102a,aged smoke reading,102,aged,8-Sep,0.0,1.48,,,,563.0,year not given in source
+Kapton,108,smoke generation run,108,Low flow run w/aging,9-Sep,1.0,1.48,60.0,11.0,8.0,30.0,year not given in source
+Kapton,108a,aged smoke reading,108,aged,9-Sep,1.0,1.48,,,,560.0,year not given in source
+Kapton,114,smoke generation run,114,low flow run w STS no Ptrak,9-Sep,2.0,1.43,60.0,11.0,8.0,28.0,year not given in source
+Silicone,48,smoke generation run,48,Low Temp,16-Jul,8.0,1.304,60.0,11.0,8.0,62.0,year not given in source
+Silicone,53,smoke generation run,53,HighTemp,22-Jul,8.1,1.35,60.0,1.0,8.0,52.0,year not given in source
+Silicone,59,smoke generation run,59,baseline aged,30-Jul,8.1,1.327,60.0,11.0,8.0,24.0,year not given in source
+Silicone,59a,aged smoke reading,59,aged,30-Jul,8.1,1.327,,,,856.0,year not given in source
+Silicone,60,smoke generation run,60,Htemp ageing,30-Jul,8.1,1.35,60.0,11.0,8.0,49.0,year not given in source
+Silicone,60a,aged smoke reading,60,aged,30-Jul,8.1,1.35,,,,856.0,year not given in source
+Silicone,65,smoke generation run,65,Baseline long aging,23-Aug,8.1,1.327,60.0,11.0,8.0,50.0,year not given in source
+Silicone,65a,aged smoke reading,65,aged,23-Aug,8.1,1.327,,,,1923.0,year not given in source
+Silicone,66,smoke generation run,66,High T aging,23-Aug,8.1,1.36,60.0,11.0,8.0,42.0,year not given in source
+Silicone,66a,aged smoke reading,66,aged,23-Aug,8.1,1.36,,,,837.0,year not given in source
+Silicone,67,smoke generation run,67,High temp aged,24-Aug,8.1,1.35,60.0,720.0,8.0,751.0,year not given in source
+Silicone,72,smoke generation run,72,Baseline STS det,25-Aug,8.1,1.327,60.0,11.0,8.0,42.0,year not given in source
+Silicone,86,smoke generation run,86,Mid temp aging,30-Aug,8.1,1.345,60.0,11.0,8.0,50.0,year not given in source
+Silicone,86a,aged smoke reading,86,aged,30-Aug,8.1,1.345,,,,628.0,year not given in source
+Silicone,91,smoke generation run,91,Baseline STS det,7-Sep,8.1,1.327,60.0,11.0,8.0,46.0,year not given in source
+Silicone,99,smoke generation run,99,No flow run w/aging,8-Sep,0.0,1.35,60.0,11.0,8.0,48.0,year not given in source
+Silicone,99a,aged smoke reading,99,aged,8-Sep,0.0,1.35,,,,627.0,year not given in source
+Silicone,103,smoke generation run,103,low flow run w/ aging,9-Sep,1.0,1.35,60.0,11.0,8.0,48.0,year not given in source
+Silicone,103a,aged smoke reading,103,aged,9-Sep,1.0,1.35,,,,619.0,year not given in source
+Silicone,104,smoke generation run,104,No flow run w/ aging,9-Sep,0.0,1.35,60.0,11.0,8.0,51.0,year not given in source
+Silicone,104a,aged smoke reading,104,aged,9-Sep,0.0,1.35,,,,636.0,year not given in source
+Silicone,109,smoke generation run,109,low flow run w STS,9-Sep,2.0,1.35,60.0,11.0,8.0,28.0,year not given in source
+Lampwick,49,smoke generation run,49,B.L. High RT/R0,19-Jul,8.0,1.251,60.0,11.0,8.0,51.0,year not given in source
+Lampwick,54,smoke generation run,54,Baseline,29-Jul,8.1,1.245,60.0,11.0,8.0,57.0,year not given in source
+Lampwick,55,smoke generation run,55,High RT/R0 test aging,29-Jul,8.1,1.245,60.0,11.0,8.0,47.0,year not given in source
+Lampwick,55a,aged smoke reading,55,aged,29-Jul,8.1,1.245,,,,218.0,year not given in source
+Lampwick,57,smoke generation run,57,High RT/R0 reburn sample,29-Jul,8.1,1.253,60.0,11.0,8.0,,"net aging ""n/a"" in source; test 57 listed under both Lampwick and Teflon; year not given in source"
+Lampwick,68,smoke generation run,68,High temp aged STS det,24-Aug,8.1,1.28,60.0,720.0,8.0,747.0,year not given in source
+Lampwick,78,smoke generation run,78,Baseline aging,26-Aug,8.1,1.245,60.0,11.0,8.0,37.0,year not given in source
+Lampwick,78a,aged smoke reading,78,aged,26-Aug,8.1,1.245,,,,581.0,year not given in source
+Lampwick,80,smoke generation run,80,High temp aging,26-Aug,8.1,1.28,60.0,11.0,8.0,40.0,year not given in source
+Lampwick,80a,aged smoke reading,80,aged,26-Aug,8.1,1.28,,,,580.0,year not given in source
+Lampwick,82,smoke generation run,82,Mid temp aging,26-Aug,8.1,1.265,60.0,11.0,8.0,39.0,year not given in source
+Lampwick,82a,aged smoke reading,82,aged,27-Aug,8.1,1.265,,,,579.0,year not given in source
+Lampwick,88,smoke generation run,88,Baseline STS det,30-Aug,8.1,1.245,60.0,11.0,8.0,,"net aging ""n/a"" in source; year not given in source"
+Lampwick,96,smoke generation run,96,No flow run w/aging,7-Sep,0.0,1.245,60.0,11.0,8.0,34.0,year not given in source
+Lampwick,96a,aged smoke reading,96,aged,7-Sep,0.0,1.245,,,,582.0,year not given in source
+Lampwick,98,smoke generation run,98,No flow run w/aging,8-Sep,0.0,1.28,60.0,11.0,8.0,37.0,year not given in source
+Lampwick,98a,aged smoke reading,98,aged,8-Sep,0.0,1.28,,,,585.0,year not given in source
+Lampwick,106,smoke generation run,106,No flow run w/aging,9-Sep,0.0,1.28,60.0,11.0,8.0,30.0,year not given in source
+Lampwick,106a,aged smoke reading,106,aged,9-Sep,0.0,1.28,,,,558.0,year not given in source
+Lampwick,110,smoke generation run,110,low flow run w/STS,9-Sep,2.0,1.28,60.0,11.0,8.0,21.0,year not given in source
+Teflon,50,smoke generation run,50,B.L. High RT/R0,20-Jul,8.1,1.452,60.0,11.0,8.0,33.0,year not given in source
+Teflon,56,smoke generation run,56,Baseline,29-Jul,8.1,1.445,60.0,11.0,8.0,41.0,year not given in source
+Teflon,57,smoke generation run,57,High RT/R0 reburn sample,29-Jul,8.1,1.253,60.0,11.0,8.0,,"net aging ""n/a"" in source; test 57 listed under both Lampwick and Teflon; year not given in source"
+Teflon,58,smoke generation run,58,Baseline aging,30-Jul,8.1,1.445,60.0,11.0,8.0,34.0,year not given in source
+Teflon,58a,aged smoke reading,58,aged,30-Jul,8.1,1.445,,,,805.0,year not given in source
+Teflon,69,smoke generation run,69,High temp aged STS det,24-Aug,8.1,1.45,60.0,720.0,8.0,745.0,year not given in source
+Teflon,79,smoke generation run,79,Baseline aging,26-Aug,8.1,1.445,60.0,11.0,8.0,33.0,year not given in source
+Teflon,79a,aged smoke reading,79,aged,26-Aug,8.1,1.445,,,,560.0,year not given in source
+Teflon,81,smoke generation run,81,High temp aging,26-Aug,8.1,1.45,60.0,11.0,8.0,30.0,year not given in source
+Teflon,81a,aged smoke reading,81,aged,27-Aug,8.1,1.45,,,,559.0,year not given in source
+Teflon,83,smoke generation run,83,Mid temp aging,26-Aug,8.1,1.448,60.0,11.0,8.0,30.0,year not given in source
+Teflon,83a,aged smoke reading,83,aged,27-Aug,8.1,1.448,,,,557.0,year not given in source
+Teflon,89,smoke generation run,89,Baseline STS det,30-Aug,8.1,1.445,60.0,11.0,8.0,31.0,year not given in source
+Teflon,100,smoke generation run,100,No flow run w/ aging,8-Sep,0.0,1.45,60.0,11.0,8.0,29.0,year not given in source
+Teflon,100a,aged smoke reading,100,aged,8-Sep,0.0,1.45,,,,560.0,year not given in source
+Teflon,105,smoke generation run,105,No flow run w/ aging,9-Sep,0.0,1.45,60.0,11.0,8.0,24.0,year not given in source
+Teflon,105a,aged smoke reading,105,aged,9-Sep,0.0,1.45,,,,559.0,year not given in source
+Teflon,111,smoke generation run,111,low flow run w/ STS,9-Sep,2.0,1.45,60.0,11.0,8.0,43.0,year not given in source
+Pyrell,52,smoke generation run,52,Baseline,22-Jul,8.1,1.22,60.0,11.0,8.0,,"net aging ""n/a"" in source; year not given in source"
+Pyrell,63,smoke generation run,63,Baseline Aging,23-Aug,8.1,1.22,60.0,11.0,8.0,56.0,year not given in source
+Pyrell,63a,aged smoke reading,63,aged,23-Aug,8.1,1.22,,,,840.0,year not given in source
+Pyrell,64,smoke generation run,64,High Temp aging,23-Aug,8.1,1.23,60.0,11.0,8.0,47.0,year not given in source
+Pyrell,64a,aged smoke reading,64,aged,23-Aug,8.1,1.23,,,,842.0,year not given in source
+Pyrell,71,smoke generation run,71,High temp aged STS det,24-Aug,8.1,1.23,60.0,720.0,8.0,750.0,year not given in source
+Pyrell,74,smoke generation run,74,Baseline Aging,26-Aug,8.1,1.22,60.0,11.0,8.0,48.0,year not given in source
+Pyrell,74a,aged smoke reading,74,aged,26-Aug,8.1,1.22,,,,623.0,year not given in source
+Pyrell,76,smoke generation run,76,High Temp aging,26-Aug,8.1,1.23,60.0,11.0,8.0,51.0,year not given in source
+Pyrell,76a,aged smoke reading,76,aged,26-Aug,8.1,1.23,,,,625.0,year not given in source
+Pyrell,84,smoke generation run,84,Mid Temp aging retry,30-Aug,8.1,1.225,60.0,11.0,8.0,53.0,year not given in source
+Pyrell,84a,aged smoke reading,84,aged,30-Aug,8.1,1.225,,,,632.0,year not given in source
+Pyrell,87,smoke generation run,87,Baseline STS det,30-Aug,8.1,1.22,60.0,11.0,8.0,45.0,year not given in source
+Pyrell,95,smoke generation run,95,No flow run w/ aging,7-Sep,0.0,1.22,60.0,11.0,8.0,38.0,year not given in source
+Pyrell,95a,aged smoke reading,95,aged,7-Sep,0.0,1.22,,,,,"net aging ""n/a"" in source; year not given in source"
+Pyrell,97,smoke generation run,97,No flow run w/aging,8-Sep,0.0,1.23,60.0,11.0,8.0,48.0,year not given in source
+Pyrell,97a,aged smoke reading,97,aged,8-Sep,0.0,1.23,,,,624.0,year not given in source
+Pyrell,107,smoke generation run,107,Low flow run w/aging,9-Sep,1.0,1.23,60.0,11.0,8.0,32.0,year not given in source
+Pyrell,107a,aged smoke reading,107,aged,9-Sep,1.0,1.23,,,,559.0,year not given in source
+Pyrell,113,smoke generation run,113,low flow run w STS,9-Sep,2.0,1.23,60.0,11.0,8.0,31.0,year not given in source

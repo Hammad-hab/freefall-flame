@@ -1,0 +1,9 @@
+fuel,d0_mm_range,gas,x_o2_values,pressure_atm_values,temp_c,flow_cm_s_range,flags
+IsoOctane (pure),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+n-Octane (pure),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Heptane (pure),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Decane (pure),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Ethanol (pure),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Propanol (95%) Glycerol (5%) (mixture),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Heptane (50%) IsoOctane (50%) (mixture),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
+Propanol (80%) Glycerol (20%) (mixture),1.5-5,O2/N2 or O2/He,0.17;0.21;0.25;0.30,0.5;1.0;1.5;2.0;3.0,25,0.1-5,summary of ranges only; no individual tests
