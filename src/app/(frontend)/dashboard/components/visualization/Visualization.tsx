@@ -267,9 +267,6 @@ export default function Visualization({
             {/* CO2 produced by material */}
             {co2ByMaterial.length > 0 && <MeanCo2ByMaterialChart data={co2ByMaterial} excluded={excluded} />}
 
-            {/* NASA's stated outcome: the five codes, with counts (only with an outcome column) */}
-            {outcomes.length > 0 && <OutcomeChart data={outcomes} />}
-
             {/* Thickness distribution, and the rods beside it (rods have a diameter, not a thickness) */}
             {thicknessDist.length > 0 && thicknessCol && (
               <ThicknessDistributionChart
@@ -279,6 +276,9 @@ export default function Visualization({
               />
             )}
             {rodDist.length > 0 && <RodDiameterChart data={rodDist} />}
+
+            {/* NASA's stated outcome: the five codes, with counts (only with an outcome column) */}
+            {outcomes.length > 0 && <OutcomeChart data={outcomes} />}
 
             {/* Starting air velocity vs O2 consumed — explicitly a starting measurement */}
             {velVsO2.length > 2 && airVelCol && <VelocityVsO2Chart data={velVsO2} />}
