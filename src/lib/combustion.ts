@@ -197,6 +197,10 @@ export type RowMapping = {
   pi: string | null
   date: string | null
   frames: string | null
+  /** NASA's stated outcome column (optional: older mappings have none). */
+  outcome?: string | null
+  /** Rod diameter, mm (optional: older mappings have none). */
+  rodDiameter?: string | null
 }
 
 export type GasField = 'o2i' | 'o2f' | 'coi' | 'cof' | 'co2i' | 'co2f'
@@ -221,6 +225,10 @@ export type ParsedRow = {
   pi: string | null
   date: string | null
   frames: number | null
+  /** NASA's stated outcome code, e.g. "not_stated", "extinguished_low_flow"; null without the column. */
+  outcome: string | null
+  /** Rod diameter, mm; null for samples that aren't rods or without the column. */
+  rodDiameter: number | null
   readingClasses: Partial<Record<GasField, ReadingClass>>
   mappingWarnings: string[]
 }
@@ -298,6 +306,8 @@ export function parseRows(rows: RawRow[], mapping: RowMapping): ParsedRow[] {
       pi: str(r[mapping.pi ?? '']),
       date: str(r[mapping.date ?? '']),
       frames: num(r[mapping.frames ?? '']),
+      outcome: str(r[mapping.outcome ?? '']),
+      rodDiameter: num(r[mapping.rodDiameter ?? '']),
       readingClasses: {
         o2i: o2iR.kind,
         o2f: o2fR.kind,
@@ -578,6 +588,10 @@ export function resolveBass2Columns(cols: ColumnLike[]) {
     { role: 'pi', exactKeys: ['pi', 'principle_investigator'], exactLabels: ['Principle Investigator', 'PI'], fuzzy: ['investigator'] },
     { role: 'date', exactKeys: ['date'], exactLabels: ['Date'] },
     { role: 'frames', exactKeys: ['total_frames_shot', 'frames'], exactLabels: ['Total Frames Shot'] },
+    // NASA's stated outcome (the cleaned dataset's canonical "outcome" column) and
+    // the rod diameter, which the cleaned table keeps apart from thickness.
+    { role: 'outcome', canon: 'outcome', exactKeys: ['outcome'], exactLabels: ['Outcome'] },
+    { role: 'rodDiameter', exactKeys: ['rod_diameter_mm'], exactLabels: ['Rod diameter'] },
   ]
   const resolutions = resolveColumnSet(cols, specs)
   const dupes = findDuplicateMappings(resolutions)
@@ -604,6 +618,8 @@ export function buildRowMapping(resolutions: Record<string, ColumnResolution>): 
     pi: col('pi'),
     date: col('date'),
     frames: col('frames'),
+    outcome: col('outcome'),
+    rodDiameter: col('rodDiameter'),
   }
 }
 

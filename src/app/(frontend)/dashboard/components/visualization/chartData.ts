@@ -103,6 +103,37 @@ export function thicknessDistribution(rows: ParsedRow[]): CountRow[] {
     .map((k) => ({ name: k, value: bins.get(k)! }));
 }
 
+/** NASA's five outcome codes in the cleaned BASS-II table, in this order, with plain labels. */
+export const OUTCOME_CODES: { code: string; label: string }[] = [
+  { code: "not_stated", label: "Not stated" },
+  { code: "extinguished_low_flow", label: "Went out at low flow" },
+  { code: "blowoff_high_flow", label: "Blew off at high flow" },
+  { code: "no_ignition", label: "Did not ignite" },
+  { code: "not_sustained", label: "Would not stay lit" },
+];
+
+/**
+ * Tests per NASA outcome code: all five codes (zero counts kept, so the chart
+ * always shows the full set), then any other value the column holds.
+ * Empty when the dataset has no outcome column.
+ */
+export function outcomeCounts(rows: ParsedRow[]): (CountRow & { code: string })[] {
+  const vals = rows.map((r) => r.outcome).filter((v): v is string => v !== null);
+  if (!vals.length) return [];
+  const counts = new Map<string, number>();
+  for (const v of vals) counts.set(v, (counts.get(v) ?? 0) + 1);
+  const known = OUTCOME_CODES.map((o) => ({ code: o.code, name: o.label, value: counts.get(o.code) ?? 0 }));
+  const other = [...counts].filter(([c]) => !OUTCOME_CODES.some((o) => o.code === c)).map(([c, n]) => ({ code: c, name: c.replace(/_/g, " "), value: n }));
+  return [...known, ...other];
+}
+
+/** Rods by diameter (mm), one bar per diameter in the table. Empty without rods. */
+export function rodDiameterDistribution(rows: ParsedRow[]): CountRow[] {
+  const counts = new Map<number, number>();
+  for (const r of rows) if (r.rodDiameter !== null) counts.set(r.rodDiameter, (counts.get(r.rodDiameter) ?? 0) + 1);
+  return [...counts].sort((a, b) => a[0] - b[0]).map(([d, n]) => ({ name: `${d} mm`, value: n }));
+}
+
 /** Starting air velocity vs O₂ consumed — one point per test. */
 export function velocityVsO2(rows: ParsedRow[]): { x: number; y: number; material: string }[] {
   return rows

@@ -54,4 +54,11 @@
     outline: 2px solid var(--color-flame-blue);
     outline-offset: 3px;
   }
+
+  /* recharts measures label text in a span it adds to <body> (off-screen,
+     aria-hidden) and leaves the last label in it, e.g. "T'ien". Hidden, it
+     still measures, but no longer shows up in the page's text or a copy. */
+  #recharts_measurement_span {
+    visibility: hidden !important;
+  }
 }

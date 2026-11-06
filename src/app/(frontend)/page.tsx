@@ -9,7 +9,7 @@ const body = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument'
 export const metadata: Metadata = {
   title: 'Flame in Freefall',
   description:
-    "Search, compare, and rank NASA's microgravity combustion experiments for Moon and Mars fire safety.",
+    "NASA's 14 PSI combustion investigations, ranked for crew-habitat fire safety, with the BASS-II tests in a sandbox that says how often it matches NASA.",
 }
 
 const h2 =
@@ -19,26 +19,41 @@ const btn =
 const btnPrimary = `${btn} border-flame-amber bg-flame-amber text-[#1a0f05] hover:bg-[#ffb868]`
 const btnGhost = `${btn} border-line hover:border-muted`
 
+// What the dashboard does today (feat/polish rewrote these to match it).
 const FEATURES = [
-  { term: 'Explore', desc: 'Filter experiments by fuel, oxygen level, pressure, airflow, and gravity.' },
-  { term: 'Compare', desc: 'Plot any two measurements across experiments on the same chart.' },
+  {
+    term: 'Catalogue',
+    desc: "NASA's 14 PSI combustion investigations, one card each: what was burned, oxygen, pressure, flow, tests and outcomes, computed from the cleaned tables.",
+  },
   {
     term: 'Rank',
-    desc: 'Score findings by what matters for a mission. The formula and weights are visible, and you can change them.',
+    desc: 'Rank them for crew-habitat fire safety on five criteria. The formula, the weights and the reference values are on screen, and you can change the weights.',
+  },
+  {
+    term: 'BASS-II',
+    desc: "Charts and a data table for NASA's 129 BASS-II tests: gas readings, stated outcomes, thickness and rod diameter, each test linked to its sandbox preset.",
+  },
+  {
+    term: 'Simulate',
+    desc: 'Run each BASS-II test in a combustion sandbox and see whether it ends as NASA reported. It matches 4 of the 26 tests NASA scored, and the page says so.',
   },
   {
     term: 'Ask',
-    desc: 'Ask what a result means for a lunar habitat and get an answer with sources.',
+    desc: "Plain-language AI explanations grounded in the data on screen, labelled as interpretations. For the investigation summaries, an answer with a number that isn't in the data is replaced by a plain summary.",
+  },
+  {
+    term: 'Moon base',
+    desc: 'A Moon-base card (34% O2, 0.17 g), labelled as an extrapolation: what the tables hold near that oxygen, and a sandbox what-if.',
   },
 ]
 
 const SOURCES = [
   {
     name: 'Physical Sciences Informatics',
-    desc: 'Experiment records and test conditions from ISS combustion investigations.',
+    desc: "NASA's tables for 14 ISS combustion investigations, cleaned without inventing values.",
   },
-  { name: 'NASA Technical Reports Server', desc: 'The papers and reports behind the numbers.' },
-  { name: 'NASA Task Book', desc: 'Project descriptions and bibliographies for combustion research.' },
+  { name: 'NASA Technical Reports Server', desc: 'The BASS-II papers we have checked; other investigations cite their PSI table.' },
+  { name: 'Stated assumptions', desc: 'ISS air, the exploration atmosphere (Norcross et al. 2013) and cabin ventilation (SAE 932191), shown with the ranking.' },
 ]
 
 export default function HomePage() {
@@ -68,8 +83,9 @@ export default function HomePage() {
               Fire behaves differently in space. Compare how.
             </h1>
             <p className="mb-8 max-w-[52ch] text-[1.15rem] text-muted">
-              Search NASA&apos;s microgravity combustion experiments, plot them on one chart, and
-              rank what matters for Moon and Mars missions. Every result links back to its paper.
+              Explore NASA&apos;s microgravity combustion investigations, rank them for crew-habitat fire
+              safety, and run the BASS-II tests in a sandbox that says honestly how often it matches NASA.
+              Every number comes from NASA&apos;s tables, and every card names its source.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/dashboard" className={btnPrimary}>
@@ -126,16 +142,17 @@ export default function HomePage() {
             <div>
               <h2 className={h2}>Bring your own dataset</h2>
               <p className="mt-3 max-w-[52ch] text-muted">
-                Admins can add new experiments, papers, and CSV files without touching code. New
-                data shows up on every chart once it is published.
+                Admins can add a dataset and its papers in the admin panel without touching code. A
+                published dataset opens in the dashboard by its id (/dashboard?dataset=…), and its
+                charts appear for the columns they recognise.
               </p>
             </div>
             <div>
               <ol className="mb-6 list-decimal pl-5 [&>li]:py-1">
-                <li>Upload a CSV or a paper</li>
-                <li>Map its columns to the standard fields</li>
-                <li>Review the rows</li>
-                <li>Publish</li>
+                <li>Create a dataset and define its columns</li>
+                <li>Upload the CSV under Dataset Imports (&quot;Check only&quot; validates first)</li>
+                <li>Link its papers</li>
+                <li>Publish it</li>
               </ol>
               <Link href="/admin" className={btnGhost}>
                 Admin sign-in

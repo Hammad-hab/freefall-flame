@@ -7,6 +7,8 @@ import {
   type DatasetMeta,
 } from "@/components/util"
 import { DatasetNotFound } from "./components/ui/DatasetNotFound"
+import { DataUnavailable } from "./components/ui/DataUnavailable"
+import { loadDashboard } from "./load"
 import Workspace from "./components/workspace/Workspace"
 import type { TabId } from "./components/workspace/layout-reducer"
 import { buildRowMapping, parseRows, resolveBass2Columns, type ParsedRow } from "@/lib/combustion"
@@ -19,26 +21,9 @@ interface SearchPageProps {
 
 const VALID_TABS: readonly TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
 
-type LoadedDataset = NonNullable<Awaited<ReturnType<typeof getDataset>>>
-
 /** Shared parsed-row computation for the evidence panels. */
-function parseForDataset(dataset: LoadedDataset, rows: DataRow[]): ParsedRow[] {
+function parseForDataset(dataset: DatasetMeta, rows: DataRow[]): ParsedRow[] {
   return parseRows(rows, buildRowMapping(resolveBass2Columns(dataset.columns).resolutions))
-}
-
-/** The default dataset: the first published one, preferring a BASS one. */
-function pickDefault(published: DatasetMeta[]): string | null {
-  const pick = published.find((d) => /bass/i.test(d.name)) ?? published[0]
-  return pick ? String(pick.id) : null
-}
-
-/**
- * The dataset id to show, or null for DatasetNotFound.
- * With no ?dataset=, falls back to the first published dataset, preferring a BASS one.
- */
-async function resolveDatasetId(param: string | string[] | undefined): Promise<string | null> {
-  if (param === undefined) return pickDefault(await getPublishedDatasets())
-  return typeof param === 'string' && /^\d+$/.test(param) ? param : null
 }
 
 export default async function Page({ searchParams }: SearchPageProps) {
@@ -49,26 +34,20 @@ export default async function Page({ searchParams }: SearchPageProps) {
     ? (rawTab as TabId)
     : "overview"
 
-  // Resolve the id before touching the database: a bad id must show
-  // DatasetNotFound, never reach a query (a missing id became NaN in SQL).
-  let datasetId = await resolveDatasetId(dataset_id)
-  if (datasetId === null) return <DatasetNotFound/>
-
-  let ds: LoadedDataset | null = await getDataset(datasetId)
-  if (!ds && dataset_id === undefined) {
-    // The cached list of published datasets can be stale right after a
-    // published flag changes, and name a dataset that is no longer public.
-    // Ask the database again without the cache and pick again.
-    const fresh = pickDefault(await getPublishedDatasetsUncached())
-    if (fresh !== null && fresh !== datasetId) {
-      datasetId = fresh
-      ds = await getDataset(fresh)
-    }
+  // load.ts: a bad id is "not found" before any query; a database that can't
+  // be reached gives the friendly page instead of a raw HTTP 500.
+  const loaded = await loadDashboard(dataset_id, {
+    published: getPublishedDatasets,
+    publishedUncached: getPublishedDatasetsUncached,
+    dataset: getDataset,
+    rows: getAllRows,
+  })
+  if (loaded.kind === 'notFound') return <DatasetNotFound/>
+  if (loaded.kind === 'unavailable') {
+    console.error('[dashboard] could not reach the data:', (loaded.error as Error)?.message ?? loaded.error)
+    return <DataUnavailable/>
   }
-  if (!ds) return <DatasetNotFound/>
-  // Rows skip access checks, so fetch them only once the dataset is known to be published.
-  const rows = await getAllRows(datasetId)
-  const dataset: DatasetMeta = ds
+  const { datasetId, dataset, rows } = loaded
 
   // The statistics card breaks the dataset down by whoever ran the tests,
   // so resolve that column once and share the result.
