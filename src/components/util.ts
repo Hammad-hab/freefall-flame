@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 
 import config from '@/payload.config'
+import { isNotFoundOrForbidden } from '@/lib/errors'
 
 // Types and pure column helpers live in src/lib so client components can
 // import them without pulling in this server-only module.
@@ -118,8 +119,12 @@ export async function getDataset(id: number | string): Promise<DatasetMeta | nul
       overrideAccess: isPreviewDataset(id),
     })
     return doc ? toMeta(doc) : null
-  } catch {
-    return null // not found, or not visible to the public
+  } catch (e) {
+    // Not found, or not visible to the public: "dataset not found". Anything
+    // else (the database unreachable) is rethrown, so the page can say so
+    // instead of pretending the dataset doesn't exist.
+    if (isNotFoundOrForbidden(e)) return null
+    throw e
   }
 }
 
