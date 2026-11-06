@@ -1,6 +1,38 @@
 {
   "about": "Built by src/scripts/psi-catalogue.ts from the cleaned NASA PSI tables in data/psi/ (copied unchanged from nasa-project/data). Every number is computed from those tables. Do not edit by hand: change the script or data/psi/sources.json.",
-  "catalogueSha256": "70aae90116116aba10d5e47674d90651c4143f74738be3e65fdaa5c27a982d79",
+  "catalogueSha256": "f66d8de77b0c5848d27bfc47f5660ece47df7669d90afcdce38a89e3f112abc1",
+  "reference": {
+    "iss": {
+      "label": "ISS cabin",
+      "text": "about 21% O2 at 1 atm (14.7 psia)",
+      "rule": "oxygen range overlaps 20.5-22.5% and pressure range overlaps 0.95-1.05 atm",
+      "o2Pct": [
+        20.5,
+        22.5
+      ],
+      "pressureAtm": [
+        0.95,
+        1.05
+      ]
+    },
+    "exploration": {
+      "label": "Exploration atmosphere",
+      "text": "32-34% O2 at 8.0-8.2 psia (0.54-0.56 atm). The Exploration Atmospheres Working Group recommended 8.0 psia / 32%; 8.2 psia / 34% is a proposed refinement.",
+      "source": "Norcross et al. 2013, \"Effects of the 8 psia / 32% O2 Atmosphere on the Human in the Spaceflight Environment\", NTRS 20130013505",
+      "rule": "at least 30% O2 or at most 0.7 atm somewhere in the table",
+      "minO2Pct": 30,
+      "maxPressureAtm": 0.7
+    },
+    "ventilation": {
+      "label": "Cabin ventilation",
+      "text": "typically about 7.6-20 cm/s (15-40 ft/min); the lower figure is the classic station minimum",
+      "source": "SAE 932191",
+      "cmS": [
+        7.6,
+        20
+      ]
+    }
+  },
   "investigations": [
     {
       "id": "bass-ii",
@@ -72,7 +104,29 @@
           "ntrsId": "20150019858",
           "url": "https://ntrs.nasa.gov/citations/20150019858"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 13.6-22.2 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0-53 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "129 tests in the table (per test); outcomes: partial (26 of 129)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "prevention: which solids keep burning at which oxygen and air speed, in a spacecraft-like flow duct"
+        }
+      }
     },
     {
       "id": "bass",
@@ -135,7 +189,29 @@
           "psiId": "PSI-26",
           "table": "bass_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex, Ultem"
+        },
+        "atmosphere": {
+          "score": 0,
+          "reason": "O2 not in the table, pressure not in the table: does not cover ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "flow not in the table"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "121 tests in the table (per test); outcomes: no"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "the same question for more materials, but the table holds only dates and samples; results are in the reports"
+        }
+      }
     },
     {
       "id": "saffire-i-iii",
@@ -240,7 +316,29 @@
           "psiId": "PSI-98/99/100",
           "table": "saffire_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex, silicone"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21.5-22.1 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "20-30 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "13 tests in the table (per sample), fewer than 100; outcomes: yes (burn time, spread; II also 1-g comparison)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "prevention: how a large fire grows inside a real spacecraft"
+        }
+      }
     },
     {
       "id": "flex",
@@ -314,7 +412,29 @@
           "psiId": "PSI-69",
           "table": "flex_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: methanol, heptane"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 12-34 %, pressure 0.692-3.05 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0 (quiescent): still air only, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "274 tests in the table (per test); outcomes: yes (extinction/completion/disruption, extinction diameter, burning rate)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "suppression: whether CO2 or helium dilution puts a flame out"
+        }
+      }
     },
     {
       "id": "flex-2",
@@ -381,7 +501,29 @@
           "psiId": "PSI-68",
           "table": "flex2_summary_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: octanes, heptane, decane, ethanol, mixtures"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 17-30 %, pressure 0.5-3 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0.1-5 cm/s: below the 7.6 cm/s ventilation minimum, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (summary of ranges), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental droplet combustion; only ranges in the table"
+        }
+      }
     },
     {
       "id": "cfi",
@@ -428,7 +570,29 @@
           "psiId": "PSI-39",
           "table": "cfi_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: n-dodecane and dodecane/iso-dodecane mixes"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 17-21 %, pressure 0.5-5 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0 cm/s: below the 7.6 cm/s ventilation minimum, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "79 tests in the table (per test), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "cool-flame chemistry, far from a cabin fire decision"
+        }
+      }
     },
     {
       "id": "cfi-g",
@@ -513,7 +677,29 @@
           "psiId": "PSI-159",
           "table": "cfig_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethane, propane, butane (pure and diluted)"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 12-85 %, pressure 0.489-3.267 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow (mg/s): no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "333 tests in the table (per test); outcomes: yes (ignition, self-extinction vs flow-terminated, burn time, cool flames)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "flammability at exploration oxygen levels (30% and more)"
+        }
+      }
     },
     {
       "id": "flame-design",
@@ -571,7 +757,29 @@
           "psiId": "PSI-10",
           "table": "flame_design_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, propane"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 19.8-85 %, pressure 0.426-3.02 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow (mg/s): no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "327 tests in the table (per test); outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "soot control through flame structure; fundamental"
+        }
+      }
     },
     {
       "id": "bre",
@@ -624,7 +832,29 @@
           "psiId": "PSI-20",
           "table": "acme_bre_days_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 1,
+          "reason": "gas (emulating solids): gas flames used to stand in for burning solids"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21-40 %, pressure not given: does not cover ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "still atmosphere: still air only, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (18 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "material flammability in still air, but through gas flames standing in for solids"
+        }
+      }
     },
     {
       "id": "cld-flame",
@@ -685,7 +915,29 @@
           "psiId": "PSI-21",
           "table": "cld_flame_days_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: methane, ethylene"
+        },
+        "atmosphere": {
+          "score": 0,
+          "reason": "O2 not in the table, pressure not in the table: does not cover ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "coflow: no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (32 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental laminar flames"
+        }
+      }
     },
     {
       "id": "s-flame",
@@ -746,7 +998,29 @@
           "psiId": "PSI-23",
           "table": "acme_sflame_days_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, methane, hydrogen"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 21-30 %, pressure 1 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow: no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (18 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental spherical flames (nitrogen against helium)"
+        }
+      }
     },
     {
       "id": "spice",
@@ -813,7 +1087,29 @@
           "psiId": "PSI-107",
           "table": "spice_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, propane, propylene, methane"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0.66-85.3 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "469 tests in the table (per flame condition); outcomes: no (smoke point not in table)"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "smoke formation, which bears on smoke detection, but no smoke point in the table"
+        }
+      }
     },
     {
       "id": "same-r",
@@ -883,7 +1179,29 @@
           "psiId": "PSI-101",
           "table": "same_r_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: silicone, Kapton, Teflon, Pyrell, lampwick"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0-8.1 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "109 tests in the table (per run); outcomes: no (smoke measurements not in table)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "detection: the smoke particles that cabin smoke detectors must see"
+        }
+      }
     },
     {
       "id": "same",
@@ -938,7 +1256,29 @@
           "psiId": "PSI-102",
           "table": "same_tests_clean.csv"
         }
-      ]
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: silicone, Kapton, Teflon, lampwick"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "5-10 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "8 tests in the table (summary), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "detection: smoke from heated spacecraft materials"
+        }
+      }
     }
   ]
 }

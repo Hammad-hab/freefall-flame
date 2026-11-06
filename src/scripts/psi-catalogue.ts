@@ -16,7 +16,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Papa from 'papaparse'
 
-import type { PsiCatalogue, PsiFact, PsiInvestigation, PsiSource } from '../lib/psi'
+import {
+  HABITAT_REFERENCE,
+  type CriterionScore,
+  type PsiCatalogue,
+  type PsiFact,
+  type PsiInvestigation,
+  type PsiScores,
+  type PsiSource,
+} from '../lib/psi'
 
 const ROOT = process.cwd()
 const DATA = path.join(ROOT, 'data', 'psi')
@@ -114,6 +122,94 @@ const FACTS: Record<string, FactSpec[]> = {
   SAME: [{ kind: 'count', column: 'material', label: 'Samples by material' }],
 }
 
+// ---- Habitat-relevance criteria (rules in CRITERIA, src/lib/psi.ts) ------------
+
+/** "13.6-22.2" -> [13.6, 22.2]; "21 (air)" -> [21, 21]; "~1 atm" -> [1, 1]; no number -> null. */
+function parseRange(text: string): [number, number] | null {
+  const m = /(-?\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?/.exec(text)
+  if (!m) return null
+  const a = Number(m[1])
+  return [a, m[2] !== undefined ? Number(m[2]) : a]
+}
+
+/** The catalogue's pressure text in atm ("0.495-3.31 bar" is converted), or null if not given. */
+function pressureAtm(text: string): [number, number] | null {
+  if (/not in table|not given/.test(text)) return null
+  const r = parseRange(text)
+  if (!r) return null
+  const BAR_TO_ATM = 1 / 1.01325
+  return /bar/.test(text) ? [r[0] * BAR_TO_ATM, r[1] * BAR_TO_ATM] : r
+}
+
+const overlaps = (r: [number, number], band: number[]) => r[0] <= band[1] && r[1] >= band[0]
+const fmtRange = (r: [number, number], unit: string) =>
+  r[0] === r[1] ? `${Number(r[0].toFixed(3))} ${unit}` : `${Number(r[0].toFixed(3))}-${Number(r[1].toFixed(3))} ${unit}`
+
+const HABITAT_SOLIDS = ['PMMA', 'SIBAL', 'Nomex', 'silicone', 'Kapton', 'Teflon', 'Ultem', 'Pyrell', 'lampwick']
+
+function scoreMaterials(c: Row): CriterionScore {
+  const found = HABITAT_SOLIDS.filter((m) => new RegExp(`\\b${m}\\b`, 'i').test(c.fuels))
+  if (found.length) return { score: 2, reason: `spacecraft solids in the table: ${found.join(', ')}` }
+  if (/emulating solids/.test(c.fuel_phase)) return { score: 1, reason: `${c.fuel_phase}: gas flames used to stand in for burning solids` }
+  return { score: 0, reason: `model fuels only: ${c.fuels}` }
+}
+
+function scoreAtmosphere(c: Row): CriterionScore {
+  const ref = HABITAT_REFERENCE
+  const o2 = c.o2_pct === 'not in table' ? null : parseRange(c.o2_pct)
+  const p = pressureAtm(c.pressure)
+  const iss = !!o2 && !!p && overlaps(o2, ref.iss.o2Pct) && overlaps(p, ref.iss.pressureAtm)
+  const expl = (!!o2 && o2[1] >= ref.exploration.minO2Pct) || (!!p && p[0] <= ref.exploration.maxPressureAtm)
+  const given = `O2 ${o2 ? fmtRange(o2, '%') : 'not in the table'}, pressure ${p ? fmtRange(p, 'atm') : c.pressure === 'not in table' ? 'not in the table' : 'not given'}`
+  const parts = [iss ? 'covers ISS air' : 'does not cover ISS air', expl ? 'reaches the exploration atmosphere' : 'does not reach the exploration atmosphere']
+  return { score: ((iss ? 1 : 0) + (expl ? 1 : 0)) as 0 | 1 | 2, reason: `${given}: ${parts.join('; ')}` }
+}
+
+function scoreAirflow(c: Row): CriterionScore {
+  const band = HABITAT_REFERENCE.ventilation.cmS
+  const f = c.flow_cm_s
+  if (/quiescent|still/.test(f)) return { score: 1, reason: `${f}: still air only, the ventilation-failure case` }
+  if (/burner|coflow/.test(f) && !/\d+\s*-/.test(f)) return { score: 0, reason: `${f}: no air speed comparable with cabin ventilation` }
+  const r = f === 'not in table' ? null : parseRange(f)
+  if (!r) return { score: 0, reason: 'flow not in the table' }
+  if (overlaps(r, band)) return { score: 2, reason: `${fmtRange(r, 'cm/s')} overlaps cabin ventilation (${band[0]}-${band[1]} cm/s)` }
+  if (r[1] < band[0]) return { score: 1, reason: `${fmtRange(r, 'cm/s')}: below the ${band[0]} cm/s ventilation minimum, the ventilation-failure case` }
+  return { score: 0, reason: `${fmtRange(r, 'cm/s')}: faster than cabin ventilation` }
+}
+
+function scoreRichness(c: Row): CriterionScore {
+  const many = Number(c.tests) >= 100
+  const outcomes = /^(yes|partial)/.test(c.outcome_recorded)
+  return {
+    score: ((many ? 1 : 0) + (outcomes ? 1 : 0)) as 0 | 1 | 2,
+    reason: `${c.tests} tests in the table (${c.granularity})${many ? '' : ', fewer than 100'}; outcomes: ${c.outcome_recorded}`,
+  }
+}
+
+// Criterion e is our judgement, written down here with its reason.
+const DECISION: Record<string, CriterionScore> = {
+  'BASS-II': { score: 2, reason: 'prevention: which solids keep burning at which oxygen and air speed, in a spacecraft-like flow duct' },
+  BASS: { score: 1, reason: 'the same question for more materials, but the table holds only dates and samples; results are in the reports' },
+  'Saffire I-III': { score: 2, reason: 'prevention: how a large fire grows inside a real spacecraft' },
+  FLEX: { score: 2, reason: 'suppression: whether CO2 or helium dilution puts a flame out' },
+  'FLEX-2': { score: 0, reason: 'fundamental droplet combustion; only ranges in the table' },
+  CFI: { score: 0, reason: 'cool-flame chemistry, far from a cabin fire decision' },
+  'CFI-G (ACME)': { score: 2, reason: 'flammability at exploration oxygen levels (30% and more)' },
+  'Flame Design (ACME)': { score: 0, reason: 'soot control through flame structure; fundamental' },
+  'BRE (ACME)': { score: 1, reason: 'material flammability in still air, but through gas flames standing in for solids' },
+  'CLD Flame (ACME)': { score: 0, reason: 'fundamental laminar flames' },
+  's-Flame (ACME)': { score: 0, reason: 'fundamental spherical flames (nitrogen against helium)' },
+  SPICE: { score: 1, reason: 'smoke formation, which bears on smoke detection, but no smoke point in the table' },
+  'SAME-R': { score: 2, reason: 'detection: the smoke particles that cabin smoke detectors must see' },
+  SAME: { score: 2, reason: 'detection: smoke from heated spacecraft materials' },
+}
+
+function scores(c: Row): PsiScores {
+  const decision = DECISION[c.investigation]
+  if (!decision) throw new Error(`no judgement written for ${c.investigation}`)
+  return { materials: scoreMaterials(c), atmosphere: scoreAtmosphere(c), airflow: scoreAirflow(c), richness: scoreRichness(c), decision }
+}
+
 // Granularities where each row is one test, so the catalogue's count must equal the rows.
 const PER_TEST = /^per (test|sample|run|flame condition)$/
 
@@ -171,6 +267,7 @@ export function build(): PsiCatalogue {
       cleanedFile: c.cleaned_file,
       facts,
       sources,
+      scores: scores(c),
     }
   })
   const ids = new Set(investigations.map((i) => i.id))
@@ -179,7 +276,9 @@ export function build(): PsiCatalogue {
   return {
     about:
       'Built by src/scripts/psi-catalogue.ts from the cleaned NASA PSI tables in data/psi/ (copied unchanged from nasa-project/data). Every number is computed from those tables. Do not edit by hand: change the script or data/psi/sources.json.',
-    catalogueSha256: crypto.createHash('sha256').update(catalogueText).digest('hex'),
+    // Over the text with line endings made LF, so a CRLF checkout gives the same value.
+    catalogueSha256: crypto.createHash('sha256').update(catalogueText.toString('utf8').replace(/\r\n/g, '\n')).digest('hex'),
+    reference: HABITAT_REFERENCE,
     investigations,
   }
 }
