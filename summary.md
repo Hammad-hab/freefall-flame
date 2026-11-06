@@ -372,6 +372,12 @@ with sharp/esbuild/unrs-resolver built specially).
 
 - **Database**: `DATABASE_URL` points at a Supabase Postgres pooler (`aws-0-ap-south-1`).
   This is **not** a local Postgres; it is a managed pool and works for the hosted app.
+- **Schema push is off by default** (`push: process.env.PAYLOAD_PUSH === 'true'` in
+  `src/payload.config.ts`). Payload's own default pushes the schema to the database on
+  every dev start and test run; with the switch off, neither the dev server nor the tests
+  print "Pulling schema from database..." or change the shared database. Set
+  `PAYLOAD_PUSH=true` for one dev-server run only to push an approved schema change. A
+  production build never pushes, whatever the switch says.
 - **Storage**: `@payloadcms/storage-s3` with `clientUploads: true` → files upload straight to
   S3; requires `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (see
   `.env.example`).

@@ -26,6 +26,11 @@ export default buildConfig({
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: postgresAdapter({
     pool: { connectionString: process.env.DATABASE_URL || '' },
+    // Schema push is OFF unless PAYLOAD_PUSH=true. Payload's default pushes
+    // the schema to the database on every dev start and test run (and the
+    // database is the shared Supabase one), so it must be asked for, never
+    // implied. A production build (NODE_ENV=production) never pushes anyway.
+    push: process.env.PAYLOAD_PUSH === 'true',
   }),
   sharp,
   // No anonymous usage data sent to Payload (on by default).
