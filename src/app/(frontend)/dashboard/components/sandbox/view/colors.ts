@@ -7,7 +7,8 @@ import { KIND, MAT } from '../engine/Engine';
 
 const AIR = MAT.AIR;
 
-export const VIEWS = ['material', 'temperature', 'oxygen', 'co2', 'flow', 'camera'] as const;
+// The game's order (src/ui.c VIEW_NAMES): Mat, Temp, O2, Flow, CO2, CO, Cam.
+export const VIEWS = ['material', 'temperature', 'oxygen', 'flow', 'co2', 'co', 'camera'] as const;
 export type View = (typeof VIEWS)[number];
 
 export type RGB = [number, number, number];
@@ -21,6 +22,7 @@ export interface Grid {
   temperature: ArrayLike<number>;
   oxygen: ArrayLike<number>;
   co2: ArrayLike<number>;
+  co: ArrayLike<number>;     // fc_grid_co(): fraction 0..1, approximate
   flowX: ArrayLike<number>;
   flowY: ArrayLike<number>;
 }
@@ -47,6 +49,14 @@ const CO2_STOPS: Stop[] = [
   [0, [15, 15, 25]], [0.01, [55, 35, 100]], [0.05, [140, 55, 175]], [0.12, [235, 110, 170]],
   [0.21, [255, 235, 225]],
 ];
+// Carbon monoxide, an APPROXIMATE quantity (the engine makes it by a rule,
+// not chemistry). The game's CO_STOPS: its scale ends at 0.01, far below
+// CO2's, because much less CO is made.
+const CO_STOPS: Stop[] = [
+  [0, [15, 15, 25]], [0.0003, [35, 70, 40]], [0.002, [100, 150, 40]], [0.005, [225, 215, 60]],
+  [0.01, [255, 255, 225]],
+];
+export const CO_APPROX_LABEL = 'APPROXIMATE (a rule, not chemistry)';
 const FLOW_STOPS: Stop[] = [
   [0, [15, 15, 25]], [0.02, [25, 45, 130]], [0.1, [30, 140, 200]], [0.3, [150, 230, 240]],
   [0.5, [255, 255, 255]],
@@ -87,16 +97,18 @@ const LUTS = {
   temperature: makeLut(TEMP_STOPS, 1601),
   oxygen: makeLut(OXY_STOPS),
   co2: makeLut(CO2_STOPS),
+  co: makeLut(CO_STOPS),
   flow: makeLut(FLOW_STOPS),
   camera: makeLut(CAMERA_STOPS),
 } satisfies Record<Exclude<View, 'material'>, Lut>;
 
-export const SCALES: Record<Exclude<View, 'material' | 'temperature'> | 'temperature', { stops: Stop[]; unit: string }> = {
-  // for legends: the stops and the unit
+export const SCALES: Record<Exclude<View, 'material'>, { stops: Stop[]; unit: string; note?: string }> = {
+  // for legends: the stops, the unit, and a label that must show with the view
   temperature: { stops: TEMP_STOPS, unit: 'K' },
   oxygen: { stops: OXY_STOPS, unit: 'O2 fraction' },
-  co2: { stops: CO2_STOPS, unit: 'CO2 fraction' },
   flow: { stops: FLOW_STOPS, unit: 'cells/step' },
+  co2: { stops: CO2_STOPS, unit: 'CO2 fraction' },
+  co: { stops: CO_STOPS, unit: 'CO fraction', note: CO_APPROX_LABEL },
   camera: { stops: CAMERA_STOPS, unit: 'glow 0..1' },
 };
 
@@ -111,7 +123,7 @@ function put(out: Pixels, p: number, lut: Lut, v: number): void {
 // `airColour`, if given, paints empty (air) cells in the material view, so the
 // chamber matches the dashboard's background; no other colour changes.
 export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null): void {
-  const { material, temperature, oxygen, co2, flowX, flowY } = engine.grid;
+  const { material, temperature, oxygen, co2, co, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;
   const glow = view === 'camera' ? engine.camera() : null;   // fc_camera_intensity()
   for (let i = 0, p = 0; i < cells; i++, p += 4) {
@@ -126,6 +138,9 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour
         break;
       case 'co2':
         if (gas) put(out, p, LUTS.co2, co2[i]); else setRgb(out, p, NO_GAS);
+        break;
+      case 'co':
+        if (gas) put(out, p, LUTS.co, co[i]); else setRgb(out, p, NO_GAS);
         break;
       case 'flow': {
         if (!gas) { setRgb(out, p, NO_GAS); break; }

@@ -14,7 +14,7 @@ export const TOOLS = ['paint', 'erase', 'ignite'] as const;
 export type Tool = (typeof TOOLS)[number];
 
 const VIEW_LABELS: Record<View, string> = {
-  material: 'Material', temperature: 'Temperature', oxygen: 'Oxygen', co2: 'CO2', flow: 'Flow', camera: 'Camera',
+  material: 'Material', temperature: 'Temperature', oxygen: 'Oxygen', flow: 'Flow', co2: 'CO2', co: 'CO', camera: 'Camera',
 };
 const GRAVITY_PRESETS: [string, number][] = [['Earth', 1], ['Mars', 0.38], ['Moon', 0.165], ['Zero', 0]];
 const FAN_DIRS: [string, Dir][] = [['Right', DIR.RIGHT], ['Down', DIR.DOWN], ['Left', DIR.LEFT], ['Up', DIR.UP]];
@@ -187,12 +187,20 @@ function Legend({ view }: { view: View }) {
   if (!scale) return <div id="legend" />;
   const lo = scale.stops[0][0], hi = scale.stops[scale.stops.length - 1][0];
   return (
-    <div id="legend" className="flex items-center gap-2 text-[10px] tabular-nums" style={{ color: C.muted }}>
-      <span>{lo}</span>
-      {/* The ramp is drawn 260x1; CSS stretches that single row into a readable band. */}
-      <canvas ref={ref} width={260} height={1} className="h-2 min-w-0 flex-1 rounded-full" />
-      <span>{hi}</span>
-      <span className="whitespace-nowrap">{scale.unit}</span>
+    <div className="flex w-full min-w-0 flex-col gap-1">
+      <div id="legend" data-view={view} className="flex items-center gap-2 text-[10px] tabular-nums" style={{ color: C.muted }}>
+        <span>{lo}</span>
+        {/* The ramp is drawn 260x1; CSS stretches that single row into a readable band. */}
+        <canvas ref={ref} width={260} height={1} className="h-2 min-w-0 flex-1 rounded-full" />
+        <span>{hi}</span>
+        <span className="whitespace-nowrap">{scale.unit}</span>
+      </div>
+      {/* A label that must be read with the view (CO: the engine makes it by a rule, not chemistry). */}
+      {scale.note && (
+        <div id="legend-note" className="text-[10px] font-semibold tracking-wide" style={{ color: C.amber }}>
+          {scale.note}
+        </div>
+      )}
     </div>
   );
 }
