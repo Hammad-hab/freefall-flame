@@ -12,7 +12,8 @@ import type { DatasetMeta, DataRow } from '@/lib/types'
 import type { ParsedRow } from '@/lib/combustion'
 import type { ShareResult } from '@/lib/shares'
 import SummaryAndChart from '../overview/SummaryChart'
-import { Vulnerability, Statistics, Assistant } from '../overview/Fragments'
+import { Statistics, Assistant } from '../overview/Fragments'
+import KeyNumbers from '../overview/KeyNumbers'
 import SourcesStrip from '../overview/SourcesStrip'
 import Limitations from '../overview/Limitations'
 import EvidenceRanking from '../evidence/EvidenceRanking'
@@ -58,7 +59,7 @@ function OverviewContent({ data }: { data: TabData }) {
       )}
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[1fr_380px]">
         <SummaryAndChart dataset={data.dataset} rows={data.rows} />
-        <Vulnerability />
+        <KeyNumbers rows={data.parsedRows} links={data.links} />
       </div>
       <div className="grid grid-cols-1 gap-8 @2xl:grid-cols-2 @6xl:grid-cols-[1.45fr_0.8fr_1fr]">
         <Statistics shares={data.shares} />
