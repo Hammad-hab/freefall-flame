@@ -108,9 +108,11 @@ test days, FLEX-2 8 fuels (ranges only). All gas flames or droplets.
 Its sandbox what-if (`?tab=sandbox&scenario=moon`) loads BASS-II test B1
 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it, stops its timeline, sets only
 the oxygen to 34% and gravity to 0.17 g, refills the chamber air, and plays
-B1's own 1500 steps. No engine change. On 6 Nov 2026: burned out at step
-1271, where B1 at NASA's conditions (22.2%, 0 g) is still burning at step
-1500. Labelled "extrapolation: not validated above 22.2% O2; pressure is not
+B1's own 1500 steps. No engine change. On 6 Nov 2026: at 34% O2 and
+0.17 g, the sample was fully consumed by step 1271; at NASA's conditions
+(B1: 22.2% O2, 0 g) it is still burning at step 1500. More oxygen made the
+fire faster, not safer. The card states this result (MOON_RESULT in
+MoonBaseCard.tsx) and run-checks compares it with a live run. Labelled "extrapolation: not validated above 22.2% O2; pressure is not
 modelled (the engine runs at 1 atm)".
 
 ## Choices

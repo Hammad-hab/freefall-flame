@@ -10,6 +10,13 @@ import type { MoonBase } from '@/lib/psi'
 import { linkProps, type WorkspaceLinks } from '../workspace/links'
 import { C, panelCls, panelStyle } from '../ui/chart-theme'
 
+/**
+ * The what-if's result in this engine (flame-core 1.1.0), measured on 6 Nov
+ * 2026; run-checks compares it with a live run. "Fully consumed": every bit
+ * of the sample burned (the engine's outcome "burned out"), not "went out".
+ */
+export const MOON_RESULT = { consumedByStep: 1271, nasaStillBurningAt: 1500 } as const
+
 export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: WorkspaceLinks }) {
   return (
     <section id="psi-moon" className={panelCls} style={{ ...panelStyle, borderColor: `${C.amber}66` }}>
@@ -68,6 +75,11 @@ export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: 
         <div style={{ color: C.fg }}>
           Sandbox what-if: BASS-II test B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it, with only the oxygen raised to{' '}
           {moon.o2Pct}% and gravity set to {moon.gravityG} g.
+        </div>
+        <div className="mt-1" style={{ color: C.fg }} data-moon-result={MOON_RESULT.consumedByStep}>
+          At {moon.o2Pct}% O2 and {moon.gravityG} g, the sample was fully consumed by step {MOON_RESULT.consumedByStep}; at
+          NASA&apos;s conditions (B1) it is still burning at step {MOON_RESULT.nasaStillBurningAt}. More oxygen made the fire
+          faster, not safer.
         </div>
         <div className="mt-1" style={{ color: C.amber }}>
           extrapolation: not validated above {moon.solidMaxO2Pct}% O2; pressure is not modelled (the engine runs at 1 atm).

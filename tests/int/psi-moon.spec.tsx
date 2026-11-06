@@ -40,6 +40,15 @@ describe('Moon-base scenario card', () => {
     )
   })
 
+  it('states the what-if result plainly: fully consumed, not "burned out"', () => {
+    render(<MoonBaseCard moon={moon} />)
+    const text = document.querySelector('[data-moon-result]')?.textContent?.replace(/\s+/g, ' ').trim()
+    expect(text).toBe(
+      "At 34% O2 and 0.17 g, the sample was fully consumed by step 1271; at NASA's conditions (B1) it is still burning at step 1500. More oxygen made the fire faster, not safer.",
+    )
+    expect(document.querySelector('#psi-moon')?.textContent).not.toMatch(/burned out/)
+  })
+
   it('links to the sandbox what-if', () => {
     expect(moonHref()).toBe('/dashboard?tab=sandbox&scenario=moon')
   })

@@ -22,7 +22,7 @@
 // "no reading" marker (-1.0) is also a real CO reading in 11 tests.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Engine, NASA, FIDELITY, PARAM, SAFFIRE_FIRST, WIND_PER_CM_S, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
+import { Engine, NASA, FIDELITY, OUTCOME, PARAM, SAFFIRE_FIRST, WIND_PER_CM_S, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
@@ -663,8 +663,11 @@ export default function PresetsPanel({
           <div className="space-y-1 text-[11px] leading-5">
             {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
             {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
+            {/* "burned out" reads like "went out": say plainly that the sample was used up. */}
             {row('Our outcome',
-              live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
+              live.outcomeCode === OUTCOME.BURNED_OUT
+                ? `the sample was fully consumed by step ${live.outcomeStep}`
+                : live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
             {row('NASA result', 'none: no test was run at these conditions')}
           </div>
         </div>
