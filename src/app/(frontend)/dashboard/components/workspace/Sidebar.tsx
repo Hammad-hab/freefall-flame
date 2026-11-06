@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { TabId } from './layout-reducer'
 import { TAB_REGISTRY, TAB_ORDER } from './tabs'
@@ -13,25 +13,52 @@ interface SidebarProps {
   onSplitRight: (tab: TabId) => void
 }
 
+/** Below this window width the sidebar starts collapsed and opens over the content. */
+const NARROW_PX = 768
+
 export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [narrow, setNarrow] = useState(false)
+
+  // On a phone-width window the sidebar collapses to a thin strip, so the
+  // canvas and cards get the width; it follows the window as it is resized.
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia(`(max-width: ${NARROW_PX - 1}px)`)
+    const apply = () => {
+      setNarrow(mq.matches)
+      setCollapsed(mq.matches)
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   if (collapsed) {
     return (
-      <div className="flex w-10 shrink-0 flex-col items-center border-r border-line bg-ink py-2">
+      <div className="flex w-10 shrink-0 flex-col items-center border-r border-line bg-ink py-2" data-sidebar="collapsed">
         <button
-          aria-label="Expand sidebar"
+          aria-label={narrow ? 'Open menu' : 'Expand sidebar'}
           onClick={() => setCollapsed(false)}
           className="rounded p-1.5 text-muted transition-colors hover:bg-line hover:text-fg"
         >
-          <Icon d="M9 6l6 6-6 6" className="h-4 w-4" />
+          <Icon d={narrow ? 'M4 6h16M4 12h16M4 18h16' : 'M9 6l6 6-6 6'} className="h-4 w-4" />
         </button>
       </div>
     )
   }
 
-  return (
-    <div className="flex w-48 shrink-0 flex-col border-r border-line bg-ink">
+  // Narrow window, menu open: it lies over the content (with a backdrop that
+  // closes it), and picking a tab closes it again.
+  const pick = (tab: TabId) => {
+    onOpenTab(tab)
+    if (narrow) setCollapsed(true)
+  }
+  const panel = (
+    <div
+      className={`flex w-48 shrink-0 flex-col border-r border-line bg-ink ${narrow ? 'fixed inset-y-0 left-0 z-40 w-56 shadow-2xl' : ''}`}
+      data-sidebar={narrow ? 'overlay' : 'open'}
+    >
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <Link
           href="/"
@@ -59,7 +86,7 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
               }`}
             >
               <button
-                onClick={() => onOpenTab(tab)}
+                onClick={() => pick(tab)}
                 aria-current={isActive ? 'page' : undefined}
                 className="flex flex-1 items-center gap-2 text-left"
               >
@@ -80,5 +107,14 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
         })}
       </nav>
     </div>
+  )
+  if (!narrow) return panel
+  return (
+    <>
+      {/* The strip keeps its place in the layout; the open menu lies over the content. */}
+      <div className="w-10 shrink-0 border-r border-line bg-ink" />
+      <button aria-label="Close menu" onClick={() => setCollapsed(true)} className="fixed inset-0 z-30 bg-black/50" />
+      {panel}
+    </>
   )
 }
