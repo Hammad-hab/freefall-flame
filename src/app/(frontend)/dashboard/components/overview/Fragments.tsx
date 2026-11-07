@@ -4,6 +4,7 @@ import type { PaperRef } from "@/lib/types";
 import type { ShareResult } from "@/lib/shares";
 import type { InterpretationSummary } from "@/lib/combustion";
 import { C } from "../ui/chart-theme";
+import Markdown from "../ui/Markdown";
 import { QUESTION_MAX_CHARS } from "@/lib/ai-limits";
 
 // The dashboard template's placeholder cards ("Incident frequency", "Key
@@ -231,7 +232,7 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
       {/* The answer first, in full. */}
       {answer && (
         <Section title="Answer" accent={C.amber}>
-          <p id="assistant-answer" className="whitespace-pre-wrap text-[12px] leading-6" style={{ color: C.fg }}>{answer}</p>
+          <Markdown id="assistant-answer" text={answer} className="text-[12px] leading-6" />
           <p className="text-[10px]" style={{ color: C.muted }}>AI interpretation{model ? ` (${model})` : ''}, grounded in the summary below.</p>
         </Section>
       )}

@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { C } from '../ui/chart-theme'
+import Markdown from '../ui/Markdown'
 
 interface Reply {
   fallback?: string[]
@@ -57,7 +58,7 @@ export default function AiSummary({ id, auto = false, title }: { id: string; aut
       {reply.ai ? (
         <>
           <div className="mb-1 text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>AI interpretation ({reply.model}), from the data shown here</div>
-          <p className="whitespace-pre-line" style={{ color: C.fg }}>{reply.ai}</p>
+          <Markdown text={reply.ai} />
         </>
       ) : (
         <>
