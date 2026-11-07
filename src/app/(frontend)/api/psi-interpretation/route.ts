@@ -12,7 +12,7 @@
 import { NextResponse } from 'next/server'
 import data from '@/app/(frontend)/dashboard/components/investigations/psi.json'
 import type { PsiCatalogue } from '@/lib/psi'
-import { numbersNotInFacts, psiFacts, psiFallback, systemFor, tooGeneral } from '@/lib/psi-ai'
+import { numbersNotInFacts, psiFacts, psiFallback, systemFor, tooGeneral, unmarkedInterpretation } from '@/lib/psi-ai'
 import {
   AI_MODEL,
   DAILY_PAID_CAP,
@@ -63,14 +63,18 @@ export async function GET(request: Request) {
   // the facts, and specific enough (names investigations, no general phrases).
   const invented = answer ? numbersNotInFacts(answer, facts) : []
   const general = answer && invented.length === 0 ? tooGeneral(answer, catalogue, id) : null
-  const ai = answer && invented.length === 0 && !general ? answer : null
+  // The overall summary's interpretations must sit under "What separates them" or be marked ("This suggests").
+  const unmarked = answer && invented.length === 0 && !general && id === 'overall' ? unmarkedInterpretation(answer) : null
+  const ai = answer && invented.length === 0 && !general && !unmarked ? answer : null
   const rejected = !answer
     ? null
     : invented.length
       ? `The AI answer used numbers not in the data (${invented.join(', ')}), so the plain summary is shown instead.`
       : general
         ? `The AI answer was too general (${general}), so the plain summary is shown instead.`
-        : null
+        : unmarked
+          ? `The AI answer gave an interpretation as a fact ("${unmarked.slice(0, 80)}"), so the plain summary is shown instead.`
+          : null
   return NextResponse.json({
     id,
     fallback,

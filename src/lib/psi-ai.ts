@@ -30,6 +30,7 @@ export const PSI_OVERALL_SYSTEM = [
   '9. Name the tables that record no outcome per test, or give their count.',
   '10. Do not write general statements about scoring, such as "higher scores indicate".',
   '11. Under 130 words, with three headings: Top of the ranking / What separates them / What the tables can\'t tell us.',
+  '12. Anything that interprets rather than states a fact goes under "What separates them", or starts with "This suggests". The other two headings hold facts only.',
 ].join('\n')
 
 export type PsiTarget = 'overall' | string
@@ -159,6 +160,36 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 export function names(text: string, name: string): boolean {
   const forms = new Set([name, name.replace(/\s*\(ACME\)$/, ''), name.replace(/\s+I-III$/, '')])
   return [...forms].some((f) => new RegExp(`(?<![\\w-])${escapeRe(f)}(?![\\w-])`, 'i').test(text))
+}
+
+// ---- Interpretation must be marked (overall summary, rule 12) ----
+
+const OVERALL_HEADINGS = ['Top of the ranking', 'What separates them', "What the tables can't tell us"]
+/** Words that make a sentence an inference rather than a stated fact. */
+const INTERPRETS = /\b(?:may|might|could|likely|probably|perhaps|suggests?|implies|imply|indicates?|seems?|appears? to|means? that)\b/i
+/** A sentence may interpret if it starts like this (after any list mark or bold). */
+const MARKED = /^[\s\-*\d.)#]*(?:\*\*)?(?:this suggests|this may mean|interpretation:)/i
+
+/**
+ * The first sentence that interprets outside "What separates them" without
+ * starting with a marker such as "This suggests", or null if there is none.
+ */
+export function unmarkedInterpretation(answer: string): string | null {
+  const text = answer.replace(/[‘’]/g, "'")
+  // Where each heading starts; text before the first heading counts as a facts section.
+  const starts = OVERALL_HEADINGS
+    .map((h) => ({ h, at: text.toLowerCase().indexOf(h.toLowerCase()) }))
+    .filter((s) => s.at >= 0)
+    .sort((a, b) => a.at - b.at)
+  const sections = [{ h: '', from: 0, to: starts[0]?.at ?? text.length }, ...starts.map((s, k) => ({ h: s.h, from: s.at + s.h.length, to: starts[k + 1]?.at ?? text.length }))]
+  for (const s of sections) {
+    if (s.h === 'What separates them') continue
+    // A sentence ends at . ! or ?, perhaps followed by a closing quote or bracket ('"SPICE." This suggests…').
+    const sentences = text.slice(s.from, s.to).split(/(?<=[.!?]["'”)\]]*)\s+|\n+/).map((x) => x.replace(/^[\s:#*]+/, '').trim()).filter(Boolean)
+    const bad = sentences.find((x) => INTERPRETS.test(x) && !MARKED.test(x))
+    if (bad) return bad
+  }
+  return null
 }
 
 /**
