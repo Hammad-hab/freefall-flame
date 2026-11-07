@@ -16,6 +16,8 @@ import {
   type WidgetLayout,
 } from '@/lib/widget-layout'
 import Investigations from '@/app/(frontend)/dashboard/components/investigations/Investigations'
+import data from '@/app/(frontend)/dashboard/components/investigations/psi.json'
+import { testsLabel, type PsiCatalogue } from '@/lib/psi'
 
 afterEach(cleanup)
 beforeEach(() => { try { window.localStorage.clear() } catch { /* none */ } })
@@ -173,6 +175,24 @@ describe('widgets on screen', () => {
     expect(document.querySelector('[data-widget="cards"]')).toBeTruthy()
     expect(document.querySelector('[data-psi="flex"][data-focused]')).toBeTruthy()
     expect(document.querySelector('[data-psi-detail="flex"]')).toBeTruthy()
+  })
+
+  it('says what a table without single tests holds: "18 test days (no single tests)", "8 fuels (summary ranges)"', () => {
+    const labels = Object.fromEntries((data as PsiCatalogue).investigations.map((i) => [i.id, testsLabel(i)]))
+    expect(labels).toMatchObject({
+      'bass-ii': '129 (per test)',
+      same: '8 (summary)',
+      bre: '18 test days (no single tests)',
+      'cld-flame': '32 test days (no single tests)',
+      's-flame': '18 test days (no single tests)',
+      'flex-2': '8 fuels (summary ranges)',
+    })
+    // The old wording is gone from the cards and their details.
+    render(<Investigations />)
+    expect(document.querySelector('[data-psi="bre"]')?.textContent).toContain('Tests18 test days (no single tests)')
+    fireEvent.click(document.querySelector('[data-details="flex-2"]')!)
+    expect(document.querySelector('[data-psi-detail="flex-2"]')?.textContent).toContain('Tests8 fuels (summary ranges)')
+    expect(document.body.textContent).not.toMatch(/no single tests;|rows \(per test day|no single tests in the table/)
   })
 
   it('filters cards by phase and sorts them, saying how many show', () => {

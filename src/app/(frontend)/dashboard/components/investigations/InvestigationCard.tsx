@@ -6,7 +6,7 @@
  * sources (every card cites its PSI id). All values come from psi.json.
  */
 import type { ReactNode } from 'react'
-import type { PsiFact, PsiInvestigation } from '@/lib/psi'
+import { testsLabel, type PsiFact, type PsiInvestigation } from '@/lib/psi'
 import { C, panelCls, panelStyle } from '../ui/chart-theme'
 import { StatusBadge } from './Simulated'
 
@@ -52,10 +52,6 @@ export default function InvestigationCard({
   /** The full card inside the Details side panel (CardDrawer.tsx): no panel of its own, its own ids. */
   detail?: boolean
 }) {
-  const testsText =
-    inv.tests > 0
-      ? `${inv.tests} (${inv.granularity})`
-      : `${inv.rows} rows (${inv.granularity}); no single tests in the table`
   return (
     <article
       id={detail ? `psi-detail-${inv.id}` : `psi-${inv.id}`}
@@ -81,7 +77,7 @@ export default function InvestigationCard({
         <Row label="Oxygen">{inv.o2Pct === 'not in table' ? 'not in the table' : inv.o2Pct.replace(/^([\d.]+(?:-[\d.]+)?)/, '$1 %')}</Row>
         <Row label="Pressure">{inv.pressure === 'not in table' ? 'not in the table' : inv.pressure}</Row>
         <Row label="Flow">{inv.flowCmS === 'not in table' ? 'not in the table' : /\d/.test(inv.flowCmS) && !/mg/.test(inv.flowCmS) ? `${inv.flowCmS} cm/s` : inv.flowCmS}</Row>
-        <Row label="Tests">{testsText}</Row>
+        <Row label="Tests">{testsLabel(inv)}</Row>
         <Row label="Outcomes">{inv.outcomeRecorded}</Row>
         <Row label="Fire-safety theme">{inv.safetyTheme}</Row>
       </div>
