@@ -8,7 +8,7 @@
  */
 import type { MoonBase } from '@/lib/psi'
 import { linkProps, type WorkspaceLinks } from '../workspace/links'
-import { C, panelCls, panelStyle } from '../ui/chart-theme'
+import { C } from '../ui/chart-theme'
 
 /**
  * The what-if's result in this engine (flame-core 1.1.0), measured on 6 Nov
@@ -19,11 +19,12 @@ export const MOON_RESULT = { consumedByStep: 1271, nasaStillBurningAt: 1500 } as
 
 export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: WorkspaceLinks }) {
   return (
-    <section id="psi-moon" className={panelCls} style={{ ...panelStyle, borderColor: `${C.amber}66` }}>
+    // Inside a Widget (Widget.tsx), which draws the panel with the accent border.
+    <section id="psi-moon">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-          Moon-base scenario: {moon.o2Pct}% O2, {moon.gravityG} g
-        </h3>
+        <h4 className="text-[13px] font-medium" style={{ color: C.fg }}>
+          {moon.o2Pct}% O2, {moon.gravityG} g
+        </h4>
         <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: `${C.amber}22`, color: C.amber }}>extrapolation</span>
       </div>
 

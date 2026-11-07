@@ -17,6 +17,23 @@ export type PsiSource =
   | { kind: 'psi'; psiId: string; table: string }
   | { kind: 'paper'; title: string; ntrsId: string; url: string }
 
+/** What we simulated: the four statuses, in this order on screen. */
+export const SIM_STATUS = {
+  scored: 'Simulated and scored',
+  'by-hand': 'Simulated, compared by hand',
+  'not-testable': 'Built, not testable',
+  none: 'Not simulated',
+} as const
+export type SimStatus = keyof typeof SIM_STATUS
+
+export interface PsiSimulation {
+  status: SimStatus
+  /** SIM_STATUS[status], kept in the data so the AI and the page read the same words. */
+  label: string
+  /** One or two sentences: why this status (checked against the cleaned tables and READMEs). */
+  reason: string
+}
+
 export interface PsiInvestigation {
   /** URL-safe id, e.g. "bass-ii". */
   id: string
@@ -37,7 +54,8 @@ export interface PsiInvestigation {
   flowCmS: string
   outcomeRecorded: string
   safetyTheme: string
-  simulator: string
+  /** What our sandbox does with this investigation, and why (replaces the catalogue's old "simulator" column). */
+  simulation: PsiSimulation
   cleanedFile: string
   facts: PsiFact[]
   sources: PsiSource[]

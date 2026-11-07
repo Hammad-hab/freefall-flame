@@ -2,15 +2,17 @@
  * Plain-language summaries of the PSI catalogue: one per investigation
  * (?id=bass-ii) and one for the overall ranking at equal weights
  * (?id=overall). The model is sent only that card's facts from psi.json, and
- * any answer with a number not in those facts is replaced by the plain
- * summary (src/lib/psi-ai.ts). Same guard as /api/interpretation: fixed
+ * any answer with a number not in those facts, or too general (the overall
+ * summary must name at least three investigations; no phrases like "higher
+ * scores indicate"), is replaced by the plain summary (src/lib/psi-ai.ts).
+ * Same guard as /api/interpretation: fixed
  * model, per-visitor limit on new requests, daily cap on paid calls, and a
  * cache keyed by exactly what the model is sent.
  */
 import { NextResponse } from 'next/server'
 import data from '@/app/(frontend)/dashboard/components/investigations/psi.json'
 import type { PsiCatalogue } from '@/lib/psi'
-import { PSI_SYSTEM, numbersNotInFacts, psiFacts, psiFallback } from '@/lib/psi-ai'
+import { numbersNotInFacts, psiFacts, psiFallback, systemFor, tooGeneral, unmarkedInterpretation } from '@/lib/psi-ai'
 import {
   AI_MODEL,
   DAILY_PAID_CAP,
@@ -34,7 +36,8 @@ export async function GET(request: Request) {
   if (!facts || !fallback) return NextResponse.json({ error: 'Unknown investigation' }, { status: 404 })
 
   const apiKey = process.env.OPEN_ROUTER
-  const key = cacheKey('psi', { system: PSI_SYSTEM, facts })
+  const system = systemFor(id)
+  const key = cacheKey('psi', { system, facts })
   const isNew = !isKnown(key)
 
   // The per-visitor limit counts only requests the server hasn't answered before.
@@ -55,16 +58,29 @@ export async function GET(request: Request) {
     )
   }
 
-  const answer = await cachedCall(key, apiKey ? () => callModel(apiKey, PSI_SYSTEM, JSON.stringify(facts, null, 2)) : null)
-  // The number check runs on every answer, cached or new.
+  const answer = await cachedCall(key, apiKey ? () => callModel(apiKey, system, JSON.stringify(facts, null, 2)) : null)
+  // Both checks run on every answer, cached or new: no number that isn't in
+  // the facts, and specific enough (names investigations, no general phrases).
   const invented = answer ? numbersNotInFacts(answer, facts) : []
-  const ai = answer && invented.length === 0 ? answer : null
+  const general = answer && invented.length === 0 ? tooGeneral(answer, catalogue, id) : null
+  // The overall summary's interpretations must sit under "What separates them" or be marked ("This suggests").
+  const unmarked = answer && invented.length === 0 && !general && id === 'overall' ? unmarkedInterpretation(answer) : null
+  const ai = answer && invented.length === 0 && !general && !unmarked ? answer : null
+  const rejected = !answer
+    ? null
+    : invented.length
+      ? `The AI answer used numbers not in the data (${invented.join(', ')}), so the plain summary is shown instead.`
+      : general
+        ? `The AI answer was too general (${general}), so the plain summary is shown instead.`
+        : unmarked
+          ? `The AI answer gave an interpretation as a fact ("${unmarked.slice(0, 80)}"), so the plain summary is shown instead.`
+          : null
   return NextResponse.json({
     id,
     fallback,
     ai,
     model: ai ? AI_MODEL : null,
-    rejected: answer && invented.length ? `The AI answer used numbers not in the data (${invented.join(', ')}), so the plain summary is shown instead.` : null,
+    rejected,
     cache: isNew ? 'new' : 'cached',
   })
 }
