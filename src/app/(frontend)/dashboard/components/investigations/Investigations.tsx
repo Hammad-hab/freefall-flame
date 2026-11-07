@@ -11,12 +11,13 @@
  * viewer's browser when storage is available.
  */
 import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
-import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, rank, type PsiCatalogue, type PsiInvestigation, type Weights } from '@/lib/psi'
+import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, SIM_STATUS, rank, type PsiCatalogue, type PsiInvestigation, type SimStatus, type Weights } from '@/lib/psi'
 import { DEFAULT_LAYOUT, LAYOUT_KEY, layoutRows, widgetLayoutReducer, type WidgetId } from '@/lib/widget-layout'
 import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
 import CompactCard from './CompactCard'
 import CardDrawer from './CardDrawer'
+import Simulated, { simulatedSummary } from './Simulated'
 import { Assumptions, RankingList, WeightsPanel } from './Ranking'
 import AiSummary from './AiSummary'
 import MoonBaseCard, { MOON_RESULT } from './MoonBaseCard'
@@ -123,6 +124,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
   }, [layout, layoutLoaded])
 
   const [phase, setPhase] = useState<Phase>('all')
+  const [status, setStatus] = useState<SimStatus | 'all'>('all')
   const [sort, setSort] = useState<Sort>('score')
   // The card open in the Details side panel, and the button to give the focus back to.
   const [detail, setDetail] = useState<{ id: string; opener: HTMLElement | null } | null>(null)
@@ -134,6 +136,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
   const showCard = useCallback((id: string, smooth: boolean) => {
     dispatch({ type: 'reveal', id: 'cards' })
     setPhase('all')
+    setStatus('all')
     setFocused(id)
     // After the cards widget has opened.
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -159,7 +162,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
   const byId = useMemo(() => new Map(catalogue.investigations.map((i) => [i.id, i])), [])
   const ordered = ranked ? ranked.map((r) => ({ inv: byId.get(r.id)!, r })) : catalogue.investigations.map((inv) => ({ inv, r: null }))
   const shownCards = ordered
-    .filter(({ inv }) => phase === 'all' || phaseOf(inv.fuelPhase) === phase)
+    .filter(({ inv }) => (phase === 'all' || phaseOf(inv.fuelPhase) === phase) && (status === 'all' || inv.simulation.status === status))
     .sort((a, b) => (sort === 'name' ? a.inv.name.localeCompare(b.inv.name) : sort === 'tests' ? b.inv.tests - a.inv.tests || a.inv.name.localeCompare(b.inv.name) : 0))
   const rankOf = useMemo(() => new Map((ranked ?? []).map((r) => [r.id, r])), [ranked])
   const detailInv = detail ? byId.get(detail.id) : undefined
@@ -188,6 +191,10 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
         </div>
       ),
     },
+    simulated: {
+      summary: simulatedSummary(catalogue.investigations),
+      body: <Simulated investigations={catalogue.investigations} links={links} onPick={(id) => showCard(id, true)} />,
+    },
     cards: {
       summary: `${catalogue.investigations.length} investigations`,
       body: (
@@ -197,6 +204,13 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
               Phase
               <select value={phase} onChange={(e) => setPhase(e.target.value as Phase)} data-filter="phase" className={selectCls} style={selectStyle}>
                 {PHASES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5">
+              Status
+              <select value={status} onChange={(e) => setStatus(e.target.value as SimStatus | 'all')} data-filter="status" className={selectCls} style={selectStyle}>
+                <option value="all">All statuses</option>
+                {(Object.keys(SIM_STATUS) as SimStatus[]).map((s) => <option key={s} value={s}>{SIM_STATUS[s]}</option>)}
               </select>
             </label>
             <label className="flex items-center gap-1.5">

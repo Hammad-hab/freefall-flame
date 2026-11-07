@@ -8,6 +8,7 @@
 import type { ReactNode } from 'react'
 import type { PsiFact, PsiInvestigation } from '@/lib/psi'
 import { C, panelCls, panelStyle } from '../ui/chart-theme'
+import { StatusBadge } from './Simulated'
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : String(Number(v.toFixed(2))))
 
@@ -83,6 +84,14 @@ export default function InvestigationCard({
         <Row label="Tests">{testsText}</Row>
         <Row label="Outcomes">{inv.outcomeRecorded}</Row>
         <Row label="Fire-safety theme">{inv.safetyTheme}</Row>
+      </div>
+
+      <div className="text-[11px]" data-card-simulation>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>What we simulated</span>
+          <StatusBadge sim={inv.simulation} />
+        </div>
+        <p className="leading-5" style={{ color: C.fg }}>{inv.simulation.reason}</p>
       </div>
 
       <div>

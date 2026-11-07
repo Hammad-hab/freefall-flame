@@ -1,14 +1,14 @@
 'use client'
 
 /**
- * One investigation, compact: name, score and rank, its simulation status,
- * and three key facts (what burned, oxygen, tests). "Details" opens the full
+ * One investigation, compact: name, score and rank, its simulation status
+ * badge (what we simulated), and three key facts (what burned, oxygen, tests). "Details" opens the full
  * card (InvestigationCard) in the side panel (CardDrawer). All values come
  * from psi.json.
  */
-import type { ReactNode } from 'react'
 import type { PsiInvestigation, Ranked } from '@/lib/psi'
 import { Row } from './InvestigationCard'
+import { StatusBadge } from './Simulated'
 import { C, panelCls, panelStyle } from '../ui/chart-theme'
 
 /** "13.6-22.2" -> "13.6-22.2 %"; "21 (air)" -> "21 % (air)"; "not in table" -> "not in the table". */
@@ -21,14 +21,11 @@ export default function CompactCard({
   inv,
   r,
   focused,
-  badge,
   onDetails,
 }: {
   inv: PsiInvestigation
   r: Ranked | null
   focused: boolean
-  /** The simulation status badge (what we simulated). */
-  badge?: ReactNode
   onDetails: (opener: HTMLElement) => void
 }) {
   return (
@@ -51,7 +48,7 @@ export default function CompactCard({
           </span>
         )}
       </header>
-      {badge}
+      <StatusBadge sim={inv.simulation} />
       <div className="space-y-0.5 text-[11px]">
         <Row label="What was burned"><span className="block truncate" title={inv.fuels}>{inv.fuels}</span></Row>
         <Row label="Oxygen">{oxygenText(inv.o2Pct)}</Row>

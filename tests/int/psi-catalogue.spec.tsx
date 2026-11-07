@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { render, screen, cleanup, within, fireEvent } from '@testing-library/react'
 import { build, OUT } from '../../src/scripts/psi-catalogue'
 import Investigations from '@/app/(frontend)/dashboard/components/investigations/Investigations'
-import type { PsiCatalogue } from '@/lib/psi'
+import { SIM_STATUS, type PsiCatalogue } from '@/lib/psi'
 
 afterEach(cleanup)
 
@@ -46,6 +46,30 @@ describe('PSI catalogue', () => {
     expect(count('CFI-G (ACME)', 'Outcome, normal flames at 30% O2 or more')).toEqual({
       'self extinguished': 61, 'flow terminated': 30, 'no ignition': 24,
     })
+  })
+
+  it('says what we simulated and why, for every investigation (the old "simulator" column is gone)', () => {
+    const sim = Object.fromEntries(file.investigations.map((i) => [i.name, i.simulation]))
+    expect(Object.entries(sim).filter(([, s]) => s.status !== 'none').map(([n, s]) => `${n}: ${s.label}`)).toEqual([
+      'BASS-II: Simulated and scored',
+      'Saffire I-III: Simulated, compared by hand',
+      'CFI-G (ACME): Built, not testable',
+    ])
+    for (const inv of file.investigations) {
+      expect(inv.simulation.label, inv.name).toBe(SIM_STATUS[inv.simulation.status])
+      expect(inv.simulation.reason.length, inv.name).toBeGreaterThan(40)
+      expect('simulator' in inv, inv.name).toBe(false)
+    }
+    // BASS-II's numbers come from the scorecard and the cleaned table, not typed in.
+    const scorecard = JSON.parse(fs.readFileSync('src/app/(frontend)/dashboard/components/sandbox/scorecard.json', 'utf8'))
+    expect(sim['BASS-II'].reason).toContain(`129 presets. NASA states an outcome for ${scorecard.scored} of them`)
+    expect(sim['BASS-II'].reason).toContain(`${scorecard.matched} match (${scorecard.matchedTests.join(', ')})`)
+    expect(sim['Saffire I-III'].reason).toContain('0 of 6 reproduce them')
+    expect(sim['Saffire I-III'].reason).toContain('The 4 silicone samples (Saffire-II) are skipped')
+    expect(sim['CFI-G (ACME)'].reason).toContain('A radiation audit ruled radiation out as the cause')
+    expect(sim.SPICE.reason).toContain('not the smoke points')
+    expect(sim.BASS.reason).toContain('no oxygen, airflow or outcome')
+    expect(JSON.stringify(file)).not.toMatch(/"planned/)
   })
 
   it('renders one card per investigation, and each card\'s details show its sources', () => {

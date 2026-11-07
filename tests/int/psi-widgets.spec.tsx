@@ -190,6 +190,25 @@ describe('widgets on screen', () => {
     expect(ids()[0]).toBe('bass')
   })
 
+  it('"What we simulated": a row per investigation with its status and reason, sandbox links, and the badge on every card', () => {
+    render(<Investigations />)
+    expect(document.querySelector('[data-widget="simulated"]')).toBeTruthy()
+    const rows = [...document.querySelectorAll('[data-sim-row]')]
+    expect(rows).toHaveLength(14)
+    // Ordered by status: scored, by hand, not testable, then the 11 not simulated.
+    expect(rows.slice(0, 3).map((r) => r.getAttribute('data-sim-row'))).toEqual(['bass-ii', 'saffire-i-iii', 'cfi-g'])
+    expect(rows.map((r) => r.querySelector('[data-sim-status]')?.textContent)).toEqual([
+      'Simulated and scored', 'Simulated, compared by hand', 'Built, not testable', ...Array(11).fill('Not simulated'),
+    ])
+    expect(document.querySelector('#psi-simulated')?.textContent).toContain(
+      '1 simulated and scored · 1 simulated, compared by hand · 1 built, not testable · 11 not simulated',
+    )
+    for (const card of document.querySelectorAll('[data-psi]')) expect(card.querySelector('[data-sim-status]'), card.getAttribute('data-psi')!).toBeTruthy()
+    // Filter the cards by status.
+    fireEvent.change(document.querySelector('[data-filter="status"]')!, { target: { value: 'not-testable' } })
+    expect([...document.querySelectorAll('[data-psi]')].map((c) => c.getAttribute('data-psi'))).toEqual(['cfi-g'])
+  })
+
   it('reads the saved layout back, and still works when storage is broken', () => {
     window.localStorage.setItem(LAYOUT_KEY, JSON.stringify({ order: ['assumptions'], hidden: ['ai'], collapsed: [] }))
     render(<Investigations />)
