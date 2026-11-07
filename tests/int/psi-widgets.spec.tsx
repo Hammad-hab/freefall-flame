@@ -134,6 +134,62 @@ describe('widgets on screen', () => {
     expect(reset.disabled).toBe(true)
   })
 
+  it('compact cards: name, score and rank, three facts, and Details in a side panel (Esc closes, focus returns)', () => {
+    render(<Investigations />)
+    const card = document.querySelector('[data-psi="bass-ii"]') as HTMLElement
+    expect(card.querySelector('h4')?.textContent).toBe('BASS-II')
+    expect(card.querySelector('[data-card-score]')?.textContent).toBe('90')
+    expect(card.querySelector('[data-card-rank]')?.textContent).toBe('rank 1')
+    const text = card.textContent!.replace(/\s+/g, ' ')
+    expect(text).toContain('What was burned')
+    expect(text).toContain('Oxygen13.6-22.2 %')
+    expect(text).toContain('Tests129 (per test)')
+    // Only the key facts on the compact card: no sources, no criteria.
+    expect(text).not.toContain('NASA PSI table')
+    expect(card.querySelector('[data-criteria]')).toBeNull()
+
+    const details = card.querySelector('[data-details]') as HTMLButtonElement
+    details.focus()
+    fireEvent.click(details)
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-labelledby')).toBe('psi-detail-bass-ii-title')
+    expect(document.getElementById('psi-detail-bass-ii-title')?.textContent).toBe('BASS-II')
+    expect(dialog.querySelector('[data-criteria]')).toBeTruthy()
+    expect(dialog.querySelector('[data-sources]')).toBeTruthy()
+    expect(dialog.querySelector('[data-explain="bass-ii"]')).toBeTruthy()
+    expect(document.activeElement?.hasAttribute('data-drawer-close')).toBe(true)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.activeElement).toBe(details)
+  })
+
+  it('a ranking row shows its card, even with the cards widget closed or filtered, and opens its details', async () => {
+    render(<Investigations />)
+    fireEvent.click(document.querySelector('[data-widget-close="cards"]')!)
+    fireEvent.change(document.querySelector('[data-filter="phase"]') ?? document.createElement('select'), { target: { value: 'gas' } })
+    fireEvent.click(document.querySelector('[data-rank-id="flex"] button')!)
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)) })
+    expect(document.querySelector('[data-widget="cards"]')).toBeTruthy()
+    expect(document.querySelector('[data-psi="flex"][data-focused]')).toBeTruthy()
+    expect(document.querySelector('[data-psi-detail="flex"]')).toBeTruthy()
+  })
+
+  it('filters cards by phase and sorts them, saying how many show', () => {
+    render(<Investigations />)
+    const ids = () => [...document.querySelectorAll('[data-psi]')].map((c) => c.getAttribute('data-psi'))
+    expect(ids()).toHaveLength(14)
+    expect(ids()[0]).toBe('bass-ii') // by score
+    fireEvent.change(document.querySelector('[data-filter="phase"]')!, { target: { value: 'solid' } })
+    expect(ids()).toEqual(['bass-ii', 'saffire-i-iii', 'bass'])
+    expect(document.querySelector('[data-card-count]')?.textContent).toBe('Showing 3 of 14')
+    fireEvent.change(document.querySelector('[data-filter="phase"]')!, { target: { value: 'all' } })
+    fireEvent.change(document.querySelector('[data-sort]')!, { target: { value: 'tests' } })
+    expect(ids()[0]).toBe('spice') // 469 tests, the most
+    fireEvent.change(document.querySelector('[data-sort]')!, { target: { value: 'name' } })
+    expect(ids()[0]).toBe('bass')
+  })
+
   it('reads the saved layout back, and still works when storage is broken', () => {
     window.localStorage.setItem(LAYOUT_KEY, JSON.stringify({ order: ['assumptions'], hidden: ['ai'], collapsed: [] }))
     render(<Investigations />)

@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, afterEach } from 'vitest'
 import fs from 'node:fs'
-import { render, screen, cleanup, within } from '@testing-library/react'
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react'
 import { build, OUT } from '../../src/scripts/psi-catalogue'
 import Investigations from '@/app/(frontend)/dashboard/components/investigations/Investigations'
 import type { PsiCatalogue } from '@/lib/psi'
@@ -48,12 +48,19 @@ describe('PSI catalogue', () => {
     })
   })
 
-  it('renders one card per investigation, with its sources', () => {
+  it('renders one card per investigation, and each card\'s details show its sources', () => {
     render(<Investigations />)
     const cards = document.querySelectorAll('[data-psi]')
     expect(cards).toHaveLength(14)
-    const bass2 = document.querySelector('[data-psi="bass-ii"]') as HTMLElement
-    expect(within(bass2).getByText('Burning and Suppression of Solids–II (BASS-II) Summary Report')).toBeTruthy()
-    expect(screen.getAllByText(/^NASA PSI table PSI-/)).toHaveLength(14)
-  })
+    // The compact cards open their full card (with the sources) in the Details side panel.
+    for (const inv of file.investigations) {
+      fireEvent.click(document.querySelector(`[data-details="${inv.id}"]`)!)
+      const panel = document.querySelector(`[data-psi-detail="${inv.id}"]`) as HTMLElement
+      expect(panel, inv.name).toBeTruthy()
+      expect(within(panel).getByText(`NASA PSI table ${inv.psiId}`), inv.name).toBeTruthy()
+      if (inv.id === 'bass-ii') expect(within(panel).getByText('Burning and Suppression of Solids–II (BASS-II) Summary Report')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: `Close the details of ${inv.name}` }))
+      expect(document.querySelector('[data-psi-detail]')).toBeNull()
+    }
+  }, 30_000) // 14 side panels opened and closed in jsdom
 })

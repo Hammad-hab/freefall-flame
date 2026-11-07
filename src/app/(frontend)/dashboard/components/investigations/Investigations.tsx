@@ -15,6 +15,8 @@ import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, rank, type PsiCatalogue, type Ps
 import { DEFAULT_LAYOUT, LAYOUT_KEY, layoutRows, widgetLayoutReducer, type WidgetId } from '@/lib/widget-layout'
 import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
+import CompactCard from './CompactCard'
+import CardDrawer from './CardDrawer'
 import { Assumptions, RankingList, WeightsPanel } from './Ranking'
 import AiSummary from './AiSummary'
 import MoonBaseCard, { MOON_RESULT } from './MoonBaseCard'
@@ -41,6 +43,16 @@ function loadWeights(): Weights {
     return { ...DEFAULT_WEIGHTS }
   }
 }
+
+// Card filters: the catalogue's fuel phase in four groups, and the sort order.
+const PHASES = [['all', 'All phases'], ['solid', 'Solid'], ['liquid', 'Liquid droplet'], ['gas', 'Gas'], ['smoke', 'Smoke']] as const
+type Phase = (typeof PHASES)[number][0]
+export const phaseOf = (fuelPhase: string): Exclude<Phase, 'all'> =>
+  /^solid/.test(fuelPhase) ? 'solid' : /liquid/.test(fuelPhase) ? 'liquid' : /smoke/.test(fuelPhase) ? 'smoke' : 'gas'
+const SORTS = [['score', 'Score'], ['name', 'Name'], ['tests', 'Tests']] as const
+type Sort = (typeof SORTS)[number][0]
+const selectCls = 'rounded-lg border px-2 py-1 text-[11px]'
+const selectStyle = { borderColor: C.line, background: C.surface, color: C.fg }
 
 /** The viewer's saved widget layout, or null (storage may be missing or hold anything; parseLayout makes it safe). */
 function readSavedLayout(): unknown {
@@ -74,8 +86,8 @@ export function Criteria({ inv }: { inv: PsiInvestigation }) {
   )
 }
 
-/** Where an investigation's card leads in this dashboard (links.ts). */
-export function CardLinks({ id, links }: { id: string; links: WorkspaceLinks }) {
+/** Where an investigation's card leads in this dashboard (links.ts). `onGo` runs first (the side panel closes). */
+export function CardLinks({ id, links, onGo }: { id: string; links: WorkspaceLinks; onGo?: () => void }) {
   const items: { label: string; href: string; go: () => void; key: string }[] = []
   if (id === 'bass-ii') {
     items.push({ key: 'table', label: 'BASS-II charts and Data Table', href: links.visualizationHref(), go: links.openVisualization })
@@ -87,7 +99,7 @@ export function CardLinks({ id, links }: { id: string; links: WorkspaceLinks }) 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
       {items.map((l) => (
-        <a key={l.key} {...linkProps(l.href, l.go)} data-card-goes={l.key} className="underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: C.amber }}>
+        <a key={l.key} {...linkProps(l.href, () => { onGo?.(); l.go() })} data-card-goes={l.key} className="underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: C.amber }}>
           {l.label}
         </a>
       ))}
@@ -110,14 +122,24 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
     try { window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)) } catch { /* storage unavailable: the layout lasts this visit */ }
   }, [layout, layoutLoaded])
 
-  // A link asked for one card (?card=flex, or "About these tests" in the sandbox): bring it into view.
+  const [phase, setPhase] = useState<Phase>('all')
+  const [sort, setSort] = useState<Sort>('score')
+  // The card open in the Details side panel, and the button to give the focus back to.
+  const [detail, setDetail] = useState<{ id: string; opener: HTMLElement | null } | null>(null)
+
+  // A link asked for one card (?card=flex, "About these tests" in the sandbox, a
+  // ranking row): show the cards widget and that card even if they were closed
+  // or filtered out, highlight it, and open its details.
   const [focused, setFocused] = useState<string | null>(null)
   const showCard = useCallback((id: string, smooth: boolean) => {
     dispatch({ type: 'reveal', id: 'cards' })
+    setPhase('all')
     setFocused(id)
     // After the cards widget has opened.
-    requestAnimationFrame(() => requestAnimationFrame(() =>
-      document.getElementById(`psi-${id}`)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })))
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.getElementById(`psi-${id}`)?.scrollIntoView?.({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+      setDetail({ id, opener: document.querySelector<HTMLElement>(`[data-details="${id}"]`) })
+    }))
   }, [])
   const cardNonce = links?.card?.nonce
   useEffect(() => {
@@ -136,6 +158,11 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
   const isDefault = CRITERIA.every((c) => weights[c.key] === DEFAULT_WEIGHTS[c.key])
   const byId = useMemo(() => new Map(catalogue.investigations.map((i) => [i.id, i])), [])
   const ordered = ranked ? ranked.map((r) => ({ inv: byId.get(r.id)!, r })) : catalogue.investigations.map((inv) => ({ inv, r: null }))
+  const shownCards = ordered
+    .filter(({ inv }) => phase === 'all' || phaseOf(inv.fuelPhase) === phase)
+    .sort((a, b) => (sort === 'name' ? a.inv.name.localeCompare(b.inv.name) : sort === 'tests' ? b.inv.tests - a.inv.tests || a.inv.name.localeCompare(b.inv.name) : 0))
+  const rankOf = useMemo(() => new Map((ranked ?? []).map((r) => [r.id, r])), [ranked])
+  const detailInv = detail ? byId.get(detail.id) : undefined
 
   // What each widget holds, and the line its header shows while collapsed.
   const widgets: Partial<Record<WidgetId, { body: ReactNode; summary: ReactNode; highlight?: boolean }>> = {
@@ -164,28 +191,34 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
     cards: {
       summary: `${catalogue.investigations.length} investigations`,
       body: (
-        <div id="psi-cards" className="grid grid-cols-1 gap-4 @3xl:grid-cols-2 @6xl:grid-cols-3">
-          {ordered.map(({ inv, r }) => (
-            <InvestigationCard
-              key={inv.id}
-              inv={inv}
-              header={r && (
-                <span className="shrink-0 text-right">
-                  <span className="block text-[18px] font-light tabular-nums" style={{ color: C.amber }} data-card-score>{r.score}</span>
-                  <span className="block text-[10px]" style={{ color: C.muted }}>rank {r.rank}</span>
-                </span>
-              )}
-              focused={focused === inv.id}
-              footer={(
-                <>
-                  <Criteria inv={inv} />
-                  {links && <CardLinks id={inv.id} links={links} />}
-                  <AiSummary id={inv.id} title={inv.name} />
-                </>
-              )}
-            />
-          ))}
-        </div>
+        <>
+          <div id="psi-card-controls" className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]" style={{ color: C.muted }}>
+            <label className="flex items-center gap-1.5">
+              Phase
+              <select value={phase} onChange={(e) => setPhase(e.target.value as Phase)} data-filter="phase" className={selectCls} style={selectStyle}>
+                {PHASES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5">
+              Sort by
+              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} data-sort className={selectCls} style={selectStyle}>
+                {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <span data-card-count aria-live="polite">Showing {shownCards.length} of {catalogue.investigations.length}</span>
+          </div>
+          <div id="psi-cards" className="grid grid-cols-1 gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3 @[90rem]:grid-cols-4">
+            {shownCards.map(({ inv, r }) => (
+              <CompactCard
+                key={inv.id}
+                inv={inv}
+                r={r}
+                focused={focused === inv.id}
+                onDetails={(opener) => setDetail({ id: inv.id, opener })}
+              />
+            ))}
+          </div>
+        </>
       ),
     },
     moon: {
@@ -233,7 +266,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
         dispatch={dispatch}
         available={layout.order.filter((w) => widgets[w])}
         onShow={(id) => requestAnimationFrame(() => requestAnimationFrame(() =>
-          document.getElementById(`psi-w-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })))}
+          document.getElementById(`psi-w-${id}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })))}
       />
 
       <div id="psi-widgets" className="space-y-4">
@@ -250,6 +283,28 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
           <p className="text-[12px]" style={{ color: C.muted }}>Every widget is closed. Click a chip in the layout bar, or Reset layout.</p>
         )}
       </div>
+
+      {detail && detailInv && (
+        <CardDrawer id={detailInv.id} name={detailInv.name} opener={detail.opener} onClose={() => setDetail(null)}>
+          <InvestigationCard
+            detail
+            inv={detailInv}
+            header={rankOf.get(detailInv.id) && (
+              <span className="shrink-0 text-right">
+                <span className="block text-[18px] font-light tabular-nums" style={{ color: C.amber }} data-card-score>{rankOf.get(detailInv.id)!.score}</span>
+                <span className="block text-[10px]" style={{ color: C.muted }}>rank {rankOf.get(detailInv.id)!.rank}</span>
+              </span>
+            )}
+            footer={(
+              <>
+                <Criteria inv={detailInv} />
+                {links && <CardLinks id={detailInv.id} links={links} onGo={() => setDetail(null)} />}
+                <AiSummary key={detailInv.id} id={detailInv.id} title={detailInv.name} />
+              </>
+            )}
+          />
+        </CardDrawer>
+      )}
     </div>
   )
 }

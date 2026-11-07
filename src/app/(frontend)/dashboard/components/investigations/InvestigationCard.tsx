@@ -39,6 +39,7 @@ export default function InvestigationCard({
   header,
   footer,
   focused = false,
+  detail = false,
 }: {
   inv: PsiInvestigation
   /** Highlighted because a link asked for this card. */
@@ -47,6 +48,8 @@ export default function InvestigationCard({
   header?: ReactNode
   /** Extra content at the end (the ranking's criteria, the AI summary, links). */
   footer?: ReactNode
+  /** The full card inside the Details side panel (CardDrawer.tsx): no panel of its own, its own ids. */
+  detail?: boolean
 }) {
   const testsText =
     inv.tests > 0
@@ -54,15 +57,16 @@ export default function InvestigationCard({
       : `${inv.rows} rows (${inv.granularity}); no single tests in the table`
   return (
     <article
-      id={`psi-${inv.id}`}
-      data-psi={inv.id}
+      id={detail ? `psi-detail-${inv.id}` : `psi-${inv.id}`}
+      data-psi={detail ? undefined : inv.id}
+      data-psi-detail={detail ? inv.id : undefined}
       data-focused={focused || undefined}
-      className={`${panelCls} flex scroll-mt-4 flex-col gap-3`}
-      style={focused ? { ...panelStyle, borderColor: C.amber } : panelStyle}
+      className={detail ? 'flex flex-col gap-3' : `${panelCls} flex scroll-mt-4 flex-col gap-3`}
+      style={detail ? undefined : focused ? { ...panelStyle, borderColor: C.amber } : panelStyle}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-medium leading-tight" style={{ color: C.fg }}>{inv.name}</h3>
+          <h3 id={detail ? `psi-detail-${inv.id}-title` : undefined} className="text-[15px] font-medium leading-tight" style={{ color: C.fg }}>{inv.name}</h3>
           <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>
             {inv.psiId} · {inv.fuelPhase} · {inv.hardware}
           </p>
