@@ -103,6 +103,37 @@ describe('widgets on screen', () => {
     expect(saved.collapsed).toEqual(['ranking'])
   })
 
+  it('layout bar: a chip shows and hides its widget, Alt+arrows move it, Reset restores', async () => {
+    render(<Investigations />)
+    const chipIds = () => [...document.querySelectorAll('[data-chip]')].map((c) => c.getAttribute('data-chip'))
+    const widgetIds = () => [...document.querySelectorAll('[data-widget]')].map((w) => w.getAttribute('data-widget'))
+    const chip = (id: string) => document.querySelector(`[data-chip-toggle="${id}"]`) as HTMLButtonElement
+    const reset = document.querySelector('[data-layout-reset]') as HTMLButtonElement
+    expect(reset.disabled).toBe(true)
+    expect(chipIds().slice(0, 3)).toEqual(['ranking', 'weights', 'ai'])
+
+    expect(chip('ai').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(chip('ai'))
+    expect(chip('ai').getAttribute('aria-pressed')).toBe('false')
+    expect(widgetIds()).not.toContain('ai')
+    expect(document.querySelector('[data-layout-said]')?.textContent).toBe('AI interpretation hidden.')
+    fireEvent.click(chip('ai'))
+    expect(widgetIds()).toContain('ai')
+
+    // Keyboard: Alt+Right moves Ranking one place right, and says so.
+    fireEvent.keyDown(chip('ranking'), { key: 'ArrowRight', altKey: true })
+    expect(chipIds().slice(0, 2)).toEqual(['weights', 'ranking'])
+    expect(widgetIds().slice(0, 2)).toEqual(['weights', 'ranking'])
+    expect(document.querySelector('[data-layout-said]')?.textContent).toBe('Ranking moved to position 2 of 7.')
+    fireEvent.keyDown(chip('ranking'), { key: 'ArrowRight' }) // without Alt: nothing
+    expect(chipIds().slice(0, 2)).toEqual(['weights', 'ranking'])
+
+    expect(reset.disabled).toBe(false)
+    fireEvent.click(reset)
+    expect(chipIds().slice(0, 2)).toEqual(['ranking', 'weights'])
+    expect(reset.disabled).toBe(true)
+  })
+
   it('reads the saved layout back, and still works when storage is broken', () => {
     window.localStorage.setItem(LAYOUT_KEY, JSON.stringify({ order: ['assumptions'], hidden: ['ai'], collapsed: [] }))
     render(<Investigations />)

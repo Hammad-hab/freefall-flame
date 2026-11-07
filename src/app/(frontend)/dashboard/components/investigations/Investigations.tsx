@@ -19,6 +19,7 @@ import { Assumptions, RankingList, WeightsPanel } from './Ranking'
 import AiSummary from './AiSummary'
 import MoonBaseCard, { MOON_RESULT } from './MoonBaseCard'
 import Widget from './Widget'
+import LayoutBar from './LayoutBar'
 import { linkProps, type WorkspaceLinks } from '../workspace/links'
 import { C } from '../ui/chart-theme'
 
@@ -227,6 +228,14 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
         </p>
       </div>
 
+      <LayoutBar
+        layout={layout}
+        dispatch={dispatch}
+        available={layout.order.filter((w) => widgets[w])}
+        onShow={(id) => requestAnimationFrame(() => requestAnimationFrame(() =>
+          document.getElementById(`psi-w-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })))}
+      />
+
       <div id="psi-widgets" className="space-y-4">
         {rows.map((row) =>
           row.length === 2 ? (
@@ -238,7 +247,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
           ),
         )}
         {rows.length === 0 && (
-          <p className="text-[12px]" style={{ color: C.muted }}>Every widget is closed.</p>
+          <p className="text-[12px]" style={{ color: C.muted }}>Every widget is closed. Click a chip in the layout bar, or Reset layout.</p>
         )}
       </div>
     </div>

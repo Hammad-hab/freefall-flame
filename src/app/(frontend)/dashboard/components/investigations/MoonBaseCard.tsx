@@ -23,7 +23,7 @@ export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: 
     <section id="psi-moon">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="text-[13px] font-medium" style={{ color: C.fg }}>
-          Moon-base scenario: {moon.o2Pct}% O2, {moon.gravityG} g
+          {moon.o2Pct}% O2, {moon.gravityG} g
         </h4>
         <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: `${C.amber}22`, color: C.amber }}>extrapolation</span>
       </div>
