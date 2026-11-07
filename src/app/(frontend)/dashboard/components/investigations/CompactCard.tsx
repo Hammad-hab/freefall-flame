@@ -33,7 +33,9 @@ export default function CompactCard({
       id={`psi-${inv.id}`}
       data-psi={inv.id}
       data-focused={focused || undefined}
-      className={`${panelCls} flex scroll-mt-16 flex-col gap-2 !p-4`}
+      // `relative`: the Details button's screen-reader text (absolutely positioned) must
+      // stay inside the card, or it stretches the page below the dashboard's pane.
+      className={`${panelCls} relative flex scroll-mt-16 flex-col gap-2 !p-4`}
       style={focused ? { ...panelStyle, borderColor: C.amber } : panelStyle}
     >
       <header className="flex items-start justify-between gap-3">
