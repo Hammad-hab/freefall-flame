@@ -51,7 +51,7 @@ describe('PSI summary route, model mocked', () => {
     const r = await ask(bad)
     expect(r.ai).toBeNull()
     expect(r.rejected).toMatch(/^The AI answer gave an interpretation as a fact \("10 tables recorded no outcomes per test/)
-    expect(r.fallback[0]).toMatch(/^Top of the ranking \(equal weights\): BASS-II 90/)
+    expect(r.fallback[0]).toMatch(/^Top of the ranking \(equal weights\): rank 1: BASS-II 90/)
   })
 
   it('accepts the same thought when it is marked "This suggests"', async () => {
