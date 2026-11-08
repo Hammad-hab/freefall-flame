@@ -121,11 +121,14 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   }, [engine]);
 
   // Load a preset. "Load & Run" plays it; "Load (standby)" only loads it.
+  // Every preset load switches to the Temperature view, where a burning sample
+  // shows best (the viewer can still pick any other view).
   const loadPreset = useCallback((id: number, lighting: Light, play: boolean) => {
     if (!engine) return;
     scenario.current = null;
     engine.loadPreset(id, lighting);
     clock.current.reset();
+    cr.current.setView('temperature');
     cr.current.setPlaying(play);
   }, [engine]);
 
@@ -142,6 +145,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     engine.refillAir();
     scenario.current = { start: engine.stepCount, runSteps: engine.preset(id).runSteps };
     clock.current.reset();
+    cr.current.setView('temperature');
     cr.current.setPlaying(true);
   }, [engine]);
 
