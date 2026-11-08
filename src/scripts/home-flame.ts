@@ -98,9 +98,8 @@ export async function render() {
 
   const W = engine.width, H = engine.height
   const full = new Uint8Array(engine.cells * 4)
-  // The plain temperature scale, without the dashboard's faint fuel (its test
-  // checks every pixel is a colour of that scale).
-  fillView(engine, 'temperature', full, null, 1, false)
+  // The sandbox's Temperature view as it is drawn, solid fuel shown faintly.
+  fillView(engine, 'temperature', full)
 
   // Crop round what is hot (over 400 K) or still has fuel, plus PAD cells of air.
   let x0 = W, y0 = H, x1 = -1, y1 = -1
@@ -124,7 +123,7 @@ export async function render() {
   return {
     width: w, height: h, rgba: out,
     meta: {
-      about: 'Made by src/scripts/home-flame.ts from the sandbox engine (do not edit by hand): the Temperature view, the sandbox\'s own colour scale.',
+      about: 'Made by src/scripts/home-flame.ts from the sandbox engine (do not edit by hand): the Temperature view, the sandbox\'s own colour scale, solid fuel shown faintly.',
       testId: TEST_ID,
       step: STEP,
       outcomeAtStep: o.name,

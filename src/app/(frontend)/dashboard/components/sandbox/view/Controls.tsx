@@ -6,13 +6,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
-import { VIEWS, SCALES, EXPOSURES, FUEL_NOTE, FUEL_TINT, fuelTintWeight, sample, type Exposure, type View } from './colors';
+import { VIEWS, SCALES, EXPOSURES, FUEL_NOTE, tintedFuelColour, sample, type Exposure, type View } from './colors';
 
 // The faint-fuel colour of a room-temperature (300 K) sample, for the legend's swatch.
-const COLD_FUEL = (() => {
-  const c = sample(SCALES.temperature.stops, 300), w = fuelTintWeight(c[0], c[1], c[2]);
-  return `rgb(${c.map((v, k) => Math.round(v * (1 - w) + FUEL_TINT[k] * w)).join(',')})`;
-})();
+const COLD_FUEL = `rgb(${tintedFuelColour(sample(SCALES.temperature.stops, 300)).join(',')})`;
 import { ZOOMS, type Zoom } from './fit';
 import { AIR_COLOUR } from './theme';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
