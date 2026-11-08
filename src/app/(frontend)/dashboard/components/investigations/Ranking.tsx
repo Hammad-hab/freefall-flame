@@ -44,7 +44,7 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
                   <span className="ml-1.5 rounded px-1 py-0.5 text-[10px]" style={{ background: C.chip2, color: C.muted }}>our judgement</span>
                 )}
               </span>
-              <span className="tabular-nums" style={{ color: C.amber }} data-weight-value={c.key}>× {weights[c.key]}</span>
+              <span className="tabular-nums" style={{ color: C.accentText }} data-weight-value={c.key}>× {weights[c.key]}</span>
             </span>
             <input
               type="range"
@@ -55,7 +55,7 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
               onChange={(e) => onChange({ ...weights, [c.key]: Number(e.target.value) })}
               aria-label={`Weight: ${c.label}`}
               data-weight={c.key}
-              className="mt-1 w-full accent-[#ffa64d]"
+              className="mt-1 w-full accent-[var(--c-accent)]"
             />
             <span className="block text-[10px] leading-4" style={{ color: C.muted }}>{c.help}</span>
           </label>
@@ -91,7 +91,7 @@ export function RankingList({ ranked, onPick }: { ranked: Ranked[] | null; onPic
   return (
     <div id="psi-ranking">
       {ranked === null ? (
-        <p className="text-[11px]" style={{ color: C.amber }}>Every weight is 0, so there is nothing to rank by. Raise at least one weight.</p>
+        <p className="text-[11px]" style={{ color: C.accentText }}>Every weight is 0, so there is nothing to rank by. Raise at least one weight.</p>
       ) : (
         <ol className="space-y-1 text-[12px]">
           {ranked.map((r) => (

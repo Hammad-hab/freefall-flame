@@ -20,7 +20,7 @@ const h2 =
   'font-display text-[clamp(1.7rem,3vw,2.3rem)] font-semibold leading-[1.15] tracking-[-0.01em]'
 const btn =
   'inline-block rounded-md border px-5 py-3 text-[0.95rem] font-semibold transition-colors'
-const btnPrimary = `${btn} border-flame-amber bg-flame-amber text-[#1a0f05] hover:bg-[#ffb868]`
+const btnPrimary = `${btn} border-flame-amber bg-flame-amber text-on hover:brightness-110`
 const btnGhost = `${btn} border-line hover:border-muted`
 
 // What the dashboard does today (feat/polish rewrote these to match it).

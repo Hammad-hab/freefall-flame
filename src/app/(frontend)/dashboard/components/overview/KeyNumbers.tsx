@@ -35,7 +35,7 @@ export default function KeyNumbers({ rows, links }: { rows: ParsedRow[]; links?:
   const label = (code: string) => OUTCOME_CODES.find((o) => o.code === code)?.label.toLowerCase() ?? code.replace(/_/g, ' ')
 
   return (
-    <div id="key-numbers" className="relative overflow-hidden rounded-[22px] bg-flame-amber p-5 text-[#1a0f05]">
+    <div id="key-numbers" className="relative overflow-hidden rounded-[22px] bg-flame-amber p-5 text-on">
       <h2 className="text-[16px]">Fire-safety numbers</h2>
       <dl className="mt-3 space-y-3 text-[13px] leading-5">
         <div data-key="materials">

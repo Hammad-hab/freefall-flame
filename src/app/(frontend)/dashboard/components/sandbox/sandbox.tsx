@@ -9,7 +9,8 @@ import { Tabs, RunBar, ViewBar, ZoomBar, ExposureBar, BuildPanel, WorldPanel, us
 import type { Exposure } from './view/colors';
 import PresetsPanel, { type PresetFocus } from './view/PresetsPanel';
 import { fitCell, sampleCentre, type Zoom } from './view/fit';
-import { AIR_COLOUR } from './view/theme';
+import { airColourFor } from './view/theme';
+import { useActiveTheme } from '../ui/useTheme';
 import { buildReadingIndex } from './view/nasaReadings';
 import type { WorkspaceLinks } from '../workspace/links';
 
@@ -69,6 +70,10 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   // Camera view exposure (display only): ×1 is the game's look.
   const [exposure, setExposure] = useState<Exposure>(1);
   const c = useControls();
+  // feat/themes: the Material view's air follows the theme (no data colour does).
+  const theme = useActiveTheme();
+  const airColour = useMemo(() => airColourFor(theme.tokens), [theme]);
+  const themeDark = theme.dark;
   const clock = useRef(new StepClock());
   const rootRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
@@ -266,7 +271,8 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                 zoom={zoom}
                 focus={zoomFocus}
                 exposure={exposure}
-                airColour={AIR_COLOUR}
+                airColour={airColour}
+                lightAir={!themeDark}
                 className="shrink-0 outline outline-1 outline-line"
               />
             </div>

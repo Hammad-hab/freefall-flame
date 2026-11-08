@@ -75,7 +75,7 @@ export default function Markdown({ text, className = '', id }: { text: string; c
     <div id={id} className={`space-y-2 ${className}`} style={{ color: C.fg }} data-markdown>
       {blocks.map((b, i) => {
         if (b.kind === 'heading') {
-          return <h4 key={i} className="pt-1 text-[0.95em] font-semibold first:pt-0" style={{ color: C.amber }}>{inline(b.text)}</h4>
+          return <h4 key={i} className="pt-1 text-[0.95em] font-semibold first:pt-0" style={{ color: C.accentText }}>{inline(b.text)}</h4>
         }
         if (b.kind === 'ul') {
           return <ul key={i} className="list-disc space-y-0.5 pl-5">{b.items.map((t, j) => <li key={j}>{inline(t)}</li>)}</ul>

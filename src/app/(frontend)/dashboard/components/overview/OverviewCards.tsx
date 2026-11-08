@@ -53,7 +53,7 @@ export function ScorecardCard({ total, links }: { total: number; links?: Workspa
       <h2 className="text-[15px] font-medium" style={{ color: C.fg }}>Our simulator against NASA</h2>
       <p className="mt-0.5 text-[11px]" style={{ color: C.muted }}>Each scorable BASS-II test run to the end in the sandbox</p>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-[30px] font-light leading-none tabular-nums" style={{ color: C.amber }}>{matched}</span>
+        <span className="text-[30px] font-light leading-none tabular-nums" style={{ color: C.accentText }}>{matched}</span>
         <span className="text-[13px]" style={{ color: C.fg }}>of {scored} scored tests match NASA</span>
       </div>
       <div className="mt-3 flex h-2 overflow-hidden rounded-full" style={{ background: C.chip }} aria-hidden="true">
@@ -68,7 +68,7 @@ export function ScorecardCard({ total, links }: { total: number; links?: Workspa
         <a
           {...linkProps(links.groupHref('bass'), () => links.openGroup('bass'))}
           className="mt-3 inline-block text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
-          style={{ color: C.amber }}
+          style={{ color: C.accentText }}
         >
           Run them in the sandbox
         </a>

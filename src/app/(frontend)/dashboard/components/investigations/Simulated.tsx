@@ -86,7 +86,7 @@ export default function Simulated({
                         {...linkProps(link.href, link.go)}
                         data-sim-link={inv.id}
                         className="ml-2 whitespace-nowrap underline decoration-dotted underline-offset-2 hover:opacity-80"
-                        style={{ color: C.amber }}
+                        style={{ color: C.accentText }}
                       >
                         {link.label}
                       </a>

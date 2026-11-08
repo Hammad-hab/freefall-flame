@@ -26,7 +26,9 @@ import InterpretationPanel from '../interpretation/InterpretationPanel'
 import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
+import Customize from '../customize/Customize'
 import { linkProps, type WorkspaceLinks } from './links'
+import { C } from '../ui/chart-theme'
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
@@ -44,17 +46,17 @@ function OverviewContent({ data }: { data: TabData }) {
     <div className="space-y-4">
       {/* Dataset title heading */}
       <div className="flex items-start gap-3">
-        <h1 className="text-[18px] font-light leading-tight" style={{ color: '#e8e4de' }}>
+        <h1 className="text-[18px] font-light leading-tight" style={{ color: C.fg }}>
           {data.datasetName}
         </h1>
       </div>
       {data.links && (
-        <p className="text-[12px]" style={{ color: '#a89e90' }}>
+        <p className="text-[12px]" style={{ color: C.muted }}>
           <a
             {...linkProps(data.links.cardHref('bass-ii'), () => data.links!.showCard('bass-ii'))}
             data-link-investigations
             className="underline decoration-dotted underline-offset-2 hover:opacity-80"
-            style={{ color: '#ffa64d' }}
+            style={{ color: C.accentText }}
           >
             How BASS-II ranks among NASA&apos;s 14 PSI combustion investigations for habitat fire safety
           </a>
@@ -154,6 +156,12 @@ export const TAB_REGISTRY: Record<
     icon: 'M9 3h6M10 3v6L4.5 18.5A2 2 0 006.4 21.5h11.2a2 2 0 001.9-3L14 9V3M7 15h10',
     render: (d) => <Sandbox dataset={d.dataset} rows={d.rows} links={d.links} />,
   },
+  customize: {
+    label: 'Customize',
+    icon: 'M12 3a9 9 0 100 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1-.3-.3-.4-.7-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM7.5 12h.01M9.5 7.5h.01M14.5 7.5h.01M16.5 11h.01',
+    render: () => <Customize />,
+  },
 }
 
+/** The data tabs, in the sidebar's order. Customize sits apart, at the sidebar's foot. */
 export const TAB_ORDER: TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']

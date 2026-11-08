@@ -23,7 +23,7 @@ export function DatasetNotFound({ requested }: { requested?: string }) {
           <Link
             href="/dashboard"
             data-open-default
-            className="rounded-full bg-flame-amber px-5 py-2.5 text-sm font-medium text-[#1a0f05] transition hover:bg-[#ffb868]"
+            className="rounded-full bg-flame-amber px-5 py-2.5 text-sm font-medium text-on transition hover:brightness-110"
           >
             Open the BASS-II dataset
           </Link>

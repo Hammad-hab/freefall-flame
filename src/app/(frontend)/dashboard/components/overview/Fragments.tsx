@@ -14,7 +14,7 @@ import { QUESTION_MAX_CHARS } from "@/lib/ai-limits";
 /* ----------------------------- helpers ----------------------------- */
 
 const hatch =
-  "bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.14)_0px,rgba(255,255,255,0.14)_1px,transparent_1px,transparent_5px)]";
+  "bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--c-fg)_14%,transparent)_0px,color-mix(in_srgb,var(--c-fg)_14%,transparent)_1px,transparent_1px,transparent_5px)]";
 
 /**
  * Share-of-rows breakdown, rendered as proportional circles.
@@ -41,7 +41,7 @@ function Statistics({ shares }: { shares: ShareResult }) {
       <h2 className="text-[17px] font-light">Statistics</h2>
 
       {entries.length === 0 ? (
-        <p className="mt-6 text-[12px] leading-5 text-white/50">
+        <p className="mt-6 text-[12px] leading-5 text-muted">
           No rows to break down yet.
         </p>
       ) : (
@@ -53,7 +53,7 @@ function Statistics({ shares }: { shares: ShareResult }) {
                 <div key={s.label} className="flex flex-col items-center gap-1.5">
                   <div
                     className={`flex items-center justify-center rounded-full text-center ${
-                      s.other ? `border border-white/10 bg-[#3f3830] text-white/80 ${hatch}` : 'bg-flame-amber text-[#1a0f05]'
+                      s.other ? `border border-line bg-[color-mix(in_srgb,var(--c-surface),var(--c-chip2))] text-fg ${hatch}` : 'bg-flame-amber text-on'
                     }`}
                     style={{ width: size, height: size, minWidth: 26, minHeight: 26 }}
                     title={`${s.label}: ${s.count} of ${total} rows (${s.share.toFixed(1)}%)`}
@@ -62,12 +62,12 @@ function Statistics({ shares }: { shares: ShareResult }) {
                       {Math.round(s.share)}%
                     </span>
                   </div>
-                  <span className="max-w-[88px] truncate text-[10px] text-white/60">{s.label}</span>
+                  <span className="max-w-[88px] truncate text-[10px] text-muted">{s.label}</span>
                 </div>
               )
             })}
           </div>
-          <p className="mt-3 text-[10px] leading-4 text-white/40">
+          <p className="mt-3 text-[10px] leading-4 text-muted">
             Share of rows by {groupLabel ?? 'value'} · {total} rows. Circle area is proportional to
             share.
           </p>
@@ -176,7 +176,7 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[17px] font-light" title={datasetName}>Ask about this dataset</div>
-          <p className="mt-1 text-[12px] leading-5 text-white/55">
+          <p className="mt-1 text-[12px] leading-5 text-muted">
             Grounded in this dataset&apos;s measured summary and linked papers. Ask anything; interpretations are
             labelled as interpretations.
           </p>
@@ -187,7 +187,7 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
             <select
               value={material}
               onChange={(e) => setMaterial(e.target.value)}
-              className="rounded-lg border border-white/10 px-2 py-1.5 text-[11px]"
+              className="rounded-lg border border-line px-2 py-1.5 text-[11px]"
               style={{ borderColor: C.line, background: C.panel2, color: C.fg }}
             >
               <option value="all">All materials</option>
@@ -206,19 +206,19 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
             onChange={(e) => setQuestion(e.target.value)}
             maxLength={QUESTION_MAX_CHARS}
             placeholder="Ask about this dataset…"
-            className="min-w-0 flex-1 rounded-lg border border-white/10 px-3 py-2 text-[12px] leading-5 outline-none focus:border-blue"
+            className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-[12px] leading-5 outline-none focus:border-blue"
             style={{ color: C.fg, background: C.panel2, borderColor: C.line }}
           />
           <button
             type="submit"
             disabled={loading || !question.trim()}
-            className="rounded-full border bg-flame-amber px-4 py-2 text-[12px] font-medium text-[#1a0f05] hover:bg-[#ffb868] disabled:opacity-40"
+            className="rounded-full border bg-flame-amber px-4 py-2 text-[12px] font-medium text-on hover:brightness-110 disabled:opacity-40"
           >
             {loading ? "Asking…" : "Ask"}
           </button>
         </div>
         {question.trim() !== "" && (
-          <p className="mt-1 text-[11px] text-white/50">
+          <p className="mt-1 text-[11px] text-muted">
             Asking routes the grounded summary to the AI service when one is configured.
           </p>
         )}
@@ -250,7 +250,7 @@ function Assistant({ datasetId, datasetName, className = '' }: AssistantProps) {
               type="button"
               onClick={() => setMore((m) => !m)}
               aria-expanded={more}
-              className="mt-1 text-[12px] font-medium text-flame-amber transition-colors hover:text-white"
+              className="mt-1 text-[12px] font-medium text-flame-blue transition-colors hover:text-fg"
             >
               {more ? "Show less" : `Read more (${observations.length - 1} more)`}
             </button>

@@ -74,7 +74,7 @@ export default function GenericCompare({
   const numId = `cmp-${dataset.id}`
 
   const selectCls =
-    'rounded-lg border px-2 py-1.5 text-[11px] bg-[#23232c]'
+    'rounded-lg border px-2 py-1.5 text-[11px] bg-[var(--c-panel2)]'
 
   // Empty states ----------------------------------------------------------------
   if (numerics.length < 2) {
@@ -201,10 +201,10 @@ export default function GenericCompare({
                         style={{ borderColor: C.line, background: C.ink }}
                       >
                         {groupCol && <div style={{ color: C.fg }}>{d.group}</div>}
-                        <div style={{ color: C.blue }}>
+                        <div style={{ color: C.accentText }}>
                           {xCol ? columnLabel(xCol) : 'X'}: {d.x}
                         </div>
-                        <div style={{ color: C.amber }}>
+                        <div style={{ color: C.accentText }}>
                           {yCol ? columnLabel(yCol) : 'Y'}: {d.y}
                         </div>
                       </div>

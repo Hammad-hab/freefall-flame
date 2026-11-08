@@ -8,7 +8,7 @@
  */
 import type { ReactNode } from 'react'
 import { WIDGET_INFO, type WidgetId } from '@/lib/widget-layout'
-import { C, panelCls, panelStyle } from '../ui/chart-theme'
+import { C, alpha, panelCls, panelStyle } from '../ui/chart-theme'
 
 const iconBtn =
   'grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[12px] leading-none transition-colors hover:brightness-110'
@@ -44,7 +44,7 @@ export default function Widget({
       data-collapsed={collapsed || undefined}
       aria-label={title}
       className={`${panelCls} min-w-0 scroll-mt-16`}
-      style={highlight ? { ...panelStyle, borderColor: `${C.amber}66` } : panelStyle}
+      style={highlight ? { ...panelStyle, borderColor: alpha(C.amber, 0x66) } : panelStyle}
     >
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 className="min-w-0 text-[14px] font-medium" style={{ color: C.fg }}>{title}</h3>

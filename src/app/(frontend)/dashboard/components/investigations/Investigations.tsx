@@ -100,7 +100,7 @@ export function CardLinks({ id, links, onGo }: { id: string; links: WorkspaceLin
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
       {items.map((l) => (
-        <a key={l.key} {...linkProps(l.href, () => { onGo?.(); l.go() })} data-card-goes={l.key} className="underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: C.amber }}>
+        <a key={l.key} {...linkProps(l.href, () => { onGo?.(); l.go() })} data-card-goes={l.key} className="underline decoration-dotted underline-offset-2 hover:opacity-80" style={{ color: C.accentText }}>
           {l.label}
         </a>
       ))}
@@ -308,7 +308,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
             inv={detailInv}
             header={rankOf.get(detailInv.id) && (
               <span className="shrink-0 text-right">
-                <span className="block text-[18px] font-light tabular-nums" style={{ color: C.amber }} data-card-score>{rankOf.get(detailInv.id)!.score}</span>
+                <span className="block text-[18px] font-light tabular-nums" style={{ color: C.accentText }} data-card-score>{rankOf.get(detailInv.id)!.score}</span>
                 <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {rankLabel(rankOf.get(detailInv.id)!, ranked!)}</span>
               </span>
             )}
