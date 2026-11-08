@@ -124,7 +124,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
   }, [cellRows]);
 
   const colorFor = (count: number) => {
-    if (count === 0) return "rgba(255,255,255,0.03)";
+    if (count === 0) return alpha(C.fg, 0x08); // no tests: a faint cell in any theme
     const t = maxCount > 0 ? count / maxCount : 0;
     // Interpolate from muted blue to bright amber
     const r = Math.round(79 + (255 - 79) * t);
@@ -255,7 +255,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
               style={{
                 borderColor: sort === m ? C.blue : C.line,
                 background: sort === m ? C.blue : C.surface,
-                color: sort === m ? C.ink : C.muted,
+                color: sort === m ? C.on : C.muted,
               }}
             >
               {m === "score" ? "Evidence score" : m === "name" ? "Name" : "Test count"}
@@ -316,7 +316,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
                     x={x}
                     y={headerH + sortedMaterials.length * (cellH + gap) + 14}
                     textAnchor="middle"
-                    style={{ fill: C.amber, fontFamily: "inherit", fontSize: "9px" }}
+                    style={{ fill: C.accentText, fontFamily: "inherit", fontSize: "9px" }}
                   >
                     {ref.label}
                   </text>
@@ -370,7 +370,8 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
                           x={cx}
                           y={cy + 4}
                           textAnchor="middle"
-                          style={{ fill: n > maxCount / 2 ? C.ink : C.fg, fontFamily: "inherit", fontSize: "11px", fontWeight: 500 }}
+                          // The cells are data colours (the same in every theme), so their numbers keep fixed colours too.
+                          style={{ fill: n > maxCount / 2 ? "#120e08" : "#f0ebe2", fontFamily: "inherit", fontSize: "11px", fontWeight: 500 }}
                         >
                           {n}
                         </text>
@@ -409,7 +410,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
           ≥1 valid test (color intensity = test count)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded" style={{ background: 'rgba(255,255,255,0.03)' }} />
+          <span className="inline-block h-3 w-3 rounded" style={{ background: alpha(C.fg, 0x08) }} />
           No recorded tests — evidence gap, not proof of safety
         </span>
         <span className="flex items-center gap-1.5">
@@ -440,7 +441,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
-                    style={{ color: C.blue }}
+                    style={{ color: C.accentText }}
                   >
                     Paper {raw._paper}
                   </a>

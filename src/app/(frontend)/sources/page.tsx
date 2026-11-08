@@ -52,7 +52,7 @@ export default function SourcesPage() {
           <ul className="mt-6 space-y-4">
             {papers.map((p) => (
               <li key={p.ntrsId}>
-                <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-flame-amber hover:underline">{p.title}</a>
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-flame-blue hover:underline">{p.title}</a>
                 <div className="text-sm text-muted">NTRS {p.ntrsId} · {p.investigation}</div>
               </li>
             ))}
@@ -92,7 +92,7 @@ export default function SourcesPage() {
           <p className="mt-4 text-sm text-muted">
             The cleaned files and their notes are in the project&apos;s <span className="font-mono">data/psi/</span> folder.
             The dashboard&apos;s{' '}
-            <Link href="/dashboard?tab=investigations" className="text-flame-amber hover:underline">Investigations</Link> tab
+            <Link href="/dashboard?tab=investigations" className="text-flame-blue hover:underline">Investigations</Link> tab
             shows each one as a card.
           </p>
         </section>

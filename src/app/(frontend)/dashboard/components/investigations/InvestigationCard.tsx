@@ -110,7 +110,7 @@ export default function InvestigationCard({
               </li>
             ) : (
               <li key={k}>
-                <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2" style={{ color: C.amber }}>
+                <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted underline-offset-2" style={{ color: C.accentText }}>
                   {s.title}
                 </a>{' '}
                 <span style={{ color: C.muted }}>(NTRS {s.ntrsId})</span>

@@ -42,11 +42,11 @@ const pill =
 const pillState = (on: boolean) => ({
   borderColor: on ? C.blue : C.line,
   background: on ? C.blue : C.surface,
-  color: on ? C.ink : C.muted,
+  color: on ? C.on : C.muted,
 });
 
 /** The one primary action per group (Play/Pause). */
-const primary = { borderColor: C.blue, background: C.blue, color: C.ink };
+const primary = { borderColor: C.blue, background: C.blue, color: C.on };
 
 /** Inset row holding a slider or a select. */
 const rowCls = 'rounded-xl border p-3';
@@ -56,7 +56,7 @@ const labelCls = 'text-[12px]';
 
 /** Value readout. tabular-nums keeps it from jittering as the number changes. */
 const badgeCls = 'inline-block rounded-full px-2 py-0.5 text-[11px] tabular-nums';
-const badgeStyle = { background: C.chip2, color: C.blue };
+const badgeStyle = { background: C.chip2, color: C.accentText };
 
 const selectCls = 'rounded-lg border px-2 py-1 text-[11px]';
 const selectStyle = { borderColor: C.line, background: C.surface, color: C.fg };
@@ -238,7 +238,7 @@ function Legend({ view, exposure = 1 }: { view: View; exposure?: number }) {
       )}
       {/* A label that must be read with the view (CO: the engine makes it by a rule, not chemistry). */}
       {scale.note && (
-        <div id="legend-note" className="text-[10px] font-semibold tracking-wide" style={{ color: C.amber }}>
+        <div id="legend-note" className="text-[10px] font-semibold tracking-wide" style={{ color: C.accentText }}>
           {scale.note}
         </div>
       )}

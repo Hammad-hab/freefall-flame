@@ -27,6 +27,7 @@ import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
 import { linkProps, type WorkspaceLinks } from './links'
+import { C } from '../ui/chart-theme'
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
@@ -44,17 +45,17 @@ function OverviewContent({ data }: { data: TabData }) {
     <div className="space-y-4">
       {/* Dataset title heading */}
       <div className="flex items-start gap-3">
-        <h1 className="text-[18px] font-light leading-tight" style={{ color: '#e8e4de' }}>
+        <h1 className="text-[18px] font-light leading-tight" style={{ color: C.fg }}>
           {data.datasetName}
         </h1>
       </div>
       {data.links && (
-        <p className="text-[12px]" style={{ color: '#a89e90' }}>
+        <p className="text-[12px]" style={{ color: C.muted }}>
           <a
             {...linkProps(data.links.cardHref('bass-ii'), () => data.links!.showCard('bass-ii'))}
             data-link-investigations
             className="underline decoration-dotted underline-offset-2 hover:opacity-80"
-            style={{ color: '#ffa64d' }}
+            style={{ color: C.accentText }}
           >
             How BASS-II ranks among NASA&apos;s 14 PSI combustion investigations for habitat fire safety
           </a>

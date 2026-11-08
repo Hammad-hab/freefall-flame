@@ -62,7 +62,7 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <Link
           href="/"
-          className="text-[13px] font-semibold text-fg transition-colors hover:text-flame-amber"
+          className="text-[13px] font-semibold text-fg transition-colors hover:text-flame-blue"
         >
           Flame in Freefall
         </Link>

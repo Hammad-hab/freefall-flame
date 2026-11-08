@@ -82,7 +82,7 @@ export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: 
           NASA&apos;s conditions (B1) it is still burning at step {MOON_RESULT.nasaStillBurningAt}. More oxygen made the fire
           faster, not safer.
         </div>
-        <div className="mt-1" style={{ color: C.amber }}>
+        <div className="mt-1" style={{ color: C.accentText }}>
           extrapolation: not validated above {moon.solidMaxO2Pct}% O2; pressure is not modelled (the engine runs at 1 atm).
         </div>
         {links && (
@@ -90,7 +90,7 @@ export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: 
             {...linkProps(links.moonHref(), links.openMoon)}
             data-moon-link
             className="mt-2 inline-block underline decoration-dotted underline-offset-2 hover:opacity-80"
-            style={{ color: C.amber }}
+            style={{ color: C.accentText }}
           >
             Run the what-if in the sandbox
           </a>

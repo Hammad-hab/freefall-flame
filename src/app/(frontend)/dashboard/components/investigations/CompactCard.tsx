@@ -46,7 +46,7 @@ export default function CompactCard({
         </div>
         {r && (
           <span className="shrink-0 text-right">
-            <span className="block text-[18px] font-light leading-none tabular-nums" style={{ color: C.amber }} data-card-score>{r.score}</span>
+            <span className="block text-[18px] font-light leading-none tabular-nums" style={{ color: C.accentText }} data-card-score>{r.score}</span>
             <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {rankText ?? r.rank}</span>
           </span>
         )}

@@ -107,7 +107,7 @@ export function DataTable({
         statistics above.
       </p>
       {linkedTest && (
-        <p id="table-linked" className="mt-1 text-[11px]" style={{ color: pinned ? C.amber : C.muted }}>
+        <p id="table-linked" className="mt-1 text-[11px]" style={{ color: pinned ? C.accentText : C.muted }}>
           {pinned
             ? `Test ${linkedTest}, linked from the sandbox, is pinned at the top.`
             : `Test ${linkedTest}, linked from the sandbox, has no row in this dataset.`}
@@ -116,7 +116,7 @@ export function DataTable({
       <div className="mt-4 overflow-x-auto rounded-xl border" style={{ borderColor: C.line }}>
         <table className="w-max min-w-full border-collapse text-left text-[11px]">
           <thead>
-            <tr style={{ background: "#16283a" }}>
+            <tr style={{ background: C.surface }}>
               {columns.map((c) => (
                 <th key={c.key} className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: C.muted }}>
                   {c.label}
@@ -154,12 +154,12 @@ export function DataTable({
                   </td>
                 )}
                 {o2iCol && (
-                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.blue }}>
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.accentText }}>
                     {cell(rows[r._idx], o2iCol.key, r.readingClasses.o2i)}
                   </td>
                 )}
                 {o2fCol && (
-                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.amber }}>
+                  <td className="whitespace-nowrap px-3 py-1.5" style={{ color: C.accentText }}>
                     {cell(rows[r._idx], o2fCol.key, r.readingClasses.o2f)}
                   </td>
                 )}
@@ -205,7 +205,7 @@ export function DataTable({
                           links.openInSandbox(r.testNo!);
                         }}
                         className="underline decoration-dotted underline-offset-2 hover:opacity-80"
-                        style={{ color: C.amber }}
+                        style={{ color: C.accentText }}
                       >
                         Open in sandbox
                       </a>

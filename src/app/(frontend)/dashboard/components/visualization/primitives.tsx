@@ -101,7 +101,7 @@ export function FilterPill({
       style={{
         borderColor: active ? C.blue : C.line,
         background: active ? C.blue : C.surface,
-        color: active ? C.ink : C.muted,
+        color: active ? C.on : C.muted,
       }}
     >
       {label}

@@ -28,7 +28,7 @@ import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import { fillView } from './colors';
 import scorecard from '../scorecard.json';
 import { isPlainClick, linkProps, type WorkspaceLinks } from '../../workspace/links';
-import { C, panelCls, panelStyle } from '../../ui/chart-theme';
+import { C, alpha, panelCls, panelStyle } from '../../ui/chart-theme';
 import { MOON_RESULT } from '../../investigations/MoonBaseCard';
 
 /**
@@ -257,9 +257,10 @@ const SAFFIRE_NOTE =
 function Tag({ value, tone = 'muted' }: { value: string; tone?: 'muted' | 'blue' | 'red' | 'green' }) {
   const toneStyle: Record<string, React.CSSProperties> = {
     muted: { color: C.muted, background: C.chip2 },
-    blue: { color: C.fg, background: 'rgba(255,166,77,0.16)' },
-    red: { color: 'rgba(248,113,113,0.85)', background: 'rgba(248,113,113,0.12)' },
-    green: { color: 'rgba(52,211,153,0.85)', background: 'rgba(52,211,153,0.12)' },
+    // The words are the theme's status colours at full strength (AA on the panels), on a faint tint of the same.
+    blue: { color: C.fg, background: alpha(C.accent, 0x29) },
+    red: { color: C.red, background: alpha(C.red, 0x1f) },
+    green: { color: C.green, background: alpha(C.green, 0x1f) },
   };
   return (
     <span
@@ -289,7 +290,7 @@ function CardLink({ links, card, children }: { links: WorkspaceLinks; card: stri
       {...linkProps(links.cardHref(card), () => links.showCard(card))}
       data-card-link={card}
       className="text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
-      style={{ color: C.amber }}
+      style={{ color: C.accentText }}
     >
       {children}
     </a>
@@ -341,7 +342,7 @@ function TableLink({ links, testId }: { links: WorkspaceLinks; testId: string })
         links.showInTable(testId);
       }}
       className="text-[11px] underline decoration-dotted underline-offset-2 hover:opacity-80"
-      style={{ color: C.amber }}
+      style={{ color: C.accentText }}
     >
       Show in data table
     </a>
@@ -483,7 +484,7 @@ export default function PresetsPanel({
               style={{
                 borderColor: on ? C.blue : C.line,
                 background: on ? C.blue : C.surface,
-                color: on ? C.ink : C.muted,
+                color: on ? C.on : C.muted,
               }}
             >
               {label}
@@ -526,7 +527,7 @@ export default function PresetsPanel({
           <StatusLine live={live} playing={playing} />
         </div>
         <div className="space-y-1 text-[11px] leading-5">
-          {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
+          {row('What it is', <span style={{ color: C.accentText }}>{MOON_LABEL}</span>)}
           {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
           {/* "burned out" reads like "went out": say plainly that the sample was used up. */}
           {row('Our outcome',
@@ -634,7 +635,7 @@ export default function PresetsPanel({
       </div>
 
       {missingTest && (
-        <p className="mt-2 text-[11px]" style={{ color: C.amber }}>
+        <p className="mt-2 text-[11px]" style={{ color: C.accentText }}>
           The link asked for test {missingTest}, which has no preset in the sandbox.
         </p>
       )}
@@ -687,7 +688,7 @@ export default function PresetsPanel({
                   className={`flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[11px] transition-colors ${
                     off ? 'cursor-not-allowed opacity-45' : on ? 'bg-line text-fg' : 'text-muted hover:bg-line/50 hover:text-fg'
                   }`}
-                  style={on ? { borderLeft: '2px solid rgba(255,166,77,0.5)' } : {}}
+                  style={on ? { borderLeft: `2px solid ${alpha(C.accent, 0x80)}` } : {}}
                 >
                   <span className="w-7 shrink-0 tabular-nums" style={{ color: C.muted, fontFamily: 'ui-monospace, monospace' }}>
                     {p.id}

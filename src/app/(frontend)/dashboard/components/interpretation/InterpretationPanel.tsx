@@ -180,7 +180,7 @@ export default function InterpretationPanel({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ml-2 text-[11px]"
-                          style={{ color: C.blue }}
+                          style={{ color: C.accentText }}
                         >
                           NTRS: {p.ntrsId} ↗
                         </a>
