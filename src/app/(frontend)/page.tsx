@@ -2,6 +2,10 @@ import Link from 'next/link'
 import { Bricolage_Grotesque, Instrument_Sans } from 'next/font/google'
 import './global.css'
 import { Metadata } from 'next'
+import { DEFAULT_WEIGHTS, rank, rankLabel, type PsiCatalogue } from '@/lib/psi'
+import psi from './dashboard/components/investigations/psi.json'
+// Made by src/scripts/home-flame.ts from the sandbox engine (not drawn by hand).
+import flame from './home-flame.json'
 
 const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage' })
 const body = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument' })
@@ -56,6 +60,10 @@ const SOURCES = [
   { name: 'Stated assumptions', desc: 'ISS air, the exploration atmosphere (Norcross et al. 2013) and cabin ventilation (SAE 932191), shown with the ranking.' },
 ]
 
+// The ranking at equal weights, as the Investigations tab opens: the top 5 for the preview.
+const RANKED = rank((psi as PsiCatalogue).investigations, DEFAULT_WEIGHTS)!
+const TOP5 = RANKED.slice(0, 5)
+
 export default function HomePage() {
   return (
     <div className={`${display.variable} ${body.variable} min-h-screen font-body leading-relaxed`}>
@@ -96,7 +104,53 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          {/*<FlameDemo />*/}
+          <figure id="home-flame" className="overflow-hidden rounded-[10px] border border-line bg-ink-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a small static PNG; sharp pixels (no resampling) wanted */}
+            <img
+              src={flame.image}
+              width={flame.width}
+              height={flame.height}
+              alt={`Sandbox Temperature view: BASS-II test ${flame.testId} at step ${flame.step}, ${flame.outcomeAtStep}. The hot gas trails downstream of the burning end of the sample.`}
+              className="block h-auto w-full [image-rendering:pixelated]"
+            />
+            <figcaption className="px-4 py-3 text-[0.8rem] text-muted">
+              BASS-II test {flame.testId} at step {flame.step} ({flame.outcomeAtStep}), the Temperature view, rendered by the
+              sandbox engine itself.{' '}
+              <Link href="/dashboard?tab=sandbox&preset=B14" className="text-flame-blue hover:underline">
+                Run it in the sandbox
+              </Link>
+            </figcaption>
+          </figure>
+        </section>
+
+        <section id="home-ranking" className="border-t border-line py-14">
+          <div className="grid gap-8 md:grid-cols-[0.8fr_1.2fr] md:gap-14">
+            <div>
+              <h2 className={h2}>Ranked for habitat fire safety</h2>
+              <p className="mt-3 text-muted">
+                NASA&apos;s {RANKED.length} PSI combustion investigations, scored on five stated criteria at equal weights.
+                A score is relevance to habitat fire safety, not fire risk.
+              </p>
+              <Link href="/dashboard?tab=investigations" className="mt-5 inline-block text-flame-blue hover:underline">
+                See all {RANKED.length}, change the weights
+              </Link>
+            </div>
+            <ol className="space-y-2.5 self-center">
+              {TOP5.map((r) => {
+                const label = rankLabel(r, RANKED)
+                return (
+                  <li key={r.id} data-home-rank={r.id} className="grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(6rem,40%)_2.5rem] items-center gap-3">
+                    <span className="text-right tabular-nums text-muted">{label.endsWith('=') ? label : `${label}.`}</span>
+                    <span className="truncate font-display text-[1.05rem] font-semibold">{r.name}</span>
+                    <span className="h-2 overflow-hidden rounded-full bg-line">
+                      <span className="block h-full rounded-full bg-flame-amber" style={{ width: `${r.score}%` }} />
+                    </span>
+                    <span className="text-right tabular-nums">{r.score}</span>
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
         </section>
 
         <section className="border-t border-line py-18">
@@ -137,28 +191,16 @@ export default function HomePage() {
           </Link>
         </section>
 
-        <section className="border-t border-line py-18">
-          <div className="grid items-center gap-10 rounded-[10px] border border-line bg-ink-2 p-7 md:grid-cols-[1.1fr_0.9fr] md:p-10">
-            <div>
-              <h2 className={h2}>Bring your own dataset</h2>
-              <p className="mt-3 max-w-[52ch] text-muted">
-                Admins can add a dataset and its papers in the admin panel without touching code. A
-                published dataset opens in the dashboard by its id (/dashboard?dataset=…), and its
-                charts appear for the columns they recognise.
-              </p>
-            </div>
-            <div>
-              <ol className="mb-6 list-decimal pl-5 [&>li]:py-1">
-                <li>Create a dataset and define its columns</li>
-                <li>Upload the CSV under Dataset Imports (&quot;Check only&quot; validates first)</li>
-                <li>Link its papers</li>
-                <li>Publish it</li>
-              </ol>
-              <Link href="/admin" className={btnGhost}>
-                Admin sign-in
-              </Link>
-            </div>
-          </div>
+        <section id="home-byod" className="border-t border-line py-8">
+          <h3 className="font-display text-[1.05rem] font-semibold">Bring your own dataset</h3>
+          <p className="mt-1 max-w-[70ch] text-[0.9rem] text-muted">
+            Admins can add a dataset and its papers in the admin panel without touching code: define its columns, upload
+            the CSV under Dataset Imports (&quot;Check only&quot; validates first), link its papers and publish it. It then
+            opens at /dashboard?dataset=…, with charts for the columns they recognise.{' '}
+            <Link href="/admin" className="text-flame-blue hover:underline">
+              Admin sign-in
+            </Link>
+          </p>
         </section>
 
         <footer className="flex flex-wrap justify-between gap-4 border-t border-line pt-7 pb-10 text-sm text-muted">

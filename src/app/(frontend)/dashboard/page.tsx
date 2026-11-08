@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: SearchPageProps) {
     dataset: getDataset,
     rows: getAllRows,
   })
-  if (loaded.kind === 'notFound') return <DatasetNotFound/>
+  if (loaded.kind === 'notFound') return <DatasetNotFound requested={typeof dataset_id === 'string' ? dataset_id : undefined}/>
   if (loaded.kind === 'unavailable') {
     console.error('[dashboard] could not reach the data:', (loaded.error as Error)?.message ?? loaded.error)
     return <DataUnavailable/>

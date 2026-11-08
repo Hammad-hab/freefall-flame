@@ -158,7 +158,7 @@ export function ViewBar({ view, setView }: { view: View; setView: (v: View) => v
     <div className="flex w-full min-w-0 flex-col gap-2">
       <div id="view-bar" className="flex min-w-0 flex-wrap gap-1.5">
         {VIEWS.map((v) => (
-          <button key={v} className={pill} style={pillState(v === view)} onClick={() => setView(v)}>
+          <button key={v} className={pill} style={pillState(v === view)} onClick={() => setView(v)} aria-pressed={v === view} data-view={v}>
             {VIEW_LABELS[v]}
           </button>
         ))}

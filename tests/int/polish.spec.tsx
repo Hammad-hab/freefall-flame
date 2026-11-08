@@ -11,6 +11,7 @@ import { outcomeCounts, rodDiameterDistribution } from '@/app/(frontend)/dashboa
 import KeyNumbers from '@/app/(frontend)/dashboard/components/overview/KeyNumbers'
 import { Assistant } from '@/app/(frontend)/dashboard/components/overview/Fragments'
 import { DataUnavailable } from '@/app/(frontend)/dashboard/components/ui/DataUnavailable'
+import { DatasetNotFound } from '@/app/(frontend)/dashboard/components/ui/DatasetNotFound'
 import { buildRowMapping, parseRows, resolveBass2Columns } from '@/lib/combustion'
 import type { DatasetMeta, DataRow } from '@/lib/types'
 
@@ -131,6 +132,20 @@ describe('Overview assistant', () => {
     const answer = document.querySelector('#assistant-answer')!
     const obs = document.querySelector('#assistant-observations')!
     expect(answer.compareDocumentPosition(obs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('dataset not found page', () => {
+  it('says so in the dashboard style, names the id as text, and offers the default dataset and home', () => {
+    render(<DatasetNotFound requested={'999<b>x</b>'} />)
+    expect(screen.getByRole('heading').textContent).toBe("We couldn't find that dataset")
+    const page = document.querySelector('#dataset-not-found')!
+    expect(page.textContent).toContain('No published dataset has the id “999<b>x</b>”.')
+    expect(page.querySelector('b')).toBeNull() // the id is text, never HTML
+    expect(page.querySelector('svg')).toBeNull() // no cartoon
+    expect(page.textContent).not.toMatch(/dragon|hoard|woah/i)
+    expect(screen.getByRole('link', { name: 'Open the BASS-II dataset' }).getAttribute('href')).toBe('/dashboard')
+    expect(screen.getByRole('link', { name: '← Home' }).getAttribute('href')).toBe('/')
   })
 })
 

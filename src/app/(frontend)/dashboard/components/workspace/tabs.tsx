@@ -14,6 +14,9 @@ import type { ShareResult } from '@/lib/shares'
 import SummaryAndChart from '../overview/SummaryChart'
 import { Statistics, Assistant } from '../overview/Fragments'
 import KeyNumbers from '../overview/KeyNumbers'
+import { AboutDataset, MaterialsCard, ScorecardCard } from '../overview/OverviewCards'
+import { OutcomeChart } from '../visualization/MaterialCharts'
+import { outcomeCounts } from '../visualization/chartData'
 import SourcesStrip from '../overview/SourcesStrip'
 import Limitations from '../overview/Limitations'
 import EvidenceRanking from '../evidence/EvidenceRanking'
@@ -57,20 +60,32 @@ function OverviewContent({ data }: { data: TabData }) {
           </a>
         </p>
       )}
+      {/* feat/ui-visuals: judge-facing cards first; the developer-style ones folded into "About this dataset". */}
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[1fr_380px]">
-        <SummaryAndChart dataset={data.dataset} rows={data.rows} />
+        <OverviewOutcomes rows={data.parsedRows} />
         <KeyNumbers rows={data.parsedRows} links={data.links} />
       </div>
-      <div className="grid grid-cols-1 gap-8 @2xl:grid-cols-2 @6xl:grid-cols-[1.45fr_0.8fr_1fr]">
-        <Statistics shares={data.shares} />
-        <Assistant datasetId={data.datasetId} datasetName={data.datasetName} className="@6xl:col-span-2" />
+      <div className="grid grid-cols-1 gap-8 @3xl:grid-cols-2">
+        <MaterialsCard rows={data.parsedRows} />
+        <ScorecardCard total={data.rows.length} links={data.links} />
       </div>
+      <Assistant datasetId={data.datasetId} datasetName={data.datasetName} />
       <div className="grid grid-cols-1 gap-8 @3xl:grid-cols-2">
         <SourcesStrip dataset={data.dataset} rows={data.rows} />
         <Limitations />
       </div>
+      <AboutDataset>
+        <SummaryAndChart dataset={data.dataset} rows={data.rows} />
+        <Statistics shares={data.shares} />
+      </AboutDataset>
     </div>
   )
+}
+
+/** NASA's stated outcomes, the Visualization tab's chart; nothing when the dataset has no outcome column. */
+function OverviewOutcomes({ rows }: { rows: ParsedRow[] }) {
+  const data = outcomeCounts(rows)
+  return data.length ? <div id="overview-outcomes"><OutcomeChart data={data} /></div> : null
 }
 
 function EvidenceContent({ data }: { data: TabData }) {
