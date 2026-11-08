@@ -3,13 +3,14 @@
  * there is no AI answer, and the number check every AI answer must pass.
  * Pure functions: no React, no network.
  */
-import { CRITERIA, DEFAULT_WEIGHTS, rank, type PsiCatalogue, type PsiFact } from './psi'
+import { CRITERIA, DEFAULT_WEIGHTS, rank, rankLabel, type PsiCatalogue, type PsiFact } from './psi'
+export { rankLabel } from './psi'
 
 const SHARED_RULES = [
   'You summarise NASA combustion investigations for a crew-habitat fire-safety dashboard.',
   'STRICT RULES:',
   '1. Use ONLY the facts JSON in the user message. Never invent measurements, test counts, results or papers.',
-  '2. Every number you write must appear in the facts JSON exactly as given. Do not round, convert or compute new numbers.',
+  '2. Every number you write must appear in the facts JSON exactly as given. Do not round, convert or compute new numbers. Write oxygen with its unit as the facts give it (for example 21% air), and a tied rank as the facts give it (2=).',
   '3. Say what the table does not hold (for example outcomes) when the facts say so.',
   '4. The relevance score is how directly the data speaks to habitat fire safety. It is NOT fire risk. Never call a material or investigation safe, unsafe, high-risk or low-risk.',
   '5. Label interpretations as interpretations.',
@@ -38,6 +39,12 @@ export type PsiTarget = 'overall' | string
 /** The system prompt for a target: the overall ranking has its own rules. */
 export const systemFor = (target: PsiTarget) => (target === 'overall' ? PSI_OVERALL_SYSTEM : PSI_SYSTEM)
 
+/** Oxygen with its unit: "13.6-22.2" -> "13.6-22.2%", "21 (air)" -> "21% air", "not in table" -> "not in the table". */
+export function o2Text(o2: string): string {
+  if (o2 === 'not in table') return 'not in the table'
+  return o2.replace(/^([\d.]+(?:-[\d.]+)?)\s*(\(air\))?/, (_, n: string, air?: string) => `${n}%${air ? ' air' : ''}`)
+}
+
 /** "a", "a and b", "a, b and c". */
 const andList = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
 
@@ -65,13 +72,13 @@ export function psiFacts(cat: PsiCatalogue, target: PsiTarget): Record<string, u
       ranking: ranked.map((r) => {
         const inv = cat.investigations.find((i) => i.id === r.id)!
         return {
-          rank: r.rank,
+          rank: rankLabel(r, ranked),
           name: r.name,
           psiId: inv.psiId,
           score: r.score,
           fuelPhase: inv.fuelPhase,
           tests: inv.tests,
-          oxygenPct: inv.o2Pct,
+          oxygen: o2Text(inv.o2Pct),
           outcomesInTable: inv.outcomeRecorded,
           criterionScores: Object.fromEntries(CRITERIA.map((c) => [c.label, inv.scores[c.key].score])),
           whatWeSimulated: `${inv.simulation.label}: ${inv.simulation.reason}`,
@@ -89,7 +96,7 @@ export function psiFacts(cat: PsiCatalogue, target: PsiTarget): Record<string, u
     fuelPhase: inv.fuelPhase,
     hardware: inv.hardware,
     whatWasBurned: inv.fuels,
-    oxygenPct: inv.o2Pct,
+    oxygen: o2Text(inv.o2Pct),
     pressure: inv.pressure,
     flowCmS: inv.flowCmS,
     tests: inv.tests,
@@ -99,7 +106,7 @@ export function psiFacts(cat: PsiCatalogue, target: PsiTarget): Record<string, u
     outcomesInTable: inv.outcomeRecorded,
     fireSafetyTheme: inv.safetyTheme,
     factsFromTable: inv.facts.map(factText),
-    habitatRelevance: { score: r.score, rank: r.rank, of: ranked.length, criteria: CRITERIA.map((c) => `${c.label}: ${inv.scores[c.key].score} of 2 (${inv.scores[c.key].reason})`) },
+    habitatRelevance: { score: r.score, rank: rankLabel(r, ranked), of: ranked.length, criteria: CRITERIA.map((c) => `${c.label}: ${inv.scores[c.key].score} of 2 (${inv.scores[c.key].reason})`) },
     whatWeSimulated: { status: inv.simulation.label, why: inv.simulation.reason },
     papers: inv.sources.filter((s) => s.kind === 'paper').map((s) => (s.kind === 'paper' ? s.title : '')),
   }
@@ -109,8 +116,8 @@ export function psiFacts(cat: PsiCatalogue, target: PsiTarget): Record<string, u
 export function psiFallback(cat: PsiCatalogue, target: PsiTarget): string[] | null {
   const ranked = rank(cat.investigations, DEFAULT_WEIGHTS)!
   const invOf = (id: string) => cat.investigations.find((i) => i.id === id)!
-  // "13.6-22.2" -> "O2 13.6-22.2%"; "21 (air)" -> "O2 21% (air)".
-  const o2 = (s: string) => (s === 'not in table' ? 'oxygen not in the table' : `O2 ${s.replace(/^([\d.]+(?:-[\d.]+)?)/, '$1%')}`)
+  // "13.6-22.2" -> "O2 13.6-22.2%"; "21 (air)" -> "O2 21% air".
+  const o2 = (s: string) => (s === 'not in table' ? 'oxygen not in the table' : `O2 ${o2Text(s)}`)
   if (target === 'overall') {
     const top = ranked.filter((r) => r.rank <= 3)
     const none = cat.investigations.filter((i) => noOutcome(i.outcomeRecorded))
@@ -121,7 +128,7 @@ export function psiFallback(cat: PsiCatalogue, target: PsiTarget): string[] | nu
       `Top of the ranking (equal weights): ${top
         .map((r) => {
           const i = invOf(r.id)
-          return `${r.name} ${r.score} (${i.psiId}: ${i.tests > 0 ? `${i.tests} tests` : 'no single tests'}, ${o2(i.o2Pct)}, outcomes ${i.outcomeRecorded})`
+          return `rank ${rankLabel(r, ranked)}: ${r.name} ${r.score} (${i.psiId}: ${i.tests > 0 ? `${i.tests} tests` : 'no single tests'}, ${o2(i.o2Pct)}, outcomes ${i.outcomeRecorded})`
         })
         .join('; ')}.`,
       ...(allTwo.length ? [`What separates them: ${top.length === 3 ? 'all three' : 'all of them'} score 2 of 2 on ${andList(allTwo)}.`] : []),
@@ -136,9 +143,9 @@ export function psiFallback(cat: PsiCatalogue, target: PsiTarget): string[] | nu
   if (!inv) return null
   const r = ranked.find((x) => x.id === inv.id)!
   return [
-    `${inv.name} (${inv.psiId}) burned ${inv.fuels}; oxygen ${inv.o2Pct}, pressure ${inv.pressure}.`,
+    `${inv.name} (${inv.psiId}) burned ${inv.fuels}; oxygen ${o2Text(inv.o2Pct)}, pressure ${inv.pressure}.`,
     ...inv.facts.slice(0, 2).map(factText).map((t) => `${t}.`),
-    `Outcomes in the table: ${inv.outcomeRecorded}. Habitat relevance ${r.score} (rank ${r.rank} of ${ranked.length}).`,
+    `Outcomes in the table: ${inv.outcomeRecorded}. Habitat relevance ${r.score} (rank ${rankLabel(r, ranked)} of ${ranked.length}).`,
     `What we simulated: ${inv.simulation.label}.`,
   ]
 }

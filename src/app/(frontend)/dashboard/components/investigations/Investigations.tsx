@@ -11,7 +11,7 @@
  * viewer's browser when storage is available.
  */
 import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
-import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, SIM_STATUS, rank, type PsiCatalogue, type PsiInvestigation, type SimStatus, type Weights } from '@/lib/psi'
+import { CRITERIA, DEFAULT_WEIGHTS, MAX_WEIGHT, SIM_STATUS, rank, rankLabel, type PsiCatalogue, type PsiInvestigation, type SimStatus, type Weights } from '@/lib/psi'
 import { DEFAULT_LAYOUT, LAYOUT_KEY, layoutRows, widgetLayoutReducer, type WidgetId } from '@/lib/widget-layout'
 import data from './psi.json'
 import InvestigationCard from './InvestigationCard'
@@ -165,12 +165,14 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
     .filter(({ inv }) => (phase === 'all' || phaseOf(inv.fuelPhase) === phase) && (status === 'all' || inv.simulation.status === status))
     .sort((a, b) => (sort === 'name' ? a.inv.name.localeCompare(b.inv.name) : sort === 'tests' ? b.inv.tests - a.inv.tests || a.inv.name.localeCompare(b.inv.name) : 0))
   const rankOf = useMemo(() => new Map((ranked ?? []).map((r) => [r.id, r])), [ranked])
+  /** "1." or "2=" (a tie), for the collapsed Ranking summary. */
+  const rankText = (r: { rank: number }) => { const l = rankLabel(r, ranked ?? []); return l.endsWith('=') ? l : `${l}.` }
   const detailInv = detail ? byId.get(detail.id) : undefined
 
   // What each widget holds, and the line its header shows while collapsed.
   const widgets: Partial<Record<WidgetId, { body: ReactNode; summary: ReactNode; highlight?: boolean }>> = {
     ranking: {
-      summary: ranked ? ranked.slice(0, 3).map((r) => `${r.rank}. ${r.name} ${r.score}`).join(' · ') : 'every weight is 0',
+      summary: ranked ? ranked.slice(0, 3).map((r) => `${rankText(r)} ${r.name} ${r.score}`).join(' · ') : 'every weight is 0',
       body: <RankingList ranked={ranked} onPick={(id) => showCard(id, true)} />,
     },
     weights: {
@@ -227,6 +229,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
                 key={inv.id}
                 inv={inv}
                 r={r}
+                rankText={r && ranked ? rankLabel(r, ranked) : undefined}
                 focused={focused === inv.id}
                 onDetails={(opener) => setDetail({ id: inv.id, opener })}
               />
@@ -306,7 +309,7 @@ export default function Investigations({ links }: { links?: WorkspaceLinks }) {
             header={rankOf.get(detailInv.id) && (
               <span className="shrink-0 text-right">
                 <span className="block text-[18px] font-light tabular-nums" style={{ color: C.amber }} data-card-score>{rankOf.get(detailInv.id)!.score}</span>
-                <span className="block text-[10px]" style={{ color: C.muted }}>rank {rankOf.get(detailInv.id)!.rank}</span>
+                <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {rankLabel(rankOf.get(detailInv.id)!, ranked!)}</span>
               </span>
             )}
             footer={(

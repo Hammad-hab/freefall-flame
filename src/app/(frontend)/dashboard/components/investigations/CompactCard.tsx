@@ -6,7 +6,7 @@
  * card (InvestigationCard) in the side panel (CardDrawer). All values come
  * from psi.json.
  */
-import type { PsiInvestigation, Ranked } from '@/lib/psi'
+import { testsLabel, type PsiInvestigation, type Ranked } from '@/lib/psi'
 import { Row } from './InvestigationCard'
 import { StatusBadge } from './Simulated'
 import { C, panelCls, panelStyle } from '../ui/chart-theme'
@@ -14,18 +14,19 @@ import { C, panelCls, panelStyle } from '../ui/chart-theme'
 /** "13.6-22.2" -> "13.6-22.2 %"; "21 (air)" -> "21 % (air)"; "not in table" -> "not in the table". */
 export const oxygenText = (o2: string) => (o2 === 'not in table' ? 'not in the table' : o2.replace(/^([\d.]+(?:-[\d.]+)?)/, '$1 %'))
 
-export const testsShort = (inv: PsiInvestigation) =>
-  inv.tests > 0 ? `${inv.tests} (${inv.granularity})` : `no single tests; ${inv.rows} rows (${inv.granularity})`
 
 export default function CompactCard({
   inv,
   r,
   focused,
   onDetails,
+  rankText,
 }: {
   inv: PsiInvestigation
   r: Ranked | null
   focused: boolean
+  /** The rank as written ("2=" for a tie); defaults to the number. */
+  rankText?: string
   onDetails: (opener: HTMLElement) => void
 }) {
   return (
@@ -46,7 +47,7 @@ export default function CompactCard({
         {r && (
           <span className="shrink-0 text-right">
             <span className="block text-[18px] font-light leading-none tabular-nums" style={{ color: C.amber }} data-card-score>{r.score}</span>
-            <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {r.rank}</span>
+            <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {rankText ?? r.rank}</span>
           </span>
         )}
       </header>
@@ -54,7 +55,7 @@ export default function CompactCard({
       <div className="space-y-0.5 text-[11px]">
         <Row label="What was burned"><span className="block truncate" title={inv.fuels}>{inv.fuels}</span></Row>
         <Row label="Oxygen">{oxygenText(inv.o2Pct)}</Row>
-        <Row label="Tests">{testsShort(inv)}</Row>
+        <Row label="Tests">{testsLabel(inv)}</Row>
       </div>
       <button
         type="button"

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PaperRef } from "@/lib/types";
 import { C, panelCls, panelStyle } from "../ui/chart-theme";
+import Markdown from "../ui/Markdown";
 
 type Response = {
   summary: {
@@ -141,9 +142,7 @@ export default function InterpretationPanel({
                     Generated from the compact summary only — not from the raw dataset. Verify each
                     claim against the measured values above and the cited papers.
                   </p>
-                  <p className="whitespace-pre-wrap text-[12px] leading-6" style={{ color: C.fg }}>
-                    {data.ai}
-                  </p>
+                  <Markdown text={data.ai} className="text-[12px] leading-6" />
                 </>
               ) : (
                 <>

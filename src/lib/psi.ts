@@ -63,6 +63,20 @@ export interface PsiInvestigation {
   scores: PsiScores
 }
 
+/**
+ * The test count as a card shows it. Tables with single tests: "129 (per
+ * test)". Tables without: what their rows are, then "(no single tests)" or
+ * "(summary ranges)", e.g. "18 test days (no single tests)" and, for FLEX-2,
+ * whose 8 rows are one per fuel (data/psi/README_other_investigations.md),
+ * "8 fuels (summary ranges)".
+ */
+export function testsLabel(inv: { tests: number; rows: number; granularity: string }): string {
+  if (inv.tests > 0) return `${inv.tests} (${inv.granularity})`
+  if (/^per test day/.test(inv.granularity)) return `${inv.rows} test days (no single tests)`
+  if (/^summary of ranges/.test(inv.granularity)) return `${inv.rows} fuels (summary ranges)`
+  return `${inv.rows} rows, ${inv.granularity} (no single tests)`
+}
+
 export interface PsiCatalogue {
   about: string
   catalogueSha256: string
@@ -153,6 +167,11 @@ export const DEFAULT_WEIGHTS: Weights = { materials: 1, atmosphere: 1, airflow: 
 export const MAX_WEIGHT = 3
 
 export interface Ranked { id: string; name: string; score: number; rank: number }
+
+/** A rank as written for people: "2=" when another investigation has the same rank, else "2". */
+export function rankLabel(r: { rank: number }, ranked: { rank: number }[]): string {
+  return ranked.filter((x) => x.rank === r.rank).length > 1 ? `${r.rank}=` : String(r.rank)
+}
 
 /**
  * Score = sum(weight x criterion) / (2 x sum(weights)) x 100, so 0-100.

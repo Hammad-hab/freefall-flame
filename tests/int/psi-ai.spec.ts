@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import data from '@/app/(frontend)/dashboard/components/investigations/psi.json'
 import type { PsiCatalogue } from '@/lib/psi'
-import { PSI_OVERALL_SYSTEM, PSI_SYSTEM, names, numbersNotInFacts, psiFacts, psiFallback, systemFor, tooGeneral, unmarkedInterpretation } from '@/lib/psi-ai'
+import { PSI_OVERALL_SYSTEM, PSI_SYSTEM, names, numbersNotInFacts, o2Text, psiFacts, psiFallback, systemFor, tooGeneral, unmarkedInterpretation } from '@/lib/psi-ai'
 
 const cat = data as PsiCatalogue
 
@@ -61,7 +61,7 @@ describe('PSI summaries', () => {
   it('sends the overall summary each investigation\'s facts, criterion scores and what we simulated', () => {
     const overall = psiFacts(cat, 'overall')!
     const top = (overall.ranking as Record<string, unknown>[])[0]
-    expect(top).toMatchObject({ name: 'BASS-II', score: 90, tests: 129, oxygenPct: '13.6-22.2', outcomesInTable: 'partial (26 of 129)' })
+    expect(top).toMatchObject({ rank: '1', name: 'BASS-II', score: 90, tests: 129, oxygen: '13.6-22.2%', outcomesInTable: 'partial (26 of 129)' })
     expect(top.criterionScores).toEqual({ 'Habitat materials': 2, 'Habitat atmosphere': 1, 'Cabin airflow': 2, 'Data richness': 2, 'Informs a fire-safety decision': 2 })
     expect(String(top.whatWeSimulated)).toMatch(/^Simulated and scored: /)
     expect((overall.tablesWithNoOutcomePerTest as { count: number; names: string[] }).names).toContain('BASS')
@@ -71,14 +71,32 @@ describe('PSI summaries', () => {
   it('makes the plain overall summary specific: the top three with a fact each, and the tables without outcomes', () => {
     const lines = psiFallback(cat, 'overall')!
     expect(lines[0]).toBe(
-      'Top of the ranking (equal weights): BASS-II 90 (PSI-25: 129 tests, O2 13.6-22.2%, outcomes partial (26 of 129)); ' +
-        'Saffire I-III 80 (PSI-98/99/100: 13 tests, O2 21.5-22.1%, outcomes yes (burn time, spread; II also 1-g comparison)); ' +
-        'SAME-R 80 (PSI-101: 109 tests, O2 21% (air), outcomes no (smoke measurements not in table)).',
+      'Top of the ranking (equal weights): rank 1: BASS-II 90 (PSI-25: 129 tests, O2 13.6-22.2%, outcomes partial (26 of 129)); ' +
+        'rank 2=: Saffire I-III 80 (PSI-98/99/100: 13 tests, O2 21.5-22.1%, outcomes yes (burn time, spread; II also 1-g comparison)); ' +
+        'rank 2=: SAME-R 80 (PSI-101: 109 tests, O2 21% air, outcomes no (smoke measurements not in table)).',
     )
     expect(lines[1]).toBe('What separates them: all three score 2 of 2 on Habitat materials, Cabin airflow and Informs a fire-safety decision.')
     expect(lines[2]).toBe('At the bottom, CLD Flame (ACME) (0) scores 0 on every criterion.')
     expect(lines.join(' ')).toMatch(/10 of the 14 tables record no outcome per test \(BASS, /)
     expect(tooGeneral(lines.join(' '), cat, 'overall')).toBeNull()
+  })
+
+  it('writes oxygen with its unit and tied ranks as "2=", in the facts, the prompt and the plain summaries', () => {
+    expect(o2Text('13.6-22.2')).toBe('13.6-22.2%')
+    expect(o2Text('21 (air)')).toBe('21% air')
+    expect(o2Text('12-85')).toBe('12-85%')
+    expect(o2Text('not in table')).toBe('not in the table')
+    const ranking = psiFacts(cat, 'overall')!.ranking as { name: string; rank: string; oxygen: string }[]
+    const by = Object.fromEntries(ranking.map((r) => [r.name, r]))
+    expect([by['BASS-II'].rank, by['Saffire I-III'].rank, by['SAME-R'].rank, by.FLEX.rank, by.SAME.rank, by['CFI-G (ACME)'].rank]).toEqual(['1', '2=', '2=', '4=', '4=', '6'])
+    expect(by['SAME-R'].oxygen).toBe('21% air')
+    expect(by.BASS.oxygen).toBe('not in the table')
+    expect(JSON.stringify(psiFacts(cat, 'overall'))).not.toContain('oxygenPct')
+    expect(psiFacts(cat, 'same-r')).toMatchObject({ oxygen: '21% air', habitatRelevance: { rank: '2=', of: 14 } })
+    expect(psiFallback(cat, 'same-r')!.join(' ')).toContain('oxygen 21% air')
+    expect(psiFallback(cat, 'same-r')!.join(' ')).toContain('Habitat relevance 80 (rank 2= of 14)')
+    expect(psiFallback(cat, 'bass-ii')!.join(' ')).toContain('(rank 1 of 14)')
+    for (const s of [PSI_SYSTEM, PSI_OVERALL_SYSTEM]) expect(s).toContain('Write oxygen with its unit as the facts give it (for example 21% air), and a tied rank as the facts give it (2=).')
   })
 
   it('specificity guard: rejects a vague answer or one naming fewer than three investigations', () => {
