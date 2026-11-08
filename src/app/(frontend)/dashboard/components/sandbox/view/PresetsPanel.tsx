@@ -302,6 +302,10 @@ export default function PresetsPanel({
   scenarioRef.current = scenarioStatus;
   const [f, setF] = useState<FilterState>({ search: '', material: 'all', outcome: 'all', fidelity: 'all' });
   const [selected, setSelected] = useState<number | null>(null);
+  // "Details" starts open on a wide screen, closed on a phone (the viewer can toggle it).
+  const [detailsOpen, setDetailsOpen] = useState(
+    () => typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(min-width: 768px)').matches,
+  );
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
   const [live, setLive] = useState<Live | null>(() => readLive(engine, scenarioStatus));
 
@@ -390,8 +394,130 @@ export default function PresetsPanel({
     </div>
   );
 
+  // The selected row's lighting and its Load buttons (always visible, above "Details").
+  const actions = (p: PresetInfo) => (
+    <>
+      <div className="flex flex-wrap gap-2">
+        {[
+          { key: LIGHT.OPPOSED, label: 'Opposed' },
+          { key: LIGHT.CONCURRENT, label: 'Concurrent' },
+        ].map(({ key, label }) => {
+          const on = lighting === key;
+          return (
+            <button
+              key={label}
+              onClick={() => setLighting(key)}
+              className="rounded-full border px-3 py-1 text-[11px] transition-colors"
+              style={{
+                borderColor: on ? C.blue : C.line,
+                background: on ? C.blue : C.surface,
+                color: on ? C.ink : C.muted,
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => load(p.id, true)}
+          className="rounded-full border bg-amber/15 px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-amber/25"
+          style={{ borderColor: C.blue, color: C.fg }}
+        >
+          Load &amp; Run
+        </button>
+        <button
+          onClick={() => load(p.id, false)}
+          className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
+          style={{ borderColor: C.line, color: C.muted }}
+        >
+          Load (standby)
+        </button>
+        <button
+          onClick={stop}
+          className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
+          style={{ borderColor: C.line, color: C.muted }}
+        >
+          ⟲ Stop
+        </button>
+      </div>
+    </>
+  );
+
+  // What is loaded and how it is going: pinned to the top of the panel, always visible.
+  const liveBlock =
+    live?.kind === 'moon' ? (
+      <div id="preset-live" data-scenario="moon" className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-2 text-[12px]">
+          <span className="font-medium" style={{ color: C.fg }}>Moon-base what-if</span>
+          <StatusLine live={live} playing={playing} />
+        </div>
+        <div className="space-y-1 text-[11px] leading-5">
+          {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
+          {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
+          {/* "burned out" reads like "went out": say plainly that the sample was used up. */}
+          {row('Our outcome',
+            live.outcomeCode === OUTCOME.BURNED_OUT
+              ? `the sample was fully consumed by step ${live.outcomeStep}`
+              : live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
+          {row('NASA result', 'none: no test was run at these conditions')}
+        </div>
+      </div>
+    ) : live?.kind === 'demo' ? (
+      <div id="preset-live" data-demo="cfig" className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-2 text-[12px]">
+          <span className="font-medium" style={{ color: C.fg }}>Gas flame demo</span>
+          <StatusLine live={live} playing={playing} />
+        </div>
+        <div className="space-y-1 text-[11px] leading-5">
+          {row('What it is', 'visual demo, not NASA-scored')}
+        </div>
+      </div>
+    ) : live && livePreset && verdict ? (
+      <div id="preset-live" className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-2 text-[12px]">
+          <span className="font-medium" style={{ color: C.fg }}>{livePreset.testId}</span>
+          <StatusLine live={live} playing={playing} />
+        </div>
+        <div className="space-y-1 text-[11px] leading-5">
+          {row('Our outcome',
+            live.outcomeCode === 0 || live.outcomeStep === 0
+              ? live.outcomeName
+              : `${live.outcomeName} (step ${live.outcomeStep})`)}
+          {row(isSaffire(livePreset) ? 'NASA result' : 'NASA outcome', livePreset.nasaOutcome)}
+          {row('Match', (
+            <span data-verdict={verdict}>
+              <Tag value={verdict} tone={VERDICT_TONE[verdict]} />
+              {(isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]) && (
+                <span className="mt-0.5 block text-[10px]" style={{ color: C.muted }}>
+                  {isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+        {links && readingIndex?.has(livePreset.testId) && (
+          <div><TableLink links={links} testId={livePreset.testId} /></div>
+        )}
+      </div>
+    ) : (
+      <div className="text-[11px]" data-preset-idle style={{ color: C.muted }}>
+        <span>Nothing loaded. Select a preset below, then Load &amp; Run.</span>
+      </div>
+    );
+
   return (
     <div className={panelCls} style={panelStyle}>
+      {/* Pinned: status, our outcome, NASA's, the match. It stays in view while the list scrolls. */}
+      <div
+        id="preset-pinned"
+        className="sticky top-0 z-10 -mx-5 -mt-5 mb-3 rounded-t-[22px] border-b px-5 pt-4 pb-3"
+        style={{ background: C.ink2, borderColor: C.line }}
+      >
+        {liveBlock}
+      </div>
+
       {/* Groups: NASA's BASS-II tests, and the Saffire tests */}
       <div className="mb-2 flex w-fit rounded-full border p-0.5" style={{ borderColor: C.line, background: C.ink }}>
         {([['bass', `BASS-II (${bass.length})`], ['saffire', `Saffire (${saffire.length})`]] as const).map(([g, label]) => {
@@ -511,41 +637,23 @@ export default function PresetsPanel({
             })}
           </div>
   
-          {/* Live: the loaded preset, read from the engine while it runs */}
-          {live && livePreset && verdict && (
-            <div id="preset-live" className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
-              <div className="flex items-baseline justify-between gap-2 text-[12px]">
-                <span className="font-medium" style={{ color: C.fg }}>{livePreset.testId}</span>
-                <StatusLine live={live} playing={playing} />
-              </div>
-              <div className="space-y-1 text-[11px] leading-5">
-                {row('Our outcome',
-                  live.outcomeCode === 0 || live.outcomeStep === 0
-                    ? live.outcomeName
-                    : `${live.outcomeName} (step ${live.outcomeStep})`)}
-                {row(isSaffire(livePreset) ? 'NASA result' : 'NASA outcome', livePreset.nasaOutcome)}
-                {row('Match', (
-                  <span data-verdict={verdict}>
-                    <Tag value={verdict} tone={VERDICT_TONE[verdict]} />
-                    {(isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]) && (
-                      <span className="mt-0.5 block text-[10px]" style={{ color: C.muted }}>
-                        {isSaffire(livePreset) ? SAFFIRE_NOT_SCORED : VERDICT_NOTE[verdict]}
-                      </span>
-                    )}
-                  </span>
-                ))}
-              </div>
-              {links && readingIndex?.has(livePreset.testId) && (
-                <div><TableLink links={links} testId={livePreset.testId} /></div>
-              )}
-            </div>
-          )}
-
-          {/* Detail: the selected row */}
+          {/* The selected row: its actions, then its details (folded: "Details") */}
           {activePreset ? (
             <div className="flex flex-col gap-3 border-t pt-3" style={{ borderColor: C.line }}>
               <div className="space-y-1 text-[11px] leading-5">
                 {row('Selected', activePreset.testId)}
+              </div>
+              {actions(activePreset)}
+              <details
+                id="preset-details"
+                open={detailsOpen}
+                onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
+                className="flex flex-col gap-3"
+              >
+                <summary className="cursor-pointer select-none text-[11px] font-medium" style={{ color: C.fg }}>
+                  Details <span className="font-normal" style={{ color: C.muted }}>sample, conditions, rule, NASA readings, flags</span>
+                </summary>
+              <div className="mt-2 space-y-1 text-[11px] leading-5">
                 {row('Sample', `${activePreset.materialName} ${activePreset.kindName}, ${activePreset.shapeName}`)}
                 {row('Conditions', `${activePreset.thicknessMm > 0 ? activePreset.thicknessMm.toFixed(2) : '—'} mm · ${activePreset.oxygenPct.toFixed(1)} % O2`)}
                 {row('Fidelity', activePreset.fidelityName)}
@@ -554,14 +662,14 @@ export default function PresetsPanel({
               </div>
 
               {isSaffire(activePreset) && (
-                <div className="space-y-1 text-[11px] leading-5">
+                <div className="mt-3 space-y-1 text-[11px] leading-5">
                   {row('NASA result', activePreset.nasaOutcome)}
                   {row('Match', <span style={{ color: C.muted }}>not scored: {SAFFIRE_NOT_SCORED}</span>)}
                 </div>
               )}
 
               {activeReadings && !isSaffire(activePreset) && (
-                <div id="preset-readings" data-source={activeReadings.source} className="space-y-1 text-[11px] leading-5">
+                <div id="preset-readings" data-source={activeReadings.source} className="mt-3 space-y-1 text-[11px] leading-5">
                   {row('NASA readings', (
                     <span style={{ color: C.muted }}>
                       {activeReadings.source === 'dataset'
@@ -579,53 +687,7 @@ export default function PresetsPanel({
                   )}
                 </div>
               )}
-  
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: LIGHT.OPPOSED, label: 'Opposed' },
-                  { key: LIGHT.CONCURRENT, label: 'Concurrent' },
-                ].map(({ key, label }) => {
-                  const on = lighting === key;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => setLighting(key)}
-                      className="rounded-full border px-3 py-1 text-[11px] transition-colors"
-                      style={{
-                        borderColor: on ? C.blue : C.line,
-                        background: on ? C.blue : C.surface,
-                        color: on ? C.ink : C.muted,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-  
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => load(activePreset.id, true)}
-                  className="rounded-full border bg-amber/15 px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-amber/25"
-                  style={{ borderColor: C.blue, color: C.fg }}
-                >
-                  Load &amp; Run
-                </button>
-                <button
-                  onClick={() => load(activePreset.id, false)}
-                  className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
-                  style={{ borderColor: C.line, color: C.muted }}
-                >
-                  Load (standby)
-                </button>
-                <button
-                  onClick={stop}
-                  className="rounded-full border px-3 py-1.5 text-[11px] transition-colors hover:bg-line/50"
-                  style={{ borderColor: C.line, color: C.muted }}
-                >
-                  ⟲ Stop
-                </button>
-              </div>
+              </details>
             </div>
           ) : (
             <div className="flex flex-col items-center py-1" style={{ color: C.muted }}>
@@ -652,35 +714,6 @@ export default function PresetsPanel({
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>{DEMO_LABEL}</p>
           <p className="text-[10px] leading-4" style={{ color: C.muted }}>Opens in the Temperature view: the flame is hot gas round the burner.</p>
           {links && <div><CardLink links={links} card={DEMO_CARD}>About CFI-G in the PSI catalogue</CardLink></div>}
-        </div>
-      )}
-      {live?.kind === 'moon' && (
-        <div id="preset-live" data-scenario="moon" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
-          <div className="flex items-baseline justify-between gap-2 text-[12px]">
-            <span className="font-medium" style={{ color: C.fg }}>Moon-base what-if</span>
-            <StatusLine live={live} playing={playing} />
-          </div>
-          <div className="space-y-1 text-[11px] leading-5">
-            {row('What it is', <span style={{ color: C.amber }}>{MOON_LABEL}</span>)}
-            {row('Based on', 'BASS-II B1 (PMMA film 0.1 mm, air 5 cm/s) as NASA ran it; only oxygen → 34% and gravity → 0.17 g')}
-            {/* "burned out" reads like "went out": say plainly that the sample was used up. */}
-            {row('Our outcome',
-              live.outcomeCode === OUTCOME.BURNED_OUT
-                ? `the sample was fully consumed by step ${live.outcomeStep}`
-                : live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
-            {row('NASA result', 'none: no test was run at these conditions')}
-          </div>
-        </div>
-      )}
-      {live?.kind === 'demo' && (
-        <div id="preset-live" data-demo="cfig" className="mt-3 flex flex-col gap-2 border-t pt-3" style={{ borderColor: C.line }}>
-          <div className="flex items-baseline justify-between gap-2 text-[12px]">
-            <span className="font-medium" style={{ color: C.fg }}>Gas flame demo</span>
-            <StatusLine live={live} playing={playing} />
-          </div>
-          <div className="space-y-1 text-[11px] leading-5">
-            {row('What it is', 'visual demo, not NASA-scored')}
-          </div>
         </div>
       )}
     </div>
