@@ -51,7 +51,7 @@ function MoonFrame({ width, height, frame }: { width: number; height: number; fr
     <figure id="moon-frame" data-step={frame.step} className="space-y-1">
       <canvas ref={ref} width={width} height={height} className="block w-full rounded-lg border" style={{ borderColor: C.line, imageRendering: 'pixelated' }} />
       <figcaption className="text-[10px]" style={{ color: C.muted }}>
-        The what-if&apos;s last frame with fuel left, step {frame.step} (Temperature view, saved during the run)
+        The what-if&apos;s last frame with fuel left, step {frame.step} (Temperature view, fuel shown faintly, saved during the run)
       </figcaption>
     </figure>
   );

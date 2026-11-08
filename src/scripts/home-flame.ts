@@ -98,7 +98,9 @@ export async function render() {
 
   const W = engine.width, H = engine.height
   const full = new Uint8Array(engine.cells * 4)
-  fillView(engine, 'temperature', full)
+  // The plain temperature scale, without the dashboard's faint fuel (its test
+  // checks every pixel is a colour of that scale).
+  fillView(engine, 'temperature', full, null, 1, false)
 
   // Crop round what is hot (over 400 K) or still has fuel, plus PAD cells of air.
   let x0 = W, y0 = H, x1 = -1, y1 = -1
