@@ -24,6 +24,7 @@ import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
 import { linkProps, type WorkspaceLinks } from './links'
+import ChatUI from '../chat/chatui'
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
@@ -124,11 +125,11 @@ export const TAB_REGISTRY: Record<
     icon: 'M4 20V10M10 20V4M16 20v-7',
     render: (d) => <VisualizationContent data={d} />,
   },
-  'ai-summary': {
-    label: 'Interpretation',
-    icon: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0012 3z',
-    render: (d) => <AiSummaryContent data={d} />,
-  },
+  // 'ai-summary': {
+  //   label: 'Interpretation',
+  //   icon: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0012 3z',
+  //   render: (d) => <AiSummaryContent data={d} />,
+  // },
   papers: {
     label: 'Referenced Papers',
     icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6',
@@ -138,6 +139,11 @@ export const TAB_REGISTRY: Record<
     label: 'Sandbox',
     icon: 'M9 3h6M10 3v6L4.5 18.5A2 2 0 006.4 21.5h11.2a2 2 0 001.9-3L14 9V3M7 15h10',
     render: (d) => <Sandbox dataset={d.dataset} rows={d.rows} links={d.links} />,
+  },
+  'ai-summary': {
+    label: 'Interpretation',
+    icon: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0012 3z',
+    render: (d) => <ChatUI/>
   },
 }
 

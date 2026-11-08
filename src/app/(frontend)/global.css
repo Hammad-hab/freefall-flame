@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import "tw-shimmer";
 
 @theme {
     /* Surfaces: all share the navy hue, stepping up in lightness */
@@ -8,11 +9,11 @@
     --color-line: #2e2418;
     --color-fg: #f0ebe2;
     --color-muted: #a89e90;
-  
+
     /* Accents */
     --color-flame-amber: #ffa64d;   /* primary accent: the only warm color */
     --color-flame-blue: #ffa64d;    /* secondary: links, focus, info */
-  
+
     /* Status: one scale, muted, tied to the palette */
     --color-status-triage: #4fa3ff;
     --color-status-investigating: #ffa64d;
@@ -37,6 +38,22 @@
 @theme inline {
   --font-display: var(--font-bricolage), system-ui, sans-serif;
   --font-body: var(--font-instrument), system-ui, sans-serif;
+  @keyframes collapsible-down {
+  from {
+    height: 0;
+        }
+  to {
+    height: var(--radix-collapsible-content-height, var(--collapsible-panel-height, auto));
+        }
+    }
+  @keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height, var(--collapsible-panel-height, auto));
+        }
+  to {
+    height: 0;
+        }
+    }
 }
 
 @layer base {
@@ -62,3 +79,7 @@
     visibility: hidden !important;
   }
 }
+
+@custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));
+
+@custom-variant data-closed (&:where([data-state="closed"], [data-closed]:not([data-closed="false"])));
