@@ -137,10 +137,15 @@ export function fuelTintWeight(r: number, g: number, b: number): number {
   return FUEL_TINT_MAX * Math.max(0, 1 - Math.max(r, g, b) / FUEL_TINT_FADE);
 }
 
+/** A temperature colour as a fuel cell of that colour is drawn (unchanged when hot). */
+export function tintedFuelColour(c: RGB): RGB {
+  const w = fuelTintWeight(c[0], c[1], c[2]);
+  return w === 0 ? c : (c.map((v, k) => Math.round(v * (1 - w) + FUEL_TINT[k] * w)) as RGB);
+}
+
 function tintFuel(out: Pixels, p: number): void {
-  const w = fuelTintWeight(out[p], out[p + 1], out[p + 2]);
-  if (w === 0) return;
-  for (let k = 0; k < 3; k++) out[p + k] = Math.round(out[p + k] * (1 - w) + FUEL_TINT[k] * w);
+  const t = tintedFuelColour([out[p], out[p + 1], out[p + 2]]);
+  out[p] = t[0]; out[p + 1] = t[1]; out[p + 2] = t[2];
 }
 
 /** Camera exposure steps (display only): the glow is multiplied before the same colour scale. */
@@ -154,7 +159,7 @@ export type Exposure = (typeof EXPOSURES)[number];
 // scale, like a longer camera exposure: no glow stays black, and anything at
 // or above 1/exposure takes the scale's top colour. The engine is unchanged.
 // `fuelFaint` (Temperature view only, on by default) draws solid fuel faintly
-// (FUEL_TINT above); only the home page's picture turns it off.
+// (FUEL_TINT above).
 export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null, exposure = 1, fuelFaint = true): void {
   const { material, temperature, oxygen, co2, co, fuel, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;

@@ -110,11 +110,11 @@ export default function HomePage() {
               src={flame.image}
               width={flame.width}
               height={flame.height}
-              alt={`Sandbox Temperature view: BASS-II test ${flame.testId} at step ${flame.step}, ${flame.outcomeAtStep}. The hot gas trails downstream of the burning end of the sample.`}
+              alt={`Sandbox Temperature view: BASS-II test ${flame.testId} at step ${flame.step}, ${flame.outcomeAtStep}. The hot gas trails downstream of the burning end of the sample; the rest of the sample, still cold, is shown faintly in green.`}
               className="block h-auto w-full [image-rendering:pixelated]"
             />
             <figcaption className="px-4 py-3 text-[0.8rem] text-muted">
-              BASS-II test {flame.testId} at step {flame.step} ({flame.outcomeAtStep}), the Temperature view, rendered by the
+              BASS-II test {flame.testId} at step {flame.step} ({flame.outcomeAtStep}), the Temperature view (fuel shown faintly), rendered by the
               sandbox engine itself.{' '}
               <Link href="/dashboard?tab=sandbox&preset=B14" className="text-flame-blue hover:underline">
                 Run it in the sandbox
