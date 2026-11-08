@@ -11,8 +11,7 @@ import { VIEWS, SCALES, EXPOSURES, FUEL_NOTE, tintedFuelColour, sample, type Exp
 // The faint-fuel colour of a room-temperature (300 K) sample, for the legend's swatch.
 const COLD_FUEL = `rgb(${tintedFuelColour(sample(SCALES.temperature.stops, 300)).join(',')})`;
 import { ZOOMS, type Zoom } from './fit';
-import { AIR_COLOUR } from './theme';
-import { C, panelCls, panelStyle } from '../../ui/chart-theme';
+import { C, alpha, panelCls, panelStyle } from '../../ui/chart-theme';
 
 export const TOOLS = ['paint', 'erase', 'ignite'] as const;
 export type Tool = (typeof TOOLS)[number];
@@ -310,8 +309,8 @@ export function BuildPanel({ engine, c }: { engine: Engine; c: Controls }) {
                 className="h-3 w-3 shrink-0 rounded-[3px] border"
                 style={{
                   // Air shows the colour it has on the canvas (the dashboard's panel colour).
-                  background: m.id === MAT.AIR ? `rgb(${AIR_COLOUR.join(',')})` : `rgb(${m.r},${m.g},${m.b})`,
-                  borderColor: 'rgba(255,255,255,0.18)',
+                  background: m.id === MAT.AIR ? C.ink2 : `rgb(${m.r},${m.g},${m.b})`,
+                  borderColor: alpha(C.fg, 0x2e),
                 }}
               />
               <span className="truncate">{m.name}</span>

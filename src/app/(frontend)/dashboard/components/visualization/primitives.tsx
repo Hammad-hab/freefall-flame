@@ -1,6 +1,6 @@
 "use client";
 
-import { C, panelCls, panelStyle } from "../ui/chart-theme";
+import { C, alpha, panelCls, panelStyle } from "../ui/chart-theme";
 
 /* ------------------------------------------------------------------ */
 /* Standard panel wrapper                                              */
@@ -42,7 +42,7 @@ export function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="rounded-xl border p-3 text-[11px] leading-5"
-      style={{ borderColor: `${C.amber}55`, background: `${C.amber}11`, color: C.fg }}
+      style={{ borderColor: alpha(C.amber, 0x55), background: alpha(C.amber, 0x11), color: C.fg }}
     >
       {children}
     </div>

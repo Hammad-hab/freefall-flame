@@ -27,6 +27,8 @@ export class GridView {
   view: ViewName = 'material';
   /** Empty cells in the material view take this colour (the dashboard's background). */
   airColour: RGB | null = null;
+  /** The theme's air is light (light themes): the brush outline is drawn dark in the Material view. */
+  lightAir = false;
   /** Camera view exposure (display only; colors.ts fillView). */
   exposure = 1;
   hover: Cell | null = null;
@@ -56,7 +58,8 @@ export class GridView {
     o.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     if (this.view === 'flow') this.drawArrows();
     if (this.hover) {
-      o.strokeStyle = 'rgba(255,255,255,0.75)';
+      // Every data view is dark; only the Material view's air follows a light theme.
+      o.strokeStyle = this.lightAir && this.view === 'material' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.75)';
       o.lineWidth = Math.max(1, s / DESIGN_SCALE);
       o.beginPath();
       o.arc((this.hover.x + 0.5) * s, (this.hover.y + 0.5) * s, (this.brushRadius + 0.5) * s, 0, 2 * Math.PI);

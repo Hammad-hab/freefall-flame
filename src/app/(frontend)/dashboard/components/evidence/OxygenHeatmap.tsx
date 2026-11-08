@@ -10,7 +10,7 @@ import {
   type ScoredMaterial,
 } from "@/lib/combustion";
 import type { DataRow } from "@/lib/types";
-import { C, panelCls, panelStyle } from "../ui/chart-theme";
+import { C, alpha, panelCls, panelStyle } from "../ui/chart-theme";
 
 type SortMode = "name" | "tests" | "score";
 
@@ -393,7 +393,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
                 width={cellW}
                 height={cellH}
                 rx={3}
-                fill={m.hasO2Data ? "transparent" : `${C.amber}33`}
+                fill={m.hasO2Data ? "transparent" : alpha(C.amber, 0x33)}
                 stroke={m.hasO2Data ? "transparent" : C.amber}
                 strokeWidth={0.5}
               />
@@ -405,7 +405,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px]" style={{ color: C.muted }}>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded" style={{ background: `${C.blue}33`, border: `1px solid ${C.blue}` }} />
+          <span className="inline-block h-3 w-3 rounded" style={{ background: alpha(C.blue, 0x33), border: `1px solid ${C.blue}` }} />
           ≥1 valid test (color intensity = test count)
         </span>
         <span className="flex items-center gap-1.5">
@@ -413,7 +413,7 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
           No recorded tests — evidence gap, not proof of safety
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded" style={{ background: `${C.amber}22`, border: `1px solid ${C.amber}` }} />
+          <span className="inline-block h-3 w-3 rounded" style={{ background: alpha(C.amber, 0x22), border: `1px solid ${C.amber}` }} />
           Rows without a usable O₂ reading
         </span>
         <span className="flex items-center gap-1.5">

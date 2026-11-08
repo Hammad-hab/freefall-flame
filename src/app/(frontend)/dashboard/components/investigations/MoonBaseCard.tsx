@@ -8,7 +8,7 @@
  */
 import type { MoonBase } from '@/lib/psi'
 import { linkProps, type WorkspaceLinks } from '../workspace/links'
-import { C } from '../ui/chart-theme'
+import { C, alpha } from '../ui/chart-theme'
 
 /**
  * The what-if's result in this engine (flame-core 1.1.0), measured on 6 Nov
@@ -25,7 +25,7 @@ export default function MoonBaseCard({ moon, links }: { moon: MoonBase; links?: 
         <h4 className="text-[13px] font-medium" style={{ color: C.fg }}>
           {moon.o2Pct}% O2, {moon.gravityG} g
         </h4>
-        <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: `${C.amber}22`, color: C.amber }}>extrapolation</span>
+        <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: alpha(C.amber, 0x22), color: C.accentText }}>extrapolation</span>
       </div>
 
       <ul id="psi-moon-limits" className="mt-2 space-y-1 text-[12px] leading-5" style={{ color: C.fg }}>

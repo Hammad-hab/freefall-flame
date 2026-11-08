@@ -17,6 +17,8 @@ interface GridCanvasProps {
   cell?: number;
   /** Empty cells in the material view take this colour. */
   airColour?: RGB | null;
+  /** The air colour is light (a light theme): the brush outline is drawn dark over it. */
+  lightAir?: boolean;
   /** Camera view exposure (display only). */
   exposure?: number;
   /** Display zoom (1, 2 or 3) and the cell it centres on (fit.ts zoomOffset). */
@@ -32,6 +34,7 @@ export default function GridCanvas({
   onFrame,
   cell = 4,
   airColour = null,
+  lightAir = false,
   className,
   zoom = 1,
   focus,
@@ -72,7 +75,8 @@ export default function GridCanvas({
 
   useEffect(() => { if (viewRef.current) viewRef.current.view = view; }, [view]);
   useEffect(() => { if (viewRef.current) viewRef.current.brushRadius = brushRadius; }, [brushRadius]);
-  useEffect(() => { if (viewRef.current) viewRef.current.airColour = airColour; }, [airColour]);
+  useEffect(() => { if (viewRef.current) viewRef.current.airColour = airColour; }, [airColour, engine]);
+  useEffect(() => { if (viewRef.current) viewRef.current.lightAir = lightAir; }, [lightAir, engine]);
   useEffect(() => { if (viewRef.current) viewRef.current.exposure = exposure; }, [exposure]);
 
   if (!engine) return null;
