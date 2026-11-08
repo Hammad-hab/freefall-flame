@@ -28,11 +28,8 @@ import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
 import Customize from '../customize/Customize'
 import { linkProps, type WorkspaceLinks } from './links'
-<<<<<<< HEAD
 import ChatUI from '../chat/chatui'
-=======
 import { C } from '../ui/chart-theme'
->>>>>>> refs/remotes/origin/dev
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
