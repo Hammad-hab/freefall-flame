@@ -18,6 +18,9 @@ import Papa from 'papaparse'
 
 import {
   HABITAT_REFERENCE,
+  SIM_STATUS,
+  type SimStatus,
+  type PsiSimulation,
   type CriterionScore,
   type MoonBase,
   type PsiCatalogue,
@@ -205,6 +208,55 @@ const DECISION: Record<string, CriterionScore> = {
   SAME: { score: 2, reason: 'detection: smoke from heated spacecraft materials' },
 }
 
+// ---- What we simulated, and why (replaces the catalogue's old "simulator" column) ----
+// Each reason was checked against the cleaned tables and their READMEs
+// (data/psi/README_*.md) and against flame-core's README (gas flames: "built
+// but not testable in this 2D model"; Saffire: six PARTIAL presets, the four
+// silicone samples NOT MODELLED). Saffire's hand comparison (0 of 6) is the
+// engine project's, the same words as the sandbox's Saffire note.
+
+const GAS_LIMIT =
+  'the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either'
+const DROPLETS =
+  'Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G)'
+const SMOKE =
+  "the engine's smoke is a single material (cooled flame gas) with no particles or soot"
+
+function simulation(c: Row, bass2Rows: number, scorecard: { matched: number; scored: number; matchedTests: string[] }): PsiSimulation {
+  const s = (status: SimStatus, reason: string): PsiSimulation => ({ status, label: SIM_STATUS[status], reason })
+  switch (c.investigation) {
+    case 'BASS-II':
+      return s('scored', `NASA's table gives each test's oxygen and its airflow readings over time, so each test can be set up as a preset: ${bass2Rows} presets. NASA states an outcome for ${scorecard.scored} of them, so those can be scored: ${scorecard.matched} match (${scorecard.matchedTests.join(', ')}).`)
+    case 'Saffire I-III':
+      return s('by-hand', "The tables give burn times (Saffire-I and -II) and spread rates (Saffire-II), not outcome codes, so the 6 runnable presets were compared with NASA's results by hand: 0 of 6 reproduce them. The 4 silicone samples (Saffire-II) are skipped because the engine has no silicone; Saffire-III's table has no results.")
+    case 'CFI-G (ACME)':
+      return s('not-testable', "Gas flames were built (fuel gas, a burner, a one-step reaction) and the 43 CFI-G presets run, but none of them keeps a flame going. A radiation audit ruled radiation out as the cause; the likely cause is our 2 mm cell, coarser than a real weak flame. Only the visual demo (radiation off, not NASA-scored) shows a flame.")
+    case 'BASS':
+      return s('none', 'The table records only the date and the sample (material, shape and size, read from the sample name): no oxygen, airflow or outcome, so there is nothing to set up or check against.')
+    case 'FLEX':
+      return s('none', `${DROPLETS}.`)
+    case 'FLEX-2':
+      return s('none', `${DROPLETS}. Its table also holds ranges per fuel only, no single tests.`)
+    case 'CFI':
+      return s('none', `${DROPLETS}. Its table (dodecane droplets, cool flames) records no outcomes.`)
+    case 'Flame Design (ACME)':
+      return s('none', `Gas flames: ${GAS_LIMIT}. The table holds the conditions only.`)
+    case 'BRE (ACME)':
+      return s('none', `Gas flames standing in for solids: ${GAS_LIMIT}. The table has day summaries only (flames ignited per day).`)
+    case 'CLD Flame (ACME)':
+      return s('none', `Gas flames: ${GAS_LIMIT}. The table has day summaries only.`)
+    case 's-Flame (ACME)':
+      return s('none', `Spherical gas flames: ${GAS_LIMIT}. The table has day summaries only.`)
+    case 'SPICE':
+      return s('none', `Smoke from gas jet flames: ${SMOKE}, and the table holds the flame conditions, not the smoke points.`)
+    case 'SAME-R':
+      return s('none', `Smoke from heated materials, not flames, for smoke detectors: ${SMOKE}, and the table holds the heating conditions, not the smoke measurements.`)
+    case 'SAME':
+      return s('none', `Smoke from heated materials, not flames, for smoke detectors: ${SMOKE}.`)
+  }
+  throw new Error(`no simulation status written for ${c.investigation}`)
+}
+
 function scores(c: Row): PsiScores {
   const decision = DECISION[c.investigation]
   if (!decision) throw new Error(`no judgement written for ${c.investigation}`)
@@ -266,6 +318,7 @@ export function build(): PsiCatalogue {
     if (!catalogue.some((c) => c.investigation === name)) throw new Error(`sources.json names "${name}", which is not in the catalogue`)
   }
   const scorecard = JSON.parse(fs.readFileSync(SCORECARD, 'utf8')) as { matched: number; scored: number; matchedTests: string[] }
+  const bass2Rows = readCsv('bass2_tests_clean.csv').length
 
   const investigations: PsiInvestigation[] = catalogue.map((c) => {
     const rows = readCsv(c.cleaned_file)
@@ -303,7 +356,7 @@ export function build(): PsiCatalogue {
       flowCmS: c.flow_cm_s,
       outcomeRecorded: c.outcome_recorded,
       safetyTheme: c.safety_theme,
-      simulator: c.simulator,
+      simulation: simulation(c, bass2Rows, scorecard),
       cleanedFile: c.cleaned_file,
       facts,
       sources,

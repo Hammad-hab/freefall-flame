@@ -14,6 +14,9 @@ import type { ShareResult } from '@/lib/shares'
 import SummaryAndChart from '../overview/SummaryChart'
 import { Statistics, Assistant } from '../overview/Fragments'
 import KeyNumbers from '../overview/KeyNumbers'
+import { AboutDataset, MaterialsCard, ScorecardCard } from '../overview/OverviewCards'
+import { OutcomeChart } from '../visualization/MaterialCharts'
+import { outcomeCounts } from '../visualization/chartData'
 import SourcesStrip from '../overview/SourcesStrip'
 import Limitations from '../overview/Limitations'
 import EvidenceRanking from '../evidence/EvidenceRanking'
@@ -23,8 +26,13 @@ import InterpretationPanel from '../interpretation/InterpretationPanel'
 import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
+import Customize from '../customize/Customize'
 import { linkProps, type WorkspaceLinks } from './links'
+<<<<<<< HEAD
 import ChatUI from '../chat/chatui'
+=======
+import { C } from '../ui/chart-theme'
+>>>>>>> refs/remotes/origin/dev
 
 /** What every tab can use: the server's data, plus the workspace's links between tabs. */
 export interface TabData {
@@ -42,36 +50,48 @@ function OverviewContent({ data }: { data: TabData }) {
     <div className="space-y-4">
       {/* Dataset title heading */}
       <div className="flex items-start gap-3">
-        <h1 className="text-[18px] font-light leading-tight" style={{ color: '#e8e4de' }}>
+        <h1 className="text-[18px] font-light leading-tight" style={{ color: C.fg }}>
           {data.datasetName}
         </h1>
       </div>
       {data.links && (
-        <p className="text-[12px]" style={{ color: '#a89e90' }}>
+        <p className="text-[12px]" style={{ color: C.muted }}>
           <a
             {...linkProps(data.links.cardHref('bass-ii'), () => data.links!.showCard('bass-ii'))}
             data-link-investigations
             className="underline decoration-dotted underline-offset-2 hover:opacity-80"
-            style={{ color: '#ffa64d' }}
+            style={{ color: C.accentText }}
           >
             How BASS-II ranks among NASA&apos;s 14 PSI combustion investigations for habitat fire safety
           </a>
         </p>
       )}
+      {/* feat/ui-visuals: judge-facing cards first; the developer-style ones folded into "About this dataset". */}
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-[1fr_380px]">
-        <SummaryAndChart dataset={data.dataset} rows={data.rows} />
+        <OverviewOutcomes rows={data.parsedRows} />
         <KeyNumbers rows={data.parsedRows} links={data.links} />
       </div>
-      <div className="grid grid-cols-1 gap-8 @2xl:grid-cols-2 @6xl:grid-cols-[1.45fr_0.8fr_1fr]">
-        <Statistics shares={data.shares} />
-        <Assistant datasetId={data.datasetId} datasetName={data.datasetName} className="@6xl:col-span-2" />
+      <div className="grid grid-cols-1 gap-8 @3xl:grid-cols-2">
+        <MaterialsCard rows={data.parsedRows} />
+        <ScorecardCard total={data.rows.length} links={data.links} />
       </div>
+      <Assistant datasetId={data.datasetId} datasetName={data.datasetName} />
       <div className="grid grid-cols-1 gap-8 @3xl:grid-cols-2">
         <SourcesStrip dataset={data.dataset} rows={data.rows} />
         <Limitations />
       </div>
+      <AboutDataset>
+        <SummaryAndChart dataset={data.dataset} rows={data.rows} />
+        <Statistics shares={data.shares} />
+      </AboutDataset>
     </div>
   )
+}
+
+/** NASA's stated outcomes, the Visualization tab's chart; nothing when the dataset has no outcome column. */
+function OverviewOutcomes({ rows }: { rows: ParsedRow[] }) {
+  const data = outcomeCounts(rows)
+  return data.length ? <div id="overview-outcomes"><OutcomeChart data={data} /></div> : null
 }
 
 function EvidenceContent({ data }: { data: TabData }) {
@@ -143,8 +163,14 @@ export const TAB_REGISTRY: Record<
   'ai-summary': {
     label: 'Interpretation',
     icon: 'M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0012 3z',
-    render: (d) => <ChatUI/>
+    render: (d) => <ChatUI />
+  },
+  customize: {
+    label: 'Customize',
+    icon: 'M12 3a9 9 0 100 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1-.3-.3-.4-.7-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM7.5 12h.01M9.5 7.5h.01M14.5 7.5h.01M16.5 11h.01',
+    render: () => <Customize />,
   },
 }
 
+/** The data tabs, in the sidebar's order. Customize sits apart, at the sidebar's foot. */
 export const TAB_ORDER: TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']

@@ -6,27 +6,34 @@
  * the ranked list. Scores and their reasons come from psi.json; only the
  * weighting happens here (rank() in src/lib/psi.ts).
  */
-import { CRITERIA, MAX_WEIGHT, DEFAULT_WEIGHTS, type HabitatReference, type Ranked, type Weights } from '@/lib/psi'
-import { C, panelCls, panelStyle } from '../ui/chart-theme'
+import { CRITERIA, MAX_WEIGHT, DEFAULT_WEIGHTS, rankLabel, type HabitatReference, type Ranked, type Weights } from '@/lib/psi'
+import { C } from '../ui/chart-theme'
+
+/** "1." for a rank of its own, "2=" for a tie. */
+const rankLabelText = (r: Ranked, ranked: Ranked[]) => {
+  const l = rankLabel(r, ranked)
+  return l.endsWith('=') ? l : `${l}.`
+}
+
+// Each of these sits inside a Widget (Widget.tsx), which draws the panel and the title.
 
 export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange: (w: Weights) => void }) {
   const isDefault = CRITERIA.every((c) => weights[c.key] === DEFAULT_WEIGHTS[c.key])
   return (
-    <div id="psi-weights" className={panelCls} style={panelStyle}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>Weights</h3>
+    <div id="psi-weights">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px]" style={{ color: C.muted }}>
+          Score = Σ weight × criterion ÷ (2 × Σ weights) × 100. Each criterion is 0, 1 or 2.
+        </p>
         <button
           onClick={() => onChange({ ...DEFAULT_WEIGHTS })}
           disabled={isDefault}
-          className="rounded-full border px-3 py-1 text-[11px] transition-colors hover:bg-line/50 disabled:opacity-40"
+          className="shrink-0 rounded-full border px-3 py-1 text-[11px] transition-colors hover:bg-line/50 disabled:opacity-40"
           style={{ borderColor: C.line, color: C.muted }}
         >
           Reset weights
         </button>
       </div>
-      <p className="mt-1 text-[11px]" style={{ color: C.muted }}>
-        Score = Σ weight × criterion ÷ (2 × Σ weights) × 100. Each criterion is 0, 1 or 2.
-      </p>
       <div className="mt-3 space-y-3">
         {CRITERIA.map((c) => (
           <label key={c.key} className="block text-[11px]">
@@ -37,7 +44,7 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
                   <span className="ml-1.5 rounded px-1 py-0.5 text-[10px]" style={{ background: C.chip2, color: C.muted }}>our judgement</span>
                 )}
               </span>
-              <span className="tabular-nums" style={{ color: C.amber }} data-weight-value={c.key}>× {weights[c.key]}</span>
+              <span className="tabular-nums" style={{ color: C.accentText }} data-weight-value={c.key}>× {weights[c.key]}</span>
             </span>
             <input
               type="range"
@@ -48,7 +55,7 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
               onChange={(e) => onChange({ ...weights, [c.key]: Number(e.target.value) })}
               aria-label={`Weight: ${c.label}`}
               data-weight={c.key}
-              className="mt-1 w-full accent-[#ffa64d]"
+              className="mt-1 w-full accent-[var(--c-accent)]"
             />
             <span className="block text-[10px] leading-4" style={{ color: C.muted }}>{c.help}</span>
           </label>
@@ -61,9 +68,8 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
 export function Assumptions({ reference }: { reference: HabitatReference }) {
   const r = reference
   return (
-    <div id="psi-assumptions" className={panelCls} style={panelStyle}>
-      <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>Stated assumptions</h3>
-      <p className="mt-1 text-[11px]" style={{ color: C.muted }}>
+    <div id="psi-assumptions">
+      <p className="text-[11px]" style={{ color: C.muted }}>
         The criteria compare each table with these habitat values. They are not NASA PSI data.
       </p>
       <ul className="mt-2 space-y-2 text-[11px] leading-5">
@@ -83,15 +89,15 @@ export function Assumptions({ reference }: { reference: HabitatReference }) {
 
 export function RankingList({ ranked, onPick }: { ranked: Ranked[] | null; onPick: (id: string) => void }) {
   return (
-    <div id="psi-ranking" className={panelCls} style={panelStyle}>
-      <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>Habitat fire-safety relevance</h3>
+    <div id="psi-ranking">
       {ranked === null ? (
-        <p className="mt-2 text-[11px]" style={{ color: C.amber }}>Every weight is 0, so there is nothing to rank by. Raise at least one weight.</p>
+        <p className="text-[11px]" style={{ color: C.accentText }}>Every weight is 0, so there is nothing to rank by. Raise at least one weight.</p>
       ) : (
-        <ol className="mt-2 space-y-1 text-[12px]">
+        <ol className="space-y-1 text-[12px]">
           {ranked.map((r) => (
             <li key={r.id} data-rank-id={r.id} className="flex items-center gap-2">
-              <span className="w-6 shrink-0 text-right tabular-nums" style={{ color: C.muted }}>{r.rank}.</span>
+              {/* A tie reads "2=" (both), as in the AI facts and the plain summary. */}
+              <span className="w-7 shrink-0 text-right tabular-nums" style={{ color: C.muted }} data-rank-label>{rankLabelText(r, ranked)}</span>
               <button onClick={() => onPick(r.id)} className="min-w-0 flex-1 truncate text-left hover:underline" style={{ color: C.fg }}>
                 {r.name}
               </button>

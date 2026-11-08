@@ -50,7 +50,11 @@
       "flowCmS": "0-53",
       "outcomeRecorded": "partial (26 of 129)",
       "safetyTheme": "prevention: material flammability vs oxygen and ventilation",
-      "simulator": "yes (129 presets)",
+      "simulation": {
+        "status": "scored",
+        "label": "Simulated and scored",
+        "reason": "NASA's table gives each test's oxygen and its airflow readings over time, so each test can be set up as a preset: 129 presets. NASA states an outcome for 26 of them, so those can be scored: 4 match (B14, B18, B19, O4)."
+      },
       "cleanedFile": "bass2_tests_clean.csv",
       "facts": [
         {
@@ -144,7 +148,11 @@
       "flowCmS": "not in table",
       "outcomeRecorded": "no",
       "safetyTheme": "prevention: material flammability",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "The table records only the date and the sample (material, shape and size, read from the sample name): no oxygen, airflow or outcome, so there is nothing to set up or check against."
+      },
       "cleanedFile": "bass_tests_clean.csv",
       "facts": [
         {
@@ -229,7 +237,11 @@
       "flowCmS": "20-30",
       "outcomeRecorded": "yes (burn time, spread; II also 1-g comparison)",
       "safetyTheme": "prevention: spacecraft-scale fire growth",
-      "simulator": "planned (presets, no new physics)",
+      "simulation": {
+        "status": "by-hand",
+        "label": "Simulated, compared by hand",
+        "reason": "The tables give burn times (Saffire-I and -II) and spread rates (Saffire-II), not outcome codes, so the 6 runnable presets were compared with NASA's results by hand: 0 of 6 reproduce them. The 4 silicone samples (Saffire-II) are skipped because the engine has no silicone; Saffire-III's table has no results."
+      },
       "cleanedFile": "saffire_tests_clean.csv",
       "facts": [
         {
@@ -356,7 +368,11 @@
       "flowCmS": "0 (quiescent)",
       "outcomeRecorded": "yes (extinction/completion/disruption, extinction diameter, burning rate)",
       "safetyTheme": "suppression: CO2 and helium dilution",
-      "simulator": "planned (droplet physics)",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G)."
+      },
       "cleanedFile": "flex_tests_clean.csv",
       "facts": [
         {
@@ -452,7 +468,11 @@
       "flowCmS": "0.1-5",
       "outcomeRecorded": "no",
       "safetyTheme": "fundamental droplet combustion",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G). Its table also holds ranges per fuel only, no single tests."
+      },
       "cleanedFile": "flex2_summary_clean.csv",
       "facts": [
         {
@@ -541,7 +561,11 @@
       "flowCmS": "0",
       "outcomeRecorded": "no",
       "safetyTheme": "cool flames (low-temperature chemistry)",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G). Its table (dodecane droplets, cool flames) records no outcomes."
+      },
       "cleanedFile": "cfi_tests_clean.csv",
       "facts": [
         {
@@ -610,7 +634,11 @@
       "flowCmS": "burner flow (mg/s)",
       "outcomeRecorded": "yes (ignition, self-extinction vs flow-terminated, burn time, cool flames)",
       "safetyTheme": "high-oxygen flammability (Moon-base levels)",
-      "simulator": "planned (gas physics)",
+      "simulation": {
+        "status": "not-testable",
+        "label": "Built, not testable",
+        "reason": "Gas flames were built (fuel gas, a burner, a one-step reaction) and the 43 CFI-G presets run, but none of them keeps a flame going. A radiation audit ruled radiation out as the cause; the likely cause is our 2 mm cell, coarser than a real weak flame. Only the visual demo (radiation off, not NASA-scored) shows a flame."
+      },
       "cleanedFile": "cfig_tests_clean.csv",
       "facts": [
         {
@@ -717,7 +745,11 @@
       "flowCmS": "burner flow (mg/s)",
       "outcomeRecorded": "no",
       "safetyTheme": "soot control via flame structure",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table holds the conditions only."
+      },
       "cleanedFile": "flame_design_tests_clean.csv",
       "facts": [
         {
@@ -797,7 +829,11 @@
       "flowCmS": "still atmosphere",
       "outcomeRecorded": "flames ignited per day only",
       "safetyTheme": "material flammability in still air",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames standing in for solids: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only (flames ignited per day)."
+      },
       "cleanedFile": "acme_bre_days_clean.csv",
       "facts": [
         {
@@ -872,7 +908,11 @@
       "flowCmS": "coflow",
       "outcomeRecorded": "flames ignited per day only",
       "safetyTheme": "fundamental laminar flames",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only."
+      },
       "cleanedFile": "cld_flame_days_clean.csv",
       "facts": [
         {
@@ -955,7 +995,11 @@
       "flowCmS": "burner flow",
       "outcomeRecorded": "flames ignited per day only",
       "safetyTheme": "fundamental spherical flames, N2 vs He",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Spherical gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only."
+      },
       "cleanedFile": "acme_sflame_days_clean.csv",
       "facts": [
         {
@@ -1038,7 +1082,11 @@
       "flowCmS": "0.66-85.3",
       "outcomeRecorded": "no (smoke point not in table)",
       "safetyTheme": "soot / smoke formation",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from gas jet flames: the engine's smoke is a single material (cooled flame gas) with no particles or soot, and the table holds the flame conditions, not the smoke points."
+      },
       "cleanedFile": "spice_tests_clean.csv",
       "facts": [
         {
@@ -1127,7 +1175,11 @@
       "flowCmS": "0-8.1",
       "outcomeRecorded": "no (smoke measurements not in table)",
       "safetyTheme": "detection: smoke particle properties",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from heated materials, not flames, for smoke detectors: the engine's smoke is a single material (cooled flame gas) with no particles or soot, and the table holds the heating conditions, not the smoke measurements."
+      },
       "cleanedFile": "same_r_tests_clean.csv",
       "facts": [
         {
@@ -1219,7 +1271,11 @@
       "flowCmS": "5-10",
       "outcomeRecorded": "no",
       "safetyTheme": "detection: smoke particle properties",
-      "simulator": "catalogue only",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from heated materials, not flames, for smoke detectors: the engine's smoke is a single material (cooled flame gas) with no particles or soot."
+      },
       "cleanedFile": "same_tests_clean.csv",
       "facts": [
         {

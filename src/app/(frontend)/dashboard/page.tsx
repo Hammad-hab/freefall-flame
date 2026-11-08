@@ -19,7 +19,7 @@ interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-const VALID_TABS: readonly TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
+const VALID_TABS: readonly TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox', 'customize']
 
 /** Shared parsed-row computation for the evidence panels. */
 function parseForDataset(dataset: DatasetMeta, rows: DataRow[]): ParsedRow[] {
@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: SearchPageProps) {
     dataset: getDataset,
     rows: getAllRows,
   })
-  if (loaded.kind === 'notFound') return <DatasetNotFound/>
+  if (loaded.kind === 'notFound') return <DatasetNotFound requested={typeof dataset_id === 'string' ? dataset_id : undefined}/>
   if (loaded.kind === 'unavailable') {
     console.error('[dashboard] could not reach the data:', (loaded.error as Error)?.message ?? loaded.error)
     return <DataUnavailable/>

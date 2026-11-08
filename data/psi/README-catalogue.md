@@ -123,3 +123,14 @@ modelled (the engine runs at 1 atm)".
   "n/a", "Note 4"), so they are listed as written, not as a range.
 - BASS-II's card adds one line on our simulator (4 of 26 scored tests
   match), labelled "not NASA data".
+- "What we simulated" (feat/psi-widgets): each card's `simulation` gives
+  one of four statuses (Simulated and scored: BASS-II; Simulated, compared
+  by hand: Saffire; Built, not testable: CFI-G; Not simulated: the other
+  11) and a one- or two-sentence reason, written in the script
+  (`simulation()`). It replaces the catalogue's `simulator` column, which
+  is left in `investigations_catalogue.csv` unchanged but no longer read:
+  it still said "planned" for Saffire and CFI-G. Each reason was checked
+  against the cleaned tables, these READMEs and flame-core's README;
+  BASS-II's numbers come from `sandbox/scorecard.json` and the cleaned
+  table. Saffire's "0 of 6" is the engine project's hand comparison (the
+  same words as the sandbox's Saffire note).

@@ -18,7 +18,7 @@ export function DataUnavailable({ onRetry }: { onRetry?: () => void }) {
         <button
           type="button"
           onClick={() => (onRetry ? onRetry() : window.location.reload())}
-          className="rounded-full bg-flame-amber px-5 py-2.5 text-sm font-medium text-[#1a0f05] transition hover:bg-[#ffb868]"
+          className="rounded-full bg-flame-amber px-5 py-2.5 text-sm font-medium text-on transition hover:brightness-110"
         >
           Try again
         </button>

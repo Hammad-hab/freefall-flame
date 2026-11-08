@@ -73,7 +73,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
           <div className="text-[12px]" style={{ color: C.fg }}>{label}</div>
           <div className="mt-0.5 text-[10px] leading-4" style={{ color: C.muted }}>{hint}</div>
         </div>
-        <span className="rounded-full px-2 py-0.5 text-[11px] tabular-nums" style={{ background: C.chip2, color: C.blue }}>
+        <span className="rounded-full px-2 py-0.5 text-[11px] tabular-nums" style={{ background: C.chip2, color: C.accentText }}>
           {norm(weights[key])}%
         </span>
       </div>
@@ -83,7 +83,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
         max={100}
         value={Math.round(weights[key] * 100)}
         onChange={(e) => setWeights((w) => ({ ...w, [key]: Number(e.target.value) / 100 }))}
-        className="mt-2 w-full accent-[#4fa3ff]"
+        className="mt-2 w-full accent-[var(--c-info)]"
         aria-label={`${label} weight`}
       />
     </div>
@@ -117,7 +117,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
           <button
             onClick={() => setShowFormula((v) => !v)}
             className="flex items-center gap-2 text-[11px] underline"
-            style={{ color: C.blue }}
+            style={{ color: C.accentText }}
           >
             {showFormula ? "Hide" : "Show"} how this score is calculated
             <span style={{ color: C.muted }}>{showFormula ? "▲" : "▼"}</span>
@@ -150,7 +150,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
                 style={{
                   borderColor: sort === m ? C.blue : C.line,
                   background: sort === m ? C.blue : C.surface,
-                  color: sort === m ? C.ink : C.muted,
+                  color: sort === m ? C.on : C.muted,
                 }}
               >
                 {m === "rank" ? "Rank" : m === "name" ? "Name" : m === "tests" ? "Tests" : "Score"}
@@ -163,7 +163,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
         <div className="mt-3 overflow-x-auto rounded-xl border" style={{ borderColor: C.line }}>
           <table className="w-full border-collapse text-left text-[11px]">
             <thead>
-              <tr style={{ background: '#16283a' }}>
+              <tr style={{ background: C.surface }}>
                 {["Rank", "Material", "Score", "Test Cov.", "O₂ Div.", "O₂ Range", "Tests", "O₂ conditions", "O₂ range", "Bands", "Mean O₂ consumed (n)", "Excluded readings"].map((h) => (
                   <th key={h} className="whitespace-nowrap px-2.5 py-2 font-medium" style={{ color: C.muted }}>
                     {h}
@@ -181,7 +181,7 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
                     )}
                   </td>
                   <td className="px-2.5 py-2" style={{ color: C.fg }}>{m.material}</td>
-                  <td className="px-2.5 py-2 font-medium tabular-nums" style={{ color: C.amber }}>
+                  <td className="px-2.5 py-2 font-medium tabular-nums" style={{ color: C.accentText }}>
                     {m.score !== null ? m.score.toFixed(1) : '—'}
                   </td>
                   <td className="px-2.5 py-2 tabular-nums" style={{ color: C.muted }}>
@@ -199,12 +199,12 @@ export default function EvidenceRanking({ rows }: { rows: ParsedRow[] }) {
                     {m.o2Range !== null ? `${m.o2Range.toFixed(1)}%` : '—'}
                   </td>
                   <td className="px-2.5 py-2 tabular-nums" style={{ color: C.muted }}>{m.o2BandsCovered}</td>
-                  <td className="px-2.5 py-2 tabular-nums" style={{ color: C.blue }}>
+                  <td className="px-2.5 py-2 tabular-nums" style={{ color: C.accentText }}>
                     {m.o2ConsumedMean !== null ? `${m.o2ConsumedMean.toFixed(1)}% (n=${m.o2ConsumedN})` : '—'}
                   </td>
                   <td className="px-2.5 py-2 tabular-nums" style={{ color: C.muted }}>
                     {m.excluded.censoredPlusOOR > 0 || m.excluded.missing > 0 ? (
-                      <span style={{ color: m.excluded.censoredPlusOOR > 0 ? C.amber : C.muted }}>
+                      <span style={{ color: m.excluded.censoredPlusOOR > 0 ? C.accentText : C.muted }}>
                         {m.excluded.censoredPlusOOR} censored · {m.excluded.missing} missing
                       </span>
                     ) : (

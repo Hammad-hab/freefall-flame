@@ -79,7 +79,7 @@ export default function SourcesStrip({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-full px-2 py-0.5 transition-colors hover:underline"
-                  style={{ background: C.chip2, color: C.blue }}
+                  style={{ background: C.chip2, color: C.accentText }}
                   title="Verified NASA NTRS citation"
                 >
                   NTRS: {p.ntrsId} ↗
@@ -90,7 +90,7 @@ export default function SourcesStrip({
                   href={p.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: C.blue }}
+                  style={{ color: C.accentText }}
                   className="hover:underline"
                 >
                   Source link ↗
@@ -103,7 +103,7 @@ export default function SourcesStrip({
               )}
               <span>Dataset-wide source</span>
               {rowPaperCounts.has(String(p.id)) && (
-                <span style={{ color: C.amber }}>
+                <span style={{ color: C.accentText }}>
                   · linked to {rowPaperCounts.get(String(p.id))} row
                   {(rowPaperCounts.get(String(p.id)) ?? 0) === 1 ? "" : "s"}
                 </span>

@@ -1,31 +1,46 @@
 /** Shared chart/theme tokens for the dashboard panels.
- * Kept in one place so every panel matches the existing dark visual design.
+ * Kept in one place so every panel matches the visual design.
+ *
+ * feat/themes: every value is a CSS variable set by the active theme
+ * (ui/themes.ts: Ember on :root, the others on html[data-theme=…]), so all
+ * inline styles, SVG charts and panels follow the theme. Ember is today's
+ * look. Canvas code can't read var(): it uses useThemeTokens() (ui/useTheme).
  */
 
 export const C = {
-  ink: '#120e08',
-  ink2: '#1a140c',
-  panel: '#241f1a',
-  panel2: '#2c2822',
-  chip: '#363026',
-  chip2: '#474036',
+  ink: 'var(--c-ink)',
+  ink2: 'var(--c-ink2)',
+  panel: 'var(--c-panel)',
+  panel2: 'var(--c-panel2)',
+  chip: 'var(--c-chip)',
+  chip2: 'var(--c-chip2)',
   /** Opaque control surfaces. Controls must never be transparent: the animated
    *  background shows through the page padding, so a transparent pill reads as
    *  part of the backdrop instead of as a control. */
-  surface: '#363026',
-  surfaceHover: '#474036',
-  line: '#2e2418',
-  fg: '#f0ebe2',
-  muted: '#a89e90',
-  blue: '#ffa64d',
-  amber: '#ffa64d',
-  pink: '#f472b6',
-  green: '#34d399',
-  violet: '#a78bfa',
-  red: '#f87171',
+  surface: 'var(--c-surface)',
+  surfaceHover: 'var(--c-surface-hover)',
+  line: 'var(--c-line)',
+  fg: 'var(--c-fg)',
+  muted: 'var(--c-muted)',
+  /** The accent as a fill: active buttons, bars, borders. Text on it uses `on`. */
+  accent: 'var(--c-accent)',
+  blue: 'var(--c-accent)',
+  amber: 'var(--c-accent)',
+  on: 'var(--c-on)',
+  /** The accent as text: links, highlights, badges (AA on every surface). */
+  accentText: 'var(--c-accent-text)',
+  pink: 'var(--c-pink)',
+  green: 'var(--c-green)',
+  violet: 'var(--c-violet)',
+  red: 'var(--c-red)',
 } as const
 
-export const CHART_COLORS = ['#4fa3ff', '#ffa64d', '#34d399', '#f472b6', '#a78bfa', '#fbbf24'] as const
+export const CHART_COLORS = [1, 2, 3, 4, 5, 6].map((i) => `var(--c-chart-${i})`)
+
+/** A colour at an opacity (0..255, like a hex alpha byte), for theme colours given as var(). */
+export function alpha(color: string, a: number): string {
+  return `color-mix(in srgb, ${color} ${Math.round((a / 255) * 1000) / 10}%, transparent)`
+}
 
 /** Standard panel wrapper matching the existing Card look. */
 export const panelCls = 'rounded-[22px] border p-5'

@@ -11,9 +11,9 @@ import {
 import { computeShares } from '@/lib/shares'
 
 const hatch =
-  'bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.14)_0px,rgba(255,255,255,0.14)_1px,transparent_1px,transparent_5px)]'
+  'bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--c-fg)_14%,transparent)_0px,color-mix(in_srgb,var(--c-fg)_14%,transparent)_1px,transparent_1px,transparent_5px)]'
 
-const PILL_STYLES = ['bg-flame-amber text-[#1a0f05]', 'bg-fg text-ink', 'bg-line text-fg']
+const PILL_STYLES = ['bg-flame-amber text-on', 'bg-fg text-ink', 'bg-line text-fg']
 
 type Props = {
   datasetId: number | string
@@ -111,7 +111,7 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
         <h1 className="font-display text-[28px] font-light tracking-tight">
           {dataset?.name}
           {dataset?.description && (
-            <p className="mt-1.5 text-[13px] leading-5 text-white/55 tracking-normal">{dataset?.description}</p>
+            <p className="mt-1.5 text-[13px] leading-5 text-muted tracking-normal">{dataset?.description}</p>
           )}
           {filter && (
             <span className="text-flame-blue">
@@ -164,7 +164,7 @@ export default async function TopStats({ datasetId, groupKey, metricKey, filter 
                     {s.chip.dir && (
                       <span
                         className={`absolute -top-2 -left-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] text-ink ${
-                          s.chip.dir === 'up' ? 'bg-flame-amber' : 'bg-flame-blue'
+                          s.chip.dir === 'up' ? 'bg-flame-amber' : 'bg-flame-amber/60'
                         }`}
                         aria-hidden
                       >
