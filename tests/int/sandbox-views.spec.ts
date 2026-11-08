@@ -9,6 +9,10 @@ import {
   SCALES,
   CO_APPROX_LABEL,
   EXPOSURES,
+  FUEL_NOTE,
+  FUEL_TINT,
+  FUEL_TINT_MAX,
+  fuelTintWeight,
   fillView,
   sample,
   type ColorEngine,
@@ -90,6 +94,40 @@ describe('sandbox views match the game', () => {
     const plain = new Uint8ClampedArray(16), x1 = new Uint8ClampedArray(16)
     fillView(w, 'camera', plain); fillView(w, 'camera', x1, null, 1)
     expect([...x1]).toEqual([...plain])
+  })
+
+  it('Temperature view: solid fuel is tinted faintly when cold, never when hot, never gas or fuel-less solids', () => {
+    expect(FUEL_NOTE).toBe('fuel shown faintly')
+    // Cells: 0 air, 1 cold fuel (300 K), 2 cold wall (no fuel), 3 hot fuel (1000 K), 4 gas holding fuel.
+    const w = world([0, 0, 0, 0, 0])
+    w.grid.material = Uint8Array.from([0, 1, 1, 1, 0])
+    w.grid.temperature = Float32Array.from([300, 300, 300, 1000, 300])
+    w.grid.fuel = Float32Array.from([0, 1, 0, 1, 1])
+    const px = new Uint8ClampedArray(5 * 4)
+    fillView(w, 'temperature', px)
+    const plain = new Uint8ClampedArray(5 * 4)
+    fillView(w, 'temperature', plain, null, 1, false)
+    const air = rgbAt(plain, 0)
+    expect(rgbAt(px, 0)).toEqual(air)
+    // Cold fuel: the 300 K colour blended toward FUEL_TINT, by fuelTintWeight of that colour.
+    const wt = fuelTintWeight(air[0], air[1], air[2])
+    expect(wt).toBeGreaterThan(0.25)
+    expect(wt).toBeLessThanOrEqual(FUEL_TINT_MAX)
+    expect(rgbAt(px, 1)).toEqual(air.map((c, k) => Math.round(c * (1 - wt) + FUEL_TINT[k] * wt)))
+    // ...a green no temperature has (checked against every kelvin 0-1600), and brighter than the air.
+    const scaleColours = new Set<string>()
+    for (let k = 0; k <= 1600; k++) scaleColours.add(sample(SCALES.temperature.stops, k).join(','))
+    expect(scaleColours.has(rgbAt(px, 1).join(','))).toBe(false)
+    expect(rgbAt(px, 1)[1]).toBeGreaterThan(air[1] + 40)
+    // A wall with no fuel, hot fuel, and gas: exactly the plain temperature colours.
+    for (const i of [2, 3, 4]) expect(rgbAt(px, i)).toEqual(rgbAt(plain, i))
+    expect(fuelTintWeight(...(rgbAt(plain, 3) as [number, number, number]))).toBe(0)
+    // Turned off (the home page picture): no tint anywhere.
+    expect(rgbAt(plain, 1)).toEqual(air)
+    // Other views ignore the fuel field.
+    const mat = new Uint8ClampedArray(5 * 4), matNoFuel = new Uint8ClampedArray(5 * 4)
+    fillView(w, 'co2', mat); w.grid.fuel = new Float32Array(5); fillView(w, 'co2', matNoFuel)
+    expect([...mat]).toEqual([...matNoFuel])
   })
 
   it('keeps the other gas scales at the game ranges', () => {

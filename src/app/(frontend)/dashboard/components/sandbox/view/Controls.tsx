@@ -6,7 +6,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
-import { VIEWS, SCALES, EXPOSURES, sample, type Exposure, type View } from './colors';
+import { VIEWS, SCALES, EXPOSURES, FUEL_NOTE, FUEL_TINT, fuelTintWeight, sample, type Exposure, type View } from './colors';
+
+// The faint-fuel colour of a room-temperature (300 K) sample, for the legend's swatch.
+const COLD_FUEL = (() => {
+  const c = sample(SCALES.temperature.stops, 300), w = fuelTintWeight(c[0], c[1], c[2]);
+  return `rgb(${c.map((v, k) => Math.round(v * (1 - w) + FUEL_TINT[k] * w)).join(',')})`;
+})();
 import { ZOOMS, type Zoom } from './fit';
 import { AIR_COLOUR } from './theme';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
@@ -227,6 +233,13 @@ function Legend({ view, exposure = 1 }: { view: View; exposure?: number }) {
         <span>{hi}</span>
         <span className="whitespace-nowrap">{scale.unit}{exposed ? ` (exposure ×${exposure})` : ''}</span>
       </div>
+      {/* Temperature: a cold sample would be as dark as the air, so solid fuel is tinted faintly (colors.ts). */}
+      {view === 'temperature' && (
+        <div id="legend-fuel" className="flex items-center gap-1.5 text-[10px]" style={{ color: C.muted }}>
+          <span aria-hidden className="inline-block h-2 w-3 rounded-sm border" style={{ background: COLD_FUEL, borderColor: C.line }} />
+          <span>{FUEL_NOTE} (a tint, not a temperature)</span>
+        </div>
+      )}
       {/* A label that must be read with the view (CO: the engine makes it by a rule, not chemistry). */}
       {scale.note && (
         <div id="legend-note" className="text-[10px] font-semibold tracking-wide" style={{ color: C.amber }}>

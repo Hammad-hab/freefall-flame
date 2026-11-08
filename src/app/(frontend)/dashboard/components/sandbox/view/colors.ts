@@ -23,6 +23,7 @@ export interface Grid {
   oxygen: ArrayLike<number>;
   co2: ArrayLike<number>;
   co: ArrayLike<number>;     // fc_grid_co(): fraction 0..1, approximate
+  fuel?: ArrayLike<number>;  // fc_grid_fuel(): only the Temperature view's faint fuel uses it
   flowX: ArrayLike<number>;
   flowY: ArrayLike<number>;
 }
@@ -119,6 +120,29 @@ function put(out: Pixels, p: number, lut: Lut, v: number): void {
   out[p] = lut.lut[i * 3]; out[p + 1] = lut.lut[i * 3 + 1]; out[p + 2] = lut.lut[i * 3 + 2]; out[p + 3] = 255;
 }
 
+// Solid fuel in the Temperature view (display only). A sample at room
+// temperature is the same near-black as the air round it, so before
+// ignition and after its flame goes out it can't be seen. Every solid or
+// liquid cell that still holds fuel is blended toward a green the scale never
+// uses, by at most FUEL_TINT_MAX. The blend fades out as the cell's own
+// temperature colour gets brighter (gone once its brightest channel reaches
+// FUEL_TINT_FADE), so a hot sample keeps its true temperature colour.
+export const FUEL_TINT: RGB = [60, 200, 90];
+export const FUEL_TINT_MAX = 0.4;
+export const FUEL_TINT_FADE = 160;
+export const FUEL_NOTE = 'fuel shown faintly';
+
+/** The faint-fuel blend weight for a cell whose temperature colour is (r, g, b). */
+export function fuelTintWeight(r: number, g: number, b: number): number {
+  return FUEL_TINT_MAX * Math.max(0, 1 - Math.max(r, g, b) / FUEL_TINT_FADE);
+}
+
+function tintFuel(out: Pixels, p: number): void {
+  const w = fuelTintWeight(out[p], out[p + 1], out[p + 2]);
+  if (w === 0) return;
+  for (let k = 0; k < 3; k++) out[p + k] = Math.round(out[p + k] * (1 - w) + FUEL_TINT[k] * w);
+}
+
 /** Camera exposure steps (display only): the glow is multiplied before the same colour scale. */
 export const EXPOSURES = [1, 2, 4, 8] as const;
 export type Exposure = (typeof EXPOSURES)[number];
@@ -129,8 +153,10 @@ export type Exposure = (typeof EXPOSURES)[number];
 // `exposure` (Camera view only) multiplies the engine's glow before the colour
 // scale, like a longer camera exposure: no glow stays black, and anything at
 // or above 1/exposure takes the scale's top colour. The engine is unchanged.
-export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null, exposure = 1): void {
-  const { material, temperature, oxygen, co2, co, flowX, flowY } = engine.grid;
+// `fuelFaint` (Temperature view only, on by default) draws solid fuel faintly
+// (FUEL_TINT above); only the home page's picture turns it off.
+export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null, exposure = 1, fuelFaint = true): void {
+  const { material, temperature, oxygen, co2, co, fuel, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;
   const glow = view === 'camera' ? engine.camera() : null;   // fc_camera_intensity()
   for (let i = 0, p = 0; i < cells; i++, p += 4) {
@@ -139,6 +165,7 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour
     switch (view) {
       case 'temperature':
         put(out, p, LUTS.temperature, temperature[i]);
+        if (fuelFaint && !gas && fuel !== undefined && fuel[i] > 0) tintFuel(out, p);
         break;
       case 'oxygen':
         if (gas) put(out, p, LUTS.oxygen, oxygen[i]); else setRgb(out, p, NO_GAS);
