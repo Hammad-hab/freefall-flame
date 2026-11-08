@@ -17,6 +17,8 @@ interface GridCanvasProps {
   cell?: number;
   /** Empty cells in the material view take this colour. */
   airColour?: RGB | null;
+  /** Camera view exposure (display only). */
+  exposure?: number;
   /** Display zoom (1, 2 or 3) and the cell it centres on (fit.ts zoomOffset). */
   zoom?: number;
   focus?: { x: number; y: number };
@@ -33,6 +35,7 @@ export default function GridCanvas({
   className,
   zoom = 1,
   focus,
+  exposure = 1,
 }: GridCanvasProps) {
   const gridRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -70,6 +73,7 @@ export default function GridCanvas({
   useEffect(() => { if (viewRef.current) viewRef.current.view = view; }, [view]);
   useEffect(() => { if (viewRef.current) viewRef.current.brushRadius = brushRadius; }, [brushRadius]);
   useEffect(() => { if (viewRef.current) viewRef.current.airColour = airColour; }, [airColour]);
+  useEffect(() => { if (viewRef.current) viewRef.current.exposure = exposure; }, [exposure]);
 
   if (!engine) return null;
   const w = engine.width, h = engine.height;

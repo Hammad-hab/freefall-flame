@@ -5,7 +5,8 @@ import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
 import { Engine, CFIG_VISUAL_DEMO, FIDELITY, LIGHT, PARAM, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
-import { Tabs, RunBar, ViewBar, ZoomBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
+import { Tabs, RunBar, ViewBar, ZoomBar, ExposureBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
+import type { Exposure } from './view/colors';
 import PresetsPanel, { type PresetFocus } from './view/PresetsPanel';
 import { fitCell, sampleCentre, type Zoom } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
@@ -65,6 +66,8 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     if (engine) setZoomFocus(sampleCentre(engine.grid.fuel, engine.width, engine.height, engine.grid.temperature));
   }, [engine]);
   const setZoom = useCallback((z: Zoom) => { recentre(); setZoomState(z); }, [recentre]);
+  // Camera view exposure (display only): ×1 is the game's look.
+  const [exposure, setExposure] = useState<Exposure>(1);
   const c = useControls();
   const clock = useRef(new StepClock());
   const rootRef = useRef<HTMLDivElement>(null);
@@ -245,7 +248,8 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                 onStep={onStep} onReset={reset}
                 behind={behind}
               />
-              <ViewBar view={c.view} setView={c.setView} />
+              <ViewBar view={c.view} setView={c.setView} exposure={exposure} />
+              {c.view === 'camera' && <ExposureBar exposure={exposure} setExposure={setExposure} />}
               <ZoomBar zoom={zoom} setZoom={setZoom} />
               <Tabs tabs={TABS} active={c.tab} onChange={c.setTab} />
             </div>
@@ -261,6 +265,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                 cell={cell}
                 zoom={zoom}
                 focus={zoomFocus}
+                exposure={exposure}
                 airColour={AIR_COLOUR}
                 className="shrink-0 outline outline-1 outline-line"
               />

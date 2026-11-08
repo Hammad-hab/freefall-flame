@@ -119,10 +119,17 @@ function put(out: Pixels, p: number, lut: Lut, v: number): void {
   out[p] = lut.lut[i * 3]; out[p + 1] = lut.lut[i * 3 + 1]; out[p + 2] = lut.lut[i * 3 + 2]; out[p + 3] = 255;
 }
 
+/** Camera exposure steps (display only): the glow is multiplied before the same colour scale. */
+export const EXPOSURES = [1, 2, 4, 8] as const;
+export type Exposure = (typeof EXPOSURES)[number];
+
 // Fill `out` (cells * 4 bytes, RGBA) with one view of the engine's grid.
 // `airColour`, if given, paints empty (air) cells in the material view, so the
 // chamber matches the dashboard's background; no other colour changes.
-export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null): void {
+// `exposure` (Camera view only) multiplies the engine's glow before the colour
+// scale, like a longer camera exposure: no glow stays black, and anything at
+// or above 1/exposure takes the scale's top colour. The engine is unchanged.
+export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null, exposure = 1): void {
   const { material, temperature, oxygen, co2, co, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;
   const glow = view === 'camera' ? engine.camera() : null;   // fc_camera_intensity()
@@ -154,7 +161,7 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour
       case 'camera': {
         // Gas is black; solids and liquids barely visible; the glow on top.
         const base = gas ? 0 : CAMERA_SOLID_DIM;
-        put(out, p, LUTS.camera, glow![i]);
+        put(out, p, LUTS.camera, glow![i] * exposure);
         out[p] = Math.min(255, out[p] + m.r * base);
         out[p + 1] = Math.min(255, out[p + 1] + m.g * base);
         out[p + 2] = Math.min(255, out[p + 2] + m.b * base);

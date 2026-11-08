@@ -27,6 +27,8 @@ export class GridView {
   view: ViewName = 'material';
   /** Empty cells in the material view take this colour (the dashboard's background). */
   airColour: RGB | null = null;
+  /** Camera view exposure (display only; colors.ts fillView). */
+  exposure = 1;
   hover: Cell | null = null;
   brushRadius = 2;
   onStroke: StrokeHandler = () => {};
@@ -48,7 +50,7 @@ export class GridView {
   get scale(): number { return this.overlayCanvas.width / this.engine.width; }
 
   draw(): void {
-    fillView(this.engine, this.view, this.image.data, this.airColour);
+    fillView(this.engine, this.view, this.image.data, this.airColour, this.exposure);
     this.grid.putImageData(this.image, 0, 0);
     const o = this.overlay, s = this.scale;
     o.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);

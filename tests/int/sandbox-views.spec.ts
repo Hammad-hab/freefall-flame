@@ -8,6 +8,7 @@ import {
   VIEWS,
   SCALES,
   CO_APPROX_LABEL,
+  EXPOSURES,
   fillView,
   sample,
   type ColorEngine,
@@ -67,6 +68,28 @@ describe('sandbox views match the game', () => {
     rgbAt(px, 1).forEach((c, k) => expect(Math.abs(c - exact[k])).toBeLessThanOrEqual(2))
     expect(rgbAt(px, 2)).toEqual([255, 255, 225])  // above the top: held at the top colour
     expect(rgbAt(px, 3)).toEqual([45, 45, 52])     // a solid: no gas to show
+  })
+
+  it('camera exposure multiplies the glow before the same scale: no glow stays black, the top is capped', () => {
+    expect([...EXPOSURES]).toEqual([1, 2, 4, 8])
+    const w = world([0, 0, 0, 0])
+    // Cells 0-2 are gas, cell 3 a solid (drawn at 12% of its colour under the glow).
+    const glow = Float32Array.from([0, 0.1, 0.5, 0])
+    w.camera = () => glow
+    const at = (exposure: number) => { const px = new Uint8ClampedArray(16); fillView(w, 'camera', px, null, exposure); return [0, 1, 2].map((i) => rgbAt(px, i)) }
+    const one = at(1), four = at(4)
+    const scale = (v: number) => sample(SCALES.camera.stops, v)
+    expect(one[0]).toEqual([0, 0, 0]) // no glow: black, at any exposure
+    expect(four[0]).toEqual([0, 0, 0])
+    // 0.1 at x4 is drawn as 0.4 on the same scale (within the table's 1-2 units), brighter than at x1.
+    four[1].forEach((c, k) => expect(Math.abs(c - scale(0.4)[k])).toBeLessThanOrEqual(2))
+    expect(four[1][2]).toBeGreaterThan(one[1][2])
+    // 0.5 at x4 is past the top: the scale's top colour, never anything else.
+    expect(four[2]).toEqual(scale(1))
+    // x1 is the game's look: the same pixels as without an exposure.
+    const plain = new Uint8ClampedArray(16), x1 = new Uint8ClampedArray(16)
+    fillView(w, 'camera', plain); fillView(w, 'camera', x1, null, 1)
+    expect([...x1]).toEqual([...plain])
   })
 
   it('keeps the other gas scales at the game ranges', () => {
