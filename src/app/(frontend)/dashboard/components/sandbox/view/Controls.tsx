@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
 import { VIEWS, SCALES, sample, type View } from './colors';
+import { ZOOMS, type Zoom } from './fit';
 import { AIR_COLOUR } from './theme';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
@@ -148,6 +149,20 @@ export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, o
           slower than real time
         </span>
       )}
+    </div>
+  );
+}
+
+// ---- Zoom (display only) ------------------------------------------------------------
+export function ZoomBar({ zoom, setZoom }: { zoom: Zoom; setZoom: (z: Zoom) => void }) {
+  return (
+    <div id="zoom-bar" role="group" aria-label="Zoom (display only)" className="flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>Zoom</span>
+      {ZOOMS.map((z) => (
+        <button key={z} className={pill} style={pillState(z === zoom)} onClick={() => setZoom(z)} aria-pressed={z === zoom} data-zoom={z}>
+          {z}x
+        </button>
+      ))}
     </div>
   );
 }

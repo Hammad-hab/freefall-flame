@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GridView, type StrokeHandler, type ViewName } from './GridView';
 import type { RGB } from './colors';
 import type { Engine } from '../engine/Engine';
+import { zoomOffset } from './fit';
 
 interface GridCanvasProps {
   engine: Engine | null;      // create client-side (useEffect/useState)
@@ -16,6 +17,9 @@ interface GridCanvasProps {
   cell?: number;
   /** Empty cells in the material view take this colour. */
   airColour?: RGB | null;
+  /** Display zoom (1, 2 or 3) and the cell it centres on (fit.ts zoomOffset). */
+  zoom?: number;
+  focus?: { x: number; y: number };
 }
 
 export default function GridCanvas({
@@ -27,6 +31,8 @@ export default function GridCanvas({
   cell = 4,
   airColour = null,
   className,
+  zoom = 1,
+  focus,
 }: GridCanvasProps) {
   const gridRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -69,23 +75,30 @@ export default function GridCanvas({
   const w = engine.width, h = engine.height;
   // The overlay (brush circle, flow arrows) is drawn at device resolution so its
   // lines stay sharp; GridView reads its pixels per cell from the canvas width.
-  const overlayW = Math.max(w, Math.round(w * cell * dpr));
-  const overlayH = Math.max(h, Math.round(h * cell * dpr));
+  // Zoomed, the canvases are `zoom` times bigger inside a box of the normal size;
+  // the mouse is read against the canvas's real rectangle, so painting stays exact.
+  const z = zoom > 1 ? zoom : 1;
+  const overlayDpr = Math.min(dpr, 2);
+  const overlayW = Math.max(w, Math.round(w * cell * z * overlayDpr));
+  const overlayH = Math.max(h, Math.round(h * cell * z * overlayDpr));
+  const off = z > 1 && focus ? zoomOffset(focus, z, cell, w, h) : { left: 0, top: 0 };
 
   return (
-    <div style={{ position: 'relative', width: w * cell, height: h * cell }} className={className}>
-      <canvas
-        ref={gridRef}
-        width={w}
-        height={h}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', imageRendering: 'pixelated' }}
-      />
-      <canvas
-        ref={overlayRef}
-        width={overlayW}
-        height={overlayH}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
-      />
+    <div style={{ position: 'relative', width: w * cell, height: h * cell, overflow: 'hidden' }} className={className} data-canvas-zoom={z}>
+      <div style={{ position: 'absolute', left: off.left, top: off.top, width: w * cell * z, height: h * cell * z }}>
+        <canvas
+          ref={gridRef}
+          width={w}
+          height={h}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', imageRendering: 'pixelated' }}
+        />
+        <canvas
+          ref={overlayRef}
+          width={overlayW}
+          height={overlayH}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none' }}
+        />
+      </div>
     </div>
   );
 }
