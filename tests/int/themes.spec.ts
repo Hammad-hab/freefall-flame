@@ -16,14 +16,15 @@ import { KIND } from '@/app/(frontend)/dashboard/components/sandbox/engine/Engin
 afterEach(() => document.documentElement.removeAttribute('data-theme'))
 
 describe('themes', () => {
-  it('has the 20 themes in the file order: 8 Flame in Freefall, then 12 Jupyter, Ember first and default', () => {
+  it('has the 20 themes in the file order under one heading, Freefall Labs, Ember first and default', () => {
     expect(THEMES.map((t) => t.name)).toEqual([
       'Ember', 'Midnight', 'Forest', 'Violet', 'Rose', 'Graphite', 'Paper', 'Daylight',
       'Lab Light', 'Lab Dark', 'Dracula', 'Monokai', 'Solarized Dark', 'Solarized Light', 'Gruvbox Dark', 'Gruvbox Light',
       'Nord', 'One Dark', 'Oceans16', 'Chesterish',
     ])
-    expect(THEMES.filter((t) => t.group === 'Flame in Freefall')).toHaveLength(8)
-    expect(THEMES.filter((t) => t.group === 'Jupyter')).toHaveLength(12)
+    expect(THEMES.every((t) => t.group === 'Freefall Labs')).toBe(true)
+    // No theme description mentions Jupyter or JupyterLab.
+    expect(THEMES.filter((t) => /jupyter/i.test(t.description)).map((t) => t.name)).toEqual([])
     expect(THEMES.every((t) => t.description.length > 5)).toBe(true)
     expect(DEFAULT_THEME).toBe('ember')
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(20)

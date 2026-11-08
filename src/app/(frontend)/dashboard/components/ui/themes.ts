@@ -3,8 +3,8 @@
  * frontend layout turns them into CSS (themeCss) and a tiny boot script
  * (THEME_BOOT) that applies the saved theme before the first paint.
  *
- * - 20 themes from "Flame in Freefall: theme options": 8 Flame in Freefall
- *   themes, then 12 Jupyter ones. Ember is today's dashboard (chart-theme C)
+ * - 20 themes from "Flame in Freefall: theme options", all under one heading,
+ *   "Freefall Labs": the 8 original themes first. Ember is today's dashboard (chart-theme C)
  *   exactly, and the default.
  * - Each theme gives the file's 10 tokens; the rest are derived. Then every
  *   text colour must reach WCAG AA (4.5:1) on every surface it sits on, and
@@ -23,49 +23,49 @@ export interface RawTheme {
   ink2?: Hex; ink3?: Hex; chip?: Hex; surfaceHover?: Hex
 }
 
-export interface ThemeDef { id: string; name: string; group: 'Flame in Freefall' | 'Jupyter'; description: string; raw: RawTheme }
+export interface ThemeDef { id: string; name: string; group: 'Freefall Labs'; description: string; raw: RawTheme }
 
 export const THEME_DEFS: ThemeDef[] = [
   // Today's dashboard: chart-theme.ts C and global.css, value for value.
-  { id: 'ember', name: 'Ember', group: 'Flame in Freefall', description: 'Current. Warm dark, amber accent. Best fit for fire.',
+  { id: 'ember', name: 'Ember', group: 'Freefall Labs', description: 'Current. Warm dark, amber accent. Best fit for fire.',
     raw: { ink: '#120e08', ink2: '#1a140c', ink3: '#1f1a14', panel: '#241f1a', panel2: '#2c2822', chip: '#363026', chip2: '#474036', surface: '#363026', surfaceHover: '#474036', line: '#2e2418', fg: '#f0ebe2', muted: '#a89e90', accent: '#ffa64d', on: '#1a0f05' } },
-  { id: 'midnight', name: 'Midnight', group: 'Flame in Freefall', description: 'Cool blue-black. Makes flame colours pop in the grid.',
+  { id: 'midnight', name: 'Midnight', group: 'Freefall Labs', description: 'Cool blue-black. Makes flame colours pop in the grid.',
     raw: { ink: '#0b0f17', panel: '#121826', panel2: '#1a2233', surface: '#202a3d', line: '#2c384f', fg: '#e8eef9', muted: '#8d9bb5', accent: '#5aa9f4', on: '#06101d', chip2: '#1f3050' } },
-  { id: 'forest', name: 'Forest', group: 'Flame in Freefall', description: 'Deep green, lime accent. Calm for long sessions.',
+  { id: 'forest', name: 'Forest', group: 'Freefall Labs', description: 'Deep green, lime accent. Calm for long sessions.',
     raw: { ink: '#0b120e', panel: '#111b15', panel2: '#18261d', surface: '#1e2f24', line: '#2a4132', fg: '#e8f4ec', muted: '#8fa898', accent: '#8fe08a', on: '#08140b', chip2: '#223c2a' } },
-  { id: 'violet', name: 'Violet', group: 'Flame in Freefall', description: 'Plum dark, soft violet. Reads as research tool.',
+  { id: 'violet', name: 'Violet', group: 'Freefall Labs', description: 'Plum dark, soft violet. Reads as research tool.',
     raw: { ink: '#100c16', panel: '#181222', panel2: '#221a30', surface: '#2a2039', line: '#3a2d4f', fg: '#f0eaf8', muted: '#a698bd', accent: '#b48cf4', on: '#150b24', chip2: '#33264c' } },
-  { id: 'rose', name: 'Rose', group: 'Flame in Freefall', description: 'Wine dark, coral-pink accent. Warmer than Ember, less orange.',
+  { id: 'rose', name: 'Rose', group: 'Freefall Labs', description: 'Wine dark, coral-pink accent. Warmer than Ember, less orange.',
     raw: { ink: '#140c0e', panel: '#1e1316', panel2: '#2a1b1f', surface: '#332126', line: '#46303a', fg: '#f8ecee', muted: '#b49aa0', accent: '#f4728a', on: '#240810', chip2: '#47252d' } },
-  { id: 'graphite', name: 'Graphite', group: 'Flame in Freefall', description: 'Neutral grey, white accent. Lets the sim be the only colour.',
+  { id: 'graphite', name: 'Graphite', group: 'Freefall Labs', description: 'Neutral grey, white accent. Lets the sim be the only colour.',
     raw: { ink: '#0e0e0f', panel: '#161617', panel2: '#202022', surface: '#28282b', line: '#37373b', fg: '#f2f2f3', muted: '#9b9ba1', accent: '#e6e6ea', on: '#111113', chip2: '#34343a' } },
-  { id: 'paper', name: 'Paper', group: 'Flame in Freefall', description: 'Light warm paper, burnt orange. For print and projector.',
+  { id: 'paper', name: 'Paper', group: 'Freefall Labs', description: 'Light warm paper, burnt orange. For print and projector.',
     raw: { ink: '#f6f1e9', panel: '#fffaf2', panel2: '#f2ebdf', surface: '#ebe3d4', line: '#d9cfbd', fg: '#231a10', muted: '#7b6c57', accent: '#d9622b', on: '#fff7ee', chip2: '#f6dcc9' } },
-  { id: 'daylight', name: 'Daylight', group: 'Flame in Freefall', description: 'Cool light grey-blue. Clean, high contrast.',
+  { id: 'daylight', name: 'Daylight', group: 'Freefall Labs', description: 'Cool light grey-blue. Clean, high contrast.',
     raw: { ink: '#eef2f7', panel: '#ffffff', panel2: '#f1f4f9', surface: '#e6ebf3', line: '#d3dae6', fg: '#0f1a2b', muted: '#5d6b82', accent: '#1f6fe0', on: '#ffffff', chip2: '#dbe8fb' } },
-  { id: 'lab-light', name: 'Lab Light', group: 'Jupyter', description: 'JupyterLab default light.',
+  { id: 'lab-light', name: 'Lab Light', group: 'Freefall Labs', description: 'Clean light grey with blue accent.',
     raw: { ink: '#eeeeee', panel: '#ffffff', panel2: '#f5f5f5', surface: '#eeeeee', line: '#bdbdbd', fg: '#212121', muted: '#616161', accent: '#1976d2', on: '#ffffff', chip2: '#d6e6f7' } },
-  { id: 'lab-dark', name: 'Lab Dark', group: 'Jupyter', description: 'JupyterLab default dark.',
+  { id: 'lab-dark', name: 'Lab Dark', group: 'Freefall Labs', description: 'Neutral dark grey with blue accent.',
     raw: { ink: '#111111', panel: '#1e1e1e', panel2: '#262626', surface: '#2f2f2f', line: '#424242', fg: '#eeeeee', muted: '#9e9e9e', accent: '#2196f3', on: '#04111f', chip2: '#1b3a5c' } },
-  { id: 'dracula', name: 'Dracula', group: 'Jupyter', description: 'Purple on charcoal.',
+  { id: 'dracula', name: 'Dracula', group: 'Freefall Labs', description: 'Purple on charcoal.',
     raw: { ink: '#21222c', panel: '#282a36', panel2: '#303341', surface: '#383a4a', line: '#44475a', fg: '#f8f8f2', muted: '#7d88b8', accent: '#bd93f9', on: '#1d1630', chip2: '#3d3a5c' } },
-  { id: 'monokai', name: 'Monokai', group: 'Jupyter', description: 'Classic editor dark, lime accent.',
+  { id: 'monokai', name: 'Monokai', group: 'Freefall Labs', description: 'Classic editor dark, lime accent.',
     raw: { ink: '#1e1f1c', panel: '#272822', panel2: '#2f302a', surface: '#3a3b33', line: '#49483e', fg: '#f8f8f2', muted: '#9a9680', accent: '#a6e22e', on: '#12190a', chip2: '#3b4224' } },
-  { id: 'solarized-dark', name: 'Solarized Dark', group: 'Jupyter', description: 'Low-contrast teal dark.',
+  { id: 'solarized-dark', name: 'Solarized Dark', group: 'Freefall Labs', description: 'Low-contrast teal dark.',
     raw: { ink: '#00212b', panel: '#002b36', panel2: '#073642', surface: '#0c4150', line: '#1b5565', fg: '#eee8d5', muted: '#93a1a1', accent: '#268bd2', on: '#fdf6e3', chip2: '#0e4a63' } },
-  { id: 'solarized-light', name: 'Solarized Light', group: 'Jupyter', description: 'Cream light with blue accent.',
+  { id: 'solarized-light', name: 'Solarized Light', group: 'Freefall Labs', description: 'Cream light with blue accent.',
     raw: { ink: '#eee8d5', panel: '#fdf6e3', panel2: '#f5eed9', surface: '#eee8d5', line: '#d6cfb8', fg: '#073642', muted: '#657b83', accent: '#268bd2', on: '#fdf6e3', chip2: '#d5e6ea' } },
-  { id: 'gruvbox-dark', name: 'Gruvbox Dark', group: 'Jupyter', description: 'Retro warm dark, yellow accent.',
+  { id: 'gruvbox-dark', name: 'Gruvbox Dark', group: 'Freefall Labs', description: 'Retro warm dark, yellow accent.',
     raw: { ink: '#1d2021', panel: '#282828', panel2: '#32302f', surface: '#3c3836', line: '#504945', fg: '#ebdbb2', muted: '#a89984', accent: '#fabd2f', on: '#1d2021', chip2: '#4a3f1e' } },
-  { id: 'gruvbox-light', name: 'Gruvbox Light', group: 'Jupyter', description: 'Retro warm light, rust accent.',
+  { id: 'gruvbox-light', name: 'Gruvbox Light', group: 'Freefall Labs', description: 'Retro warm light, rust accent.',
     raw: { ink: '#f2e5bc', panel: '#fbf1c7', panel2: '#f2e5bc', surface: '#ebdbb2', line: '#d5c4a1', fg: '#3c3836', muted: '#7c6f64', accent: '#af3a03', on: '#fbf1c7', chip2: '#f1d3b4' } },
-  { id: 'nord', name: 'Nord', group: 'Jupyter', description: 'Arctic blue-grey.',
+  { id: 'nord', name: 'Nord', group: 'Freefall Labs', description: 'Arctic blue-grey.',
     raw: { ink: '#242933', panel: '#2e3440', panel2: '#3b4252', surface: '#434c5e', line: '#4c566a', fg: '#eceff4', muted: '#a3adc2', accent: '#88c0d0', on: '#1c2530', chip2: '#3b5361' } },
-  { id: 'one-dark', name: 'One Dark', group: 'Jupyter', description: 'Atom-style dark, blue accent.',
+  { id: 'one-dark', name: 'One Dark', group: 'Freefall Labs', description: 'Atom-style dark, blue accent.',
     raw: { ink: '#1b1d23', panel: '#21252b', panel2: '#282c34', surface: '#2f343d', line: '#3e4451', fg: '#c8ccd4', muted: '#7f8795', accent: '#61afef', on: '#0d1520', chip2: '#28405c' } },
-  { id: 'oceans16', name: 'Oceans16', group: 'Jupyter', description: 'Muted slate, sea-glass accent.',
+  { id: 'oceans16', name: 'Oceans16', group: 'Freefall Labs', description: 'Muted slate, sea-glass accent.',
     raw: { ink: '#232832', panel: '#2b303b', panel2: '#343d46', surface: '#3b4550', line: '#4f5b66', fg: '#dfe1e8', muted: '#a7adba', accent: '#96b5b4', on: '#17201f', chip2: '#35484a' } },
-  { id: 'chesterish', name: 'Chesterish', group: 'Jupyter', description: 'jupyter-themes dark, orange accent.',
+  { id: 'chesterish', name: 'Chesterish', group: 'Freefall Labs', description: 'Slate dark, orange accent.',
     raw: { ink: '#1c1f24', panel: '#22252b', panel2: '#2a2e36', surface: '#323741', line: '#424855', fg: '#e0e2e6', muted: '#9097a3', accent: '#ff9d4d', on: '#1c0f04', chip2: '#4a3220' } },
 ]
 

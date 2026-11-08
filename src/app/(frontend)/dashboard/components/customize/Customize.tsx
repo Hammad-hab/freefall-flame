@@ -11,7 +11,7 @@ import { THEMES, DEFAULT_THEME, themeById } from '../ui/themes'
 import { useThemeId } from '../ui/useTheme'
 import { SCALES } from '../sandbox/view/colors'
 
-const GROUPS = ['Flame in Freefall', 'Jupyter'] as const
+const GROUPS = ['Freefall Labs'] as const
 
 // Plain words for the tokens a theme's contrast fixes touched (ui/themes.ts).
 const FIX_WORDS: Record<string, string> = {
@@ -37,7 +37,7 @@ export default function Customize() {
         </p>
         {GROUPS.map((group) => (
           <div key={group} className="mt-4">
-            <SectionLabel>{group === 'Jupyter' ? 'Jupyter' : 'Flame in Freefall'}</SectionLabel>
+            <SectionLabel>{group}</SectionLabel>
             <div role="group" aria-label={`${group} themes`} className="flex flex-wrap gap-2">
               {THEMES.filter((t) => t.group === group).map((t) => {
                 const on = t.id === active.id
