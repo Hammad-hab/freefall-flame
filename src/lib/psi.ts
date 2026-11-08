@@ -168,6 +168,11 @@ export const MAX_WEIGHT = 3
 
 export interface Ranked { id: string; name: string; score: number; rank: number }
 
+/** A rank as written for people: "2=" when another investigation has the same rank, else "2". */
+export function rankLabel(r: { rank: number }, ranked: { rank: number }[]): string {
+  return ranked.filter((x) => x.rank === r.rank).length > 1 ? `${r.rank}=` : String(r.rank)
+}
+
 /**
  * Score = sum(weight x criterion) / (2 x sum(weights)) x 100, so 0-100.
  * Sorted by score, then name; equal scores share a rank. Null if every

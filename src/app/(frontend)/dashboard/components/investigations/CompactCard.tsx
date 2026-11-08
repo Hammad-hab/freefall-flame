@@ -20,10 +20,13 @@ export default function CompactCard({
   r,
   focused,
   onDetails,
+  rankText,
 }: {
   inv: PsiInvestigation
   r: Ranked | null
   focused: boolean
+  /** The rank as written ("2=" for a tie); defaults to the number. */
+  rankText?: string
   onDetails: (opener: HTMLElement) => void
 }) {
   return (
@@ -44,7 +47,7 @@ export default function CompactCard({
         {r && (
           <span className="shrink-0 text-right">
             <span className="block text-[18px] font-light leading-none tabular-nums" style={{ color: C.amber }} data-card-score>{r.score}</span>
-            <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {r.rank}</span>
+            <span className="block text-[10px]" style={{ color: C.muted }} data-card-rank>rank {rankText ?? r.rank}</span>
           </span>
         )}
       </header>

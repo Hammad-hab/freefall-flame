@@ -3,7 +3,8 @@
  * there is no AI answer, and the number check every AI answer must pass.
  * Pure functions: no React, no network.
  */
-import { CRITERIA, DEFAULT_WEIGHTS, rank, type PsiCatalogue, type PsiFact } from './psi'
+import { CRITERIA, DEFAULT_WEIGHTS, rank, rankLabel, type PsiCatalogue, type PsiFact } from './psi'
+export { rankLabel } from './psi'
 
 const SHARED_RULES = [
   'You summarise NASA combustion investigations for a crew-habitat fire-safety dashboard.',
@@ -42,11 +43,6 @@ export const systemFor = (target: PsiTarget) => (target === 'overall' ? PSI_OVER
 export function o2Text(o2: string): string {
   if (o2 === 'not in table') return 'not in the table'
   return o2.replace(/^([\d.]+(?:-[\d.]+)?)\s*(\(air\))?/, (_, n: string, air?: string) => `${n}%${air ? ' air' : ''}`)
-}
-
-/** A rank as written for people: "2=" when another investigation has the same rank, else "2". */
-export function rankLabel(r: { rank: number }, ranked: { rank: number }[]): string {
-  return ranked.filter((x) => x.rank === r.rank).length > 1 ? `${r.rank}=` : String(r.rank)
 }
 
 /** "a", "a and b", "a, b and c". */

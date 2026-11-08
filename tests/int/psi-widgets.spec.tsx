@@ -195,6 +195,20 @@ describe('widgets on screen', () => {
     expect(document.body.textContent).not.toMatch(/no single tests;|rows \(per test day|no single tests in the table/)
   })
 
+  it('shows tied ranks as "2=" in the ranking list, on the cards and in their details', () => {
+    render(<Investigations />)
+    const label = (id: string) => document.querySelector(`[data-rank-id="${id}"] [data-rank-label]`)?.textContent
+    expect([label('bass-ii'), label('saffire-i-iii'), label('same-r'), label('flex'), label('same'), label('cfi-g')]).toEqual(['1.', '2=', '2=', '4=', '4=', '6.'])
+    expect(label('cld-flame')).toBe('14.')
+    expect(document.querySelector('[data-psi="same-r"] [data-card-rank]')?.textContent).toBe('rank 2=')
+    expect(document.querySelector('[data-psi="bass-ii"] [data-card-rank]')?.textContent).toBe('rank 1')
+    fireEvent.click(document.querySelector('[data-details="flex"]')!)
+    expect(document.querySelector('[data-psi-detail="flex"] [data-card-rank]')?.textContent).toBe('rank 4=')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(document.querySelector('[data-widget-collapse="ranking"]')!)
+    expect(document.querySelector('[data-widget="ranking"] [data-widget-summary]')?.textContent).toBe('1. BASS-II 90 · 2= Saffire I-III 80 · 2= SAME-R 80')
+  })
+
   it('filters cards by phase and sorts them, saying how many show', () => {
     render(<Investigations />)
     const ids = () => [...document.querySelectorAll('[data-psi]')].map((c) => c.getAttribute('data-psi'))

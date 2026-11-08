@@ -6,8 +6,14 @@
  * the ranked list. Scores and their reasons come from psi.json; only the
  * weighting happens here (rank() in src/lib/psi.ts).
  */
-import { CRITERIA, MAX_WEIGHT, DEFAULT_WEIGHTS, type HabitatReference, type Ranked, type Weights } from '@/lib/psi'
+import { CRITERIA, MAX_WEIGHT, DEFAULT_WEIGHTS, rankLabel, type HabitatReference, type Ranked, type Weights } from '@/lib/psi'
 import { C } from '../ui/chart-theme'
+
+/** "1." for a rank of its own, "2=" for a tie. */
+const rankLabelText = (r: Ranked, ranked: Ranked[]) => {
+  const l = rankLabel(r, ranked)
+  return l.endsWith('=') ? l : `${l}.`
+}
 
 // Each of these sits inside a Widget (Widget.tsx), which draws the panel and the title.
 
@@ -90,7 +96,8 @@ export function RankingList({ ranked, onPick }: { ranked: Ranked[] | null; onPic
         <ol className="space-y-1 text-[12px]">
           {ranked.map((r) => (
             <li key={r.id} data-rank-id={r.id} className="flex items-center gap-2">
-              <span className="w-6 shrink-0 text-right tabular-nums" style={{ color: C.muted }}>{r.rank}.</span>
+              {/* A tie reads "2=" (both), as in the AI facts and the plain summary. */}
+              <span className="w-7 shrink-0 text-right tabular-nums" style={{ color: C.muted }} data-rank-label>{rankLabelText(r, ranked)}</span>
               <button onClick={() => onPick(r.id)} className="min-w-0 flex-1 truncate text-left hover:underline" style={{ color: C.fg }}>
                 {r.name}
               </button>
