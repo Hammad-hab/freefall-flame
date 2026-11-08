@@ -28,6 +28,39 @@ import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
 import scorecard from '../scorecard.json';
 import { isPlainClick, linkProps, type WorkspaceLinks } from '../../workspace/links';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
+import { MOON_RESULT } from '../../investigations/MoonBaseCard';
+
+/**
+ * The Moon-base what-if against B1 at NASA's conditions, as two bars on one
+ * step axis (0 to B1's run length). B1's bar is the measured result the
+ * Moon-base card states (MOON_RESULT: still burning at step 1500); the
+ * what-if's bar is the live run, stopping where the sample was used up.
+ */
+export function MoonBars({ step, runSteps, consumedStep, finished }: { step: number; runSteps: number; consumedStep: number | null; finished: boolean }) {
+  const pct = (s: number) => `${Math.max(0, Math.min(100, (100 * s) / runSteps))}%`;
+  const whatIfEnd = consumedStep ?? step;
+  const whatIfText = consumedStep !== null
+    ? `fully consumed by step ${consumedStep}`
+    : finished ? `still burning at step ${runSteps}` : `step ${step} of ${runSteps}…`;
+  const bar = (key: 'nasa' | 'whatif', label: string, end: number, text: string, color: string) => (
+    <div data-moon-bar={key} data-step={end} className="space-y-1">
+      <div className="flex items-baseline justify-between gap-2 text-[11px]">
+        <span style={{ color: C.fg }}>{label}</span>
+        <span className="text-right tabular-nums" style={{ color: C.muted }} data-moon-bar-text>{text}</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full" style={{ background: C.chip }}>
+        <span className="block h-full rounded-full" style={{ width: pct(end), background: color }} />
+      </div>
+    </div>
+  );
+  return (
+    <div id="moon-bars" className="space-y-2 rounded-xl border p-3" style={{ borderColor: C.line, background: C.ink }}>
+      <div className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>How long the sample lasted (steps 0 to {runSteps})</div>
+      {bar('nasa', "B1 at NASA's conditions", MOON_RESULT.nasaStillBurningAt, `still burning at step ${MOON_RESULT.nasaStillBurningAt}`, C.muted)}
+      {bar('whatif', 'What-if: 34% O2, 0.17 g', whatIfEnd, whatIfText, C.amber)}
+    </div>
+  );
+}
 
 /** How often the live block re-reads the engine. */
 const LIVE_MS = 250;
@@ -463,6 +496,12 @@ export default function PresetsPanel({
               : live.outcomeCode === 0 || live.outcomeStep === 0 ? live.outcomeName : `${live.outcomeName} (step ${live.outcomeStep})`)}
           {row('NASA result', 'none: no test was run at these conditions')}
         </div>
+        <MoonBars
+          step={live.step}
+          runSteps={live.runSteps}
+          consumedStep={live.outcomeCode === OUTCOME.BURNED_OUT ? live.outcomeStep : null}
+          finished={live.finished}
+        />
       </div>
     ) : live?.kind === 'demo' ? (
       <div id="preset-live" data-demo="cfig" className="flex flex-col gap-2">
