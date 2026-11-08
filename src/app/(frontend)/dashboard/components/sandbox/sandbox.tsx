@@ -5,9 +5,10 @@ import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
 import { Engine, CFIG_VISUAL_DEMO, FIDELITY, LIGHT, PARAM, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
 import { StepClock } from './engine/clock';
-import { Tabs, RunBar, ViewBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
+import { Tabs, RunBar, ViewBar, ZoomBar, ExposureBar, BuildPanel, WorldPanel, useControls } from './view/Controls';
+import type { Exposure } from './view/colors';
 import PresetsPanel, { type PresetFocus } from './view/PresetsPanel';
-import { fitCell } from './view/fit';
+import { fitCell, sampleCentre, type Zoom } from './view/fit';
 import { AIR_COLOUR } from './view/theme';
 import { buildReadingIndex } from './view/nasaReadings';
 import type { WorkspaceLinks } from '../workspace/links';
@@ -56,6 +57,17 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   const [presetPlaying, setPresetPlaying] = useState(false);
   const [behind, setBehind] = useState(false);
   const [cell, setCell] = useState(4);
+  // Display zoom, centred on the sample and its fire (its fuel cells and anything
+  // over 400 K, found when zoom is picked or a preset loads; it doesn't follow
+  // the flame between clicks, so the view stays still).
+  const [zoom, setZoomState] = useState<Zoom>(1);
+  const [zoomFocus, setZoomFocus] = useState<{ x: number; y: number } | undefined>(undefined);
+  const recentre = useCallback(() => {
+    if (engine) setZoomFocus(sampleCentre(engine.grid.fuel, engine.width, engine.height, engine.grid.temperature));
+  }, [engine]);
+  const setZoom = useCallback((z: Zoom) => { recentre(); setZoomState(z); }, [recentre]);
+  // Camera view exposure (display only): ×1 is the game's look.
+  const [exposure, setExposure] = useState<Exposure>(1);
   const c = useControls();
   const clock = useRef(new StepClock());
   const rootRef = useRef<HTMLDivElement>(null);
@@ -116,9 +128,10 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     scenario.current = null;
     engine.cfigLoad(CFIG_VISUAL_DEMO);
     clock.current.reset();
+    recentre();
     cr.current.setView('temperature');
     cr.current.setPlaying(true);
-  }, [engine]);
+  }, [engine, recentre]);
 
   // Load a preset. "Load & Run" plays it; "Load (standby)" only loads it.
   // Every preset load switches to the Temperature view, where a burning sample
@@ -128,9 +141,10 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     scenario.current = null;
     engine.loadPreset(id, lighting);
     clock.current.reset();
+    recentre();
     cr.current.setView('temperature');
     cr.current.setPlaying(play);
-  }, [engine]);
+  }, [engine, recentre]);
 
   // The Moon-base what-if (see MOON): B1, then only oxygen and gravity changed.
   const loadMoon = useCallback(() => {
@@ -145,13 +159,15 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
     engine.refillAir();
     scenario.current = { start: engine.stepCount, runSteps: engine.preset(id).runSteps };
     clock.current.reset();
+    recentre();
     cr.current.setView('temperature');
     cr.current.setPlaying(true);
-  }, [engine]);
+  }, [engine, recentre]);
 
   const reset = useCallback(() => {
     scenario.current = null;
     engine?.reset();
+    setZoomState(1); // an empty chamber: back to the whole view
   }, [engine]);
 
   // A link from another tab:
@@ -232,7 +248,9 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                 onStep={onStep} onReset={reset}
                 behind={behind}
               />
-              <ViewBar view={c.view} setView={c.setView} />
+              <ViewBar view={c.view} setView={c.setView} exposure={exposure} />
+              {c.view === 'camera' && <ExposureBar exposure={exposure} setExposure={setExposure} />}
+              <ZoomBar zoom={zoom} setZoom={setZoom} />
               <Tabs tabs={TABS} active={c.tab} onChange={c.setTab} />
             </div>
 
@@ -245,6 +263,9 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
                 onFrame={onFrame}
                 onStroke={onStroke}
                 cell={cell}
+                zoom={zoom}
+                focus={zoomFocus}
+                exposure={exposure}
                 airColour={AIR_COLOUR}
                 className="shrink-0 outline outline-1 outline-line"
               />

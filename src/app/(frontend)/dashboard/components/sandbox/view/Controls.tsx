@@ -6,7 +6,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
-import { VIEWS, SCALES, sample, type View } from './colors';
+import { VIEWS, SCALES, EXPOSURES, sample, type Exposure, type View } from './colors';
+import { ZOOMS, type Zoom } from './fit';
 import { AIR_COLOUR } from './theme';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
 
@@ -152,8 +153,37 @@ export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, o
   );
 }
 
+// ---- Zoom (display only) ------------------------------------------------------------
+export function ZoomBar({ zoom, setZoom }: { zoom: Zoom; setZoom: (z: Zoom) => void }) {
+  return (
+    <div id="zoom-bar" role="group" aria-label="Zoom (display only)" className="flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>Zoom</span>
+      {ZOOMS.map((z) => (
+        <button key={z} className={pill} style={pillState(z === zoom)} onClick={() => setZoom(z)} aria-pressed={z === zoom} data-zoom={z}>
+          {z}x
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---- Camera exposure (display only) ---------------------------------------------------
+export function ExposureBar({ exposure, setExposure }: { exposure: Exposure; setExposure: (e: Exposure) => void }) {
+  return (
+    <div id="exposure-bar" role="group" aria-label="Camera exposure (display only)" className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>Exposure</span>
+      {EXPOSURES.map((e) => (
+        <button key={e} className={pill} style={pillState(e === exposure)} onClick={() => setExposure(e)} aria-pressed={e === exposure} data-exposure={e}>
+          ×{e}
+        </button>
+      ))}
+      <span className="text-[10px]" style={{ color: C.muted }}>display only: brightens the glow on the same colour scale</span>
+    </div>
+  );
+}
+
 // ---- Views + legend ---------------------------------------------------------------
-export function ViewBar({ view, setView }: { view: View; setView: (v: View) => void }) {
+export function ViewBar({ view, setView, exposure = 1 }: { view: View; setView: (v: View) => void; exposure?: number }) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
       <div id="view-bar" className="flex min-w-0 flex-wrap gap-1.5">
@@ -163,13 +193,14 @@ export function ViewBar({ view, setView }: { view: View; setView: (v: View) => v
           </button>
         ))}
       </div>
-      <Legend view={view} />
+      <Legend view={view} exposure={exposure} />
     </div>
   );
 }
 
-// A colour ramp under the canvas for every view but Material.
-function Legend({ view }: { view: View }) {
+// A colour ramp under the canvas for every view but Material. In the Camera
+// view with an exposure, the same ramp now stands for glow 0 to 1/exposure.
+function Legend({ view, exposure = 1 }: { view: View; exposure?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const scale = view === 'material' ? undefined : SCALES[view];
 
@@ -185,7 +216,8 @@ function Legend({ view }: { view: View }) {
   }, [scale]);
 
   if (!scale) return <div id="legend" />;
-  const lo = scale.stops[0][0], hi = scale.stops[scale.stops.length - 1][0];
+  const exposed = view === 'camera' && exposure > 1;
+  const lo = scale.stops[0][0], hi = exposed ? Number((scale.stops[scale.stops.length - 1][0] / exposure).toPrecision(3)) : scale.stops[scale.stops.length - 1][0];
   return (
     <div className="flex w-full min-w-0 flex-col gap-1">
       <div id="legend" data-view={view} className="flex items-center gap-2 text-[10px] tabular-nums" style={{ color: C.muted }}>
@@ -193,7 +225,7 @@ function Legend({ view }: { view: View }) {
         {/* The ramp is drawn 260x1; CSS stretches that single row into a readable band. */}
         <canvas ref={ref} width={260} height={1} className="h-2 min-w-0 flex-1 rounded-full" />
         <span>{hi}</span>
-        <span className="whitespace-nowrap">{scale.unit}</span>
+        <span className="whitespace-nowrap">{scale.unit}{exposed ? ` (exposure ×${exposure})` : ''}</span>
       </div>
       {/* A label that must be read with the view (CO: the engine makes it by a rule, not chemistry). */}
       {scale.note && (
