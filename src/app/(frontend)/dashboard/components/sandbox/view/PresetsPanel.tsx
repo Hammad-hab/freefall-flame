@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, NASA, FIDELITY, OUTCOME, PARAM, SAFFIRE_FIRST, WIND_PER_CM_S, type Light, LIGHT, type PresetInfo } from '../engine/Engine';
 import { matchVerdict, type Verdict } from '../engine/scoring';
 import { formatReading, readingsFor, type ReadingIndex } from './nasaReadings';
+import { fillView } from './colors';
 import scorecard from '../scorecard.json';
 import { isPlainClick, linkProps, type WorkspaceLinks } from '../../workspace/links';
 import { C, panelCls, panelStyle } from '../../ui/chart-theme';
@@ -36,6 +37,26 @@ import { MOON_RESULT } from '../../investigations/MoonBaseCard';
  * Moon-base card states (MOON_RESULT: still burning at step 1500); the
  * what-if's bar is the live run, stopping where the sample was used up.
  */
+/** The what-if's last frame with fuel left, as the Temperature view drew it (saved during the run). */
+function MoonFrame({ width, height, frame }: { width: number; height: number; frame: { step: number; pixels: Uint8ClampedArray } }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = ref.current?.getContext('2d');
+    if (!ctx) return;
+    const img = ctx.createImageData(width, height);
+    img.data.set(frame.pixels);
+    ctx.putImageData(img, 0, 0);
+  }, [frame, width, height]);
+  return (
+    <figure id="moon-frame" data-step={frame.step} className="space-y-1">
+      <canvas ref={ref} width={width} height={height} className="block w-full rounded-lg border" style={{ borderColor: C.line, imageRendering: 'pixelated' }} />
+      <figcaption className="text-[10px]" style={{ color: C.muted }}>
+        The what-if&apos;s last frame with fuel left, step {frame.step} (Temperature view, saved during the run)
+      </figcaption>
+    </figure>
+  );
+}
+
 export function MoonBars({ step, runSteps, consumedStep, finished }: { step: number; runSteps: number; consumedStep: number | null; finished: boolean }) {
   const pct = (s: number) => `${Math.max(0, Math.min(100, (100 * s) / runSteps))}%`;
   const whatIfEnd = consumedStep ?? step;
@@ -342,9 +363,27 @@ export default function PresetsPanel({
   const [lighting, setLighting] = useState<Light>(LIGHT.OPPOSED);
   const [live, setLive] = useState<Live | null>(() => readLive(engine, scenarioStatus));
 
+  // The Moon-base what-if's last frame with fuel left (Temperature view), kept while it
+  // runs so its end can show the sample's last moment next to the comparison bars.
+  const moonFrame = useRef<{ step: number; pixels: Uint8ClampedArray } | null>(null);
+
   // Re-read the engine while the panel is open, so the readout follows the run.
   const refresh = useCallback(() => {
-    setLive((prev) => { const next = readLive(engine, scenarioRef.current); return sameLive(prev, next) ? prev : next; });
+    const next = readLive(engine, scenarioRef.current);
+    if (next?.kind === 'moon') {
+      const kept = moonFrame.current;
+      if (kept && next.step < kept.step) moonFrame.current = null; // the what-if started again
+      // Only while some cell still holds fuel (the engine settles "burned out" a little later
+      // than the fuel runs out, and dates it back), so the frame is the sample's last moment.
+      let fuelLeft = false;
+      for (let i = 0; i < engine.cells && !fuelLeft; i++) fuelLeft = engine.grid.fuel[i] > 0;
+      if (fuelLeft && next.step > 0) {
+        const pixels = moonFrame.current?.pixels ?? new Uint8ClampedArray(engine.cells * 4);
+        fillView(engine, 'temperature', pixels);
+        moonFrame.current = { step: next.step, pixels };
+      }
+    } else moonFrame.current = null;
+    setLive((prev) => (sameLive(prev, next) ? prev : next));
   }, [engine]);
   useEffect(() => {
     const id = setInterval(refresh, LIVE_MS);
@@ -502,6 +541,9 @@ export default function PresetsPanel({
           consumedStep={live.outcomeCode === OUTCOME.BURNED_OUT ? live.outcomeStep : null}
           finished={live.finished}
         />
+        {live.outcomeCode === OUTCOME.BURNED_OUT && moonFrame.current && (
+          <MoonFrame width={engine.width} height={engine.height} frame={moonFrame.current} />
+        )}
       </div>
     ) : live?.kind === 'demo' ? (
       <div id="preset-live" data-demo="cfig" className="flex flex-col gap-2">
