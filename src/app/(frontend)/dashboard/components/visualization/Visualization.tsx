@@ -23,6 +23,7 @@ import { C, panelCls, panelStyle } from "../ui/chart-theme";
 import GenericCompare from "./GenericCompare";
 import { DataTable } from "./DataTable";
 import { FilterPill, Notice, StatCard } from "./primitives";
+import type { WorkspaceLinks } from "../workspace/links";
 import {
   TestsPerMaterialChart,
   MeanO2ByMaterialChart,
@@ -30,6 +31,8 @@ import {
   MeanCo2ByMaterialChart,
   ThicknessDistributionChart,
   PrincipalInvestigatorChart,
+  RodDiameterChart,
+  OutcomeChart,
 } from "./MaterialCharts";
 import { GasBeforeAfterChart, VelocityVsO2Chart } from "./GasCharts";
 import {
@@ -38,7 +41,9 @@ import {
   gasComposition,
   materialDistribution,
   mean,
+  outcomeCounts,
   principalInvestigatorBreakdown,
+  rodDiameterDistribution,
   summaryStats,
   thicknessDistribution,
   velocityVsO2,
@@ -47,9 +52,12 @@ import {
 export default function Visualization({
   dataset,
   rows,
+  links,
 }: {
   dataset: DatasetMeta
   rows: DataRow[];
+  /** Links between the Data Table and the sandbox (workspace/links.ts). */
+  links?: WorkspaceLinks;
 }) {
   // Resolve every combustion role through the shared, validated resolver.
   const { resolutions, warnings } = useMemo(() => resolveBass2Columns(dataset.columns), [dataset.columns]);
@@ -105,6 +113,8 @@ export default function Visualization({
   const co2ByMaterial = useMemo(() => gasByMaterial(filtered, (r) => r.co2Produced), [filtered]);
   const excluded = useMemo(() => excludedByMaterial(filtered), [filtered]);
   const thicknessDist = useMemo(() => thicknessDistribution(filtered), [filtered]);
+  const rodDist = useMemo(() => rodDiameterDistribution(filtered), [filtered]);
+  const outcomes = useMemo(() => outcomeCounts(filtered), [filtered]);
   const velVsO2 = useMemo(() => velocityVsO2(filtered), [filtered]);
   const piBreakdown = useMemo(() => principalInvestigatorBreakdown(filtered), [filtered]);
   const gasComp = useMemo(() => gasComposition(filtered), [filtered]);
@@ -172,7 +182,7 @@ export default function Visualization({
           <button
             onClick={resetFilters}
             className="mt-3 rounded-full px-4 py-2 text-[12px] transition-opacity hover:opacity-90"
-            style={{ background: C.blue, color: C.ink }}
+            style={{ background: C.blue, color: C.on }}
           >
             Reset filters
           </button>
@@ -257,13 +267,18 @@ export default function Visualization({
             {/* CO2 produced by material */}
             {co2ByMaterial.length > 0 && <MeanCo2ByMaterialChart data={co2ByMaterial} excluded={excluded} />}
 
-            {/* Thickness distribution */}
+            {/* Thickness distribution, and the rods beside it (rods have a diameter, not a thickness) */}
             {thicknessDist.length > 0 && thicknessCol && (
               <ThicknessDistributionChart
                 data={thicknessDist}
                 unit={thicknessCol.unit ? String(thicknessCol.unit) : "mm"}
+                rodsElsewhere={rodDist.reduce((s, d) => s + d.value, 0)}
               />
             )}
+            {rodDist.length > 0 && <RodDiameterChart data={rodDist} />}
+
+            {/* NASA's stated outcome: the five codes, with counts (only with an outcome column) */}
+            {outcomes.length > 0 && <OutcomeChart data={outcomes} />}
 
             {/* Starting air velocity vs O2 consumed — explicitly a starting measurement */}
             {velVsO2.length > 2 && airVelCol && <VelocityVsO2Chart data={velVsO2} />}
@@ -275,7 +290,7 @@ export default function Visualization({
           </div>
 
           {/* Data table — shows censored/out-of-range markers instead of hiding them */}
-          <DataTable filtered={filtered} rows={rows} resolutions={resolutions} />
+          <DataTable filtered={filtered} rows={rows} resolutions={resolutions} all={parsed} links={links} />
         </>
       ) : (
         /* Graceful degradation: required BASS-II columns are missing. */

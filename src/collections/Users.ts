@@ -5,6 +5,12 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
   },
+  access: {
+     create: () => true, // public sign-up
+     // Without this, ANY logged-in user can open /admin.
+     // Tighten it once you have a role (see the note below).
+     // admin: ({ req }) => req.user?.role === 'admin',
+   },
   auth: true,
   fields: [
     // Email added by default

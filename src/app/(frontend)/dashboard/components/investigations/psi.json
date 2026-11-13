@@ -1,0 +1,1428 @@
+{
+  "about": "Built by src/scripts/psi-catalogue.ts from the cleaned NASA PSI tables in data/psi/ (copied unchanged from nasa-project/data). Every number is computed from those tables. Do not edit by hand: change the script or data/psi/sources.json.",
+  "catalogueSha256": "f66d8de77b0c5848d27bfc47f5660ece47df7669d90afcdce38a89e3f112abc1",
+  "reference": {
+    "iss": {
+      "label": "ISS cabin",
+      "text": "about 21% O2 at 1 atm (14.7 psia)",
+      "rule": "oxygen range overlaps 20.5-22.5% and pressure range overlaps 0.95-1.05 atm",
+      "o2Pct": [
+        20.5,
+        22.5
+      ],
+      "pressureAtm": [
+        0.95,
+        1.05
+      ]
+    },
+    "exploration": {
+      "label": "Exploration atmosphere",
+      "text": "32-34% O2 at 8.0-8.2 psia (0.54-0.56 atm). The Exploration Atmospheres Working Group recommended 8.0 psia / 32%; 8.2 psia / 34% is a proposed refinement.",
+      "source": "Norcross et al. 2013, \"Effects of the 8 psia / 32% O2 Atmosphere on the Human in the Spaceflight Environment\", NTRS 20130013505",
+      "rule": "the table goes to at least 30% O2 or down to at most 0.7 atm",
+      "minO2Pct": 30,
+      "maxPressureAtm": 0.7
+    },
+    "ventilation": {
+      "label": "Cabin ventilation",
+      "text": "typically about 7.6-20 cm/s (15-40 ft/min); the lower figure is the classic station minimum",
+      "source": "SAE 932191",
+      "cmS": [
+        7.6,
+        20
+      ]
+    }
+  },
+  "investigations": [
+    {
+      "id": "bass-ii",
+      "name": "BASS-II",
+      "psiId": "PSI-25",
+      "fuelPhase": "solid",
+      "hardware": "MSG flow duct",
+      "tests": 129,
+      "granularity": "per test",
+      "rows": 129,
+      "flaggedRows": 47,
+      "fuels": "PMMA (films, slabs, rods), SIBAL, Nomex, wax",
+      "o2Pct": "13.6-22.2",
+      "pressure": "~1 atm",
+      "flowCmS": "0-53",
+      "outcomeRecorded": "partial (26 of 129)",
+      "safetyTheme": "prevention: material flammability vs oxygen and ventilation",
+      "simulation": {
+        "status": "scored",
+        "label": "Simulated and scored",
+        "reason": "NASA's table gives each test's oxygen and its airflow readings over time, so each test can be set up as a preset: 129 presets. NASA states an outcome for 26 of them, so those can be scored: 4 match (B14, B18, B19, O4)."
+      },
+      "cleanedFile": "bass2_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "NASA's stated outcome",
+          "total": 129,
+          "items": [
+            {
+              "value": "not stated",
+              "count": 103
+            },
+            {
+              "value": "extinguished low flow",
+              "count": 17
+            },
+            {
+              "value": "blowoff high flow",
+              "count": 7
+            },
+            {
+              "value": "no ignition",
+              "count": 1
+            },
+            {
+              "value": "not sustained",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "kind": "note",
+          "label": "Our simulator (not NASA data)",
+          "text": "The Flame in Freefall sandbox matches 4 of 26 tests with a stated outcome (B14, B18, B19, O4)."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-25",
+          "table": "bass2_tests_clean.csv"
+        },
+        {
+          "kind": "paper",
+          "title": "Burning and Suppression of Solids–II (BASS-II) Summary Report",
+          "ntrsId": "20210011385",
+          "url": "https://ntrs.nasa.gov/citations/20210011385"
+        },
+        {
+          "kind": "paper",
+          "title": "Results from On-Board CSA-CP and CDM Sensor Readings During the Burning and Suppression of Solids II (BASS-II) Experiment in the Microgravity Science Glovebox (MSG)",
+          "ntrsId": "20150019858",
+          "url": "https://ntrs.nasa.gov/citations/20150019858"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 13.6-22.2 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0-53 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "129 tests in the table (per test); outcomes: partial (26 of 129)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "prevention: which solids keep burning at which oxygen and air speed, in a spacecraft-like flow duct"
+        }
+      }
+    },
+    {
+      "id": "bass",
+      "name": "BASS",
+      "psiId": "PSI-26",
+      "fuelPhase": "solid",
+      "hardware": "MSG flow duct",
+      "tests": 121,
+      "granularity": "per test",
+      "rows": 121,
+      "flaggedRows": 31,
+      "fuels": "PMMA spheres/slabs, SIBAL, Nomex, Ultem, wax candles and slabs",
+      "o2Pct": "not in table",
+      "pressure": "not in table",
+      "flowCmS": "not in table",
+      "outcomeRecorded": "no",
+      "safetyTheme": "prevention: material flammability",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "The table records only the date and the sample (material, shape and size, read from the sample name): no oxygen, airflow or outcome, so there is nothing to set up or check against."
+      },
+      "cleanedFile": "bass_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Samples by material",
+          "total": 121,
+          "items": [
+            {
+              "value": "PMMA",
+              "count": 78
+            },
+            {
+              "value": "SIBAL fabric",
+              "count": 12
+            },
+            {
+              "value": "Japan wax",
+              "count": 10
+            },
+            {
+              "value": "paraffin wax",
+              "count": 10
+            },
+            {
+              "value": "Nomex",
+              "count": 6
+            },
+            {
+              "value": "wax candle (type not stated)",
+              "count": 3
+            },
+            {
+              "value": "Ultem",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-26",
+          "table": "bass_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex, Ultem"
+        },
+        "atmosphere": {
+          "score": 0,
+          "reason": "O2 not in the table, pressure not in the table: does not cover ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "flow not in the table"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "121 tests in the table (per test); outcomes: no"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "the same question for more materials, but the table holds only dates and samples; results are in the reports"
+        }
+      }
+    },
+    {
+      "id": "saffire-i-iii",
+      "name": "Saffire I-III",
+      "psiId": "PSI-98/99/100",
+      "fuelPhase": "solid",
+      "hardware": "Cygnus cargo vehicle (large scale)",
+      "tests": 13,
+      "granularity": "per sample",
+      "rows": 13,
+      "flaggedRows": 10,
+      "fuels": "SIBAL fabric, silicone, PMMA, Nomex",
+      "o2Pct": "21.5-22.1",
+      "pressure": "~1 atm",
+      "flowCmS": "20-30",
+      "outcomeRecorded": "yes (burn time, spread; II also 1-g comparison)",
+      "safetyTheme": "prevention: spacecraft-scale fire growth",
+      "simulation": {
+        "status": "by-hand",
+        "label": "Simulated, compared by hand",
+        "reason": "The tables give burn times (Saffire-I and -II) and spread rates (Saffire-II), not outcome codes, so the 6 runnable presets were compared with NASA's results by hand: 0 of 6 reproduce them. The 4 silicone samples (Saffire-II) are skipped because the engine has no silicone; Saffire-III's table has no results."
+      },
+      "cleanedFile": "saffire_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Samples by mission",
+          "total": 13,
+          "items": [
+            {
+              "value": "Saffire-II",
+              "count": 9
+            },
+            {
+              "value": "Saffire-I",
+              "count": 2
+            },
+            {
+              "value": "Saffire-III",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Samples by material",
+          "total": 13,
+          "items": [
+            {
+              "value": "SIBAL fabric (cotton-fibreglass)",
+              "count": 6
+            },
+            {
+              "value": "Silicone",
+              "count": 4
+            },
+            {
+              "value": "PMMA",
+              "count": 2
+            },
+            {
+              "value": "PMMA & Nomex",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "kind": "range",
+          "label": "Burn time",
+          "unit": "s",
+          "min": 0,
+          "max": 900,
+          "n": 11
+        },
+        {
+          "kind": "count",
+          "label": "Flame spread in microgravity, as written in the table",
+          "total": 9,
+          "items": [
+            {
+              "value": "n/a",
+              "count": 4
+            },
+            {
+              "value": "Note 4",
+              "count": 2
+            },
+            {
+              "value": "2.1 mm/s",
+              "count": 1
+            },
+            {
+              "value": "2.6 mm/s",
+              "count": 1
+            },
+            {
+              "value": "n/a (Nomex)",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-98/99/100",
+          "table": "saffire_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: PMMA, SIBAL, Nomex, silicone"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21.5-22.1 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "20-30 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "13 tests in the table (per sample), fewer than 100; outcomes: yes (burn time, spread; II also 1-g comparison)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "prevention: how a large fire grows inside a real spacecraft"
+        }
+      }
+    },
+    {
+      "id": "flex",
+      "name": "FLEX",
+      "psiId": "PSI-69",
+      "fuelPhase": "liquid droplet",
+      "hardware": "CIR droplet apparatus (MDCA)",
+      "tests": 274,
+      "granularity": "per test",
+      "rows": 274,
+      "flaggedRows": 23,
+      "fuels": "methanol, heptane",
+      "o2Pct": "12-34",
+      "pressure": "0.692-3.05 atm",
+      "flowCmS": "0 (quiescent)",
+      "outcomeRecorded": "yes (extinction/completion/disruption, extinction diameter, burning rate)",
+      "safetyTheme": "suppression: CO2 and helium dilution",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G)."
+      },
+      "cleanedFile": "flex_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Outcome",
+          "total": 274,
+          "items": [
+            {
+              "value": "extinction",
+              "count": 186
+            },
+            {
+              "value": "disruption",
+              "count": 61
+            },
+            {
+              "value": "completion",
+              "count": 27
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Diluent added to the chamber",
+          "total": 274,
+          "items": [
+            {
+              "value": "CO2",
+              "count": 123
+            },
+            {
+              "value": "none",
+              "count": 101
+            },
+            {
+              "value": "He",
+              "count": 50
+            }
+          ]
+        },
+        {
+          "kind": "range",
+          "label": "Burn time",
+          "unit": "s",
+          "min": 0.3,
+          "max": 39.2,
+          "n": 268
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-69",
+          "table": "flex_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: methanol, heptane"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 12-34 %, pressure 0.692-3.05 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0 (quiescent): still air only, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "274 tests in the table (per test); outcomes: yes (extinction/completion/disruption, extinction diameter, burning rate)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "suppression: whether CO2 or helium dilution puts a flame out"
+        }
+      }
+    },
+    {
+      "id": "flex-2",
+      "name": "FLEX-2",
+      "psiId": "PSI-68",
+      "fuelPhase": "liquid droplet",
+      "hardware": "CIR droplet apparatus (MDCA)",
+      "tests": 0,
+      "granularity": "summary of ranges",
+      "rows": 8,
+      "flaggedRows": 8,
+      "fuels": "octanes, heptane, decane, ethanol, mixtures",
+      "o2Pct": "17-30",
+      "pressure": "0.5-3 atm",
+      "flowCmS": "0.1-5",
+      "outcomeRecorded": "no",
+      "safetyTheme": "fundamental droplet combustion",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G). Its table also holds ranges per fuel only, no single tests."
+      },
+      "cleanedFile": "flex2_summary_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Fuels (ranges only, no single tests)",
+          "total": 8,
+          "items": [
+            {
+              "value": "Decane (pure)",
+              "count": 1
+            },
+            {
+              "value": "Ethanol (pure)",
+              "count": 1
+            },
+            {
+              "value": "Heptane (50%) IsoOctane (50%) (mixture)",
+              "count": 1
+            },
+            {
+              "value": "Heptane (pure)",
+              "count": 1
+            },
+            {
+              "value": "IsoOctane (pure)",
+              "count": 1
+            },
+            {
+              "value": "n-Octane (pure)",
+              "count": 1
+            },
+            {
+              "value": "Propanol (80%) Glycerol (20%) (mixture)",
+              "count": 1
+            },
+            {
+              "value": "Propanol (95%) Glycerol (5%) (mixture)",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-68",
+          "table": "flex2_summary_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: octanes, heptane, decane, ethanol, mixtures"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 17-30 %, pressure 0.5-3 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0.1-5 cm/s: below the 7.6 cm/s ventilation minimum, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (summary of ranges), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental droplet combustion; only ranges in the table"
+        }
+      }
+    },
+    {
+      "id": "cfi",
+      "name": "CFI",
+      "psiId": "PSI-39",
+      "fuelPhase": "liquid droplet",
+      "hardware": "CIR droplet apparatus (MDCA)",
+      "tests": 79,
+      "granularity": "per test",
+      "rows": 79,
+      "flaggedRows": 4,
+      "fuels": "n-dodecane and dodecane/iso-dodecane mixes",
+      "o2Pct": "17-21",
+      "pressure": "0.5-5 atm",
+      "flowCmS": "0",
+      "outcomeRecorded": "no",
+      "safetyTheme": "cool flames (low-temperature chemistry)",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Droplet flames: the engine has no droplet model. That stage was dropped once gas flames proved not testable at our 2 mm cells (see CFI-G). Its table (dodecane droplets, cool flames) records no outcomes."
+      },
+      "cleanedFile": "cfi_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Tests by fuel",
+          "total": 79,
+          "items": [
+            {
+              "value": "[.60]/[.40] C12H26/iso-dodecane",
+              "count": 41
+            },
+            {
+              "value": "C12H26",
+              "count": 22
+            },
+            {
+              "value": "[.75]/[.25] C12H26/iso-dodecane",
+              "count": 16
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-39",
+          "table": "cfi_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: n-dodecane and dodecane/iso-dodecane mixes"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 17-21 %, pressure 0.5-5 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "0 cm/s: below the 7.6 cm/s ventilation minimum, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "79 tests in the table (per test), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "cool-flame chemistry, far from a cabin fire decision"
+        }
+      }
+    },
+    {
+      "id": "cfi-g",
+      "name": "CFI-G (ACME)",
+      "psiId": "PSI-159",
+      "fuelPhase": "gas",
+      "hardware": "CIR ACME modular set",
+      "tests": 333,
+      "granularity": "per test",
+      "rows": 333,
+      "flaggedRows": 2,
+      "fuels": "ethane, propane, butane (pure and diluted)",
+      "o2Pct": "12-85",
+      "pressure": "0.495-3.31 bar",
+      "flowCmS": "burner flow (mg/s)",
+      "outcomeRecorded": "yes (ignition, self-extinction vs flow-terminated, burn time, cool flames)",
+      "safetyTheme": "high-oxygen flammability (Moon-base levels)",
+      "simulation": {
+        "status": "not-testable",
+        "label": "Built, not testable",
+        "reason": "Gas flames were built (fuel gas, a burner, a one-step reaction) and the 43 CFI-G presets run, but none of them keeps a flame going. A radiation audit ruled radiation out as the cause; the likely cause is our 2 mm cell, coarser than a real weak flame. Only the visual demo (radiation off, not NASA-scored) shows a flame."
+      },
+      "cleanedFile": "cfig_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Flame type",
+          "total": 333,
+          "items": [
+            {
+              "value": "normal (fuel out of burner)",
+              "count": 179
+            },
+            {
+              "value": "inverse (oxygen out of burner)",
+              "count": 154
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Outcome, all tests",
+          "total": 333,
+          "items": [
+            {
+              "value": "self extinguished",
+              "count": 175
+            },
+            {
+              "value": "flow terminated",
+              "count": 88
+            },
+            {
+              "value": "no ignition",
+              "count": 62
+            },
+            {
+              "value": "flash only",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Outcome, normal flames at 30% O2 or more",
+          "total": 115,
+          "items": [
+            {
+              "value": "self extinguished",
+              "count": 61
+            },
+            {
+              "value": "flow terminated",
+              "count": 30
+            },
+            {
+              "value": "no ignition",
+              "count": 24
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-159",
+          "table": "cfig_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethane, propane, butane (pure and diluted)"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 12-85 %, pressure 0.489-3.267 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow (mg/s): no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 2,
+          "reason": "333 tests in the table (per test); outcomes: yes (ignition, self-extinction vs flow-terminated, burn time, cool flames)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "flammability at exploration oxygen levels (30% and more)"
+        }
+      }
+    },
+    {
+      "id": "flame-design",
+      "name": "Flame Design (ACME)",
+      "psiId": "PSI-10",
+      "fuelPhase": "gas",
+      "hardware": "CIR ACME modular set",
+      "tests": 327,
+      "granularity": "per test",
+      "rows": 327,
+      "flaggedRows": 71,
+      "fuels": "ethylene, propane",
+      "o2Pct": "19.8-85",
+      "pressure": "0.426-3.02 atm",
+      "flowCmS": "burner flow (mg/s)",
+      "outcomeRecorded": "no",
+      "safetyTheme": "soot control via flame structure",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table holds the conditions only."
+      },
+      "cleanedFile": "flame_design_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Flame type",
+          "total": 327,
+          "items": [
+            {
+              "value": "normal",
+              "count": 207
+            },
+            {
+              "value": "inverse",
+              "count": 120
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Tests by fuel",
+          "total": 327,
+          "items": [
+            {
+              "value": "C2H4",
+              "count": 307
+            },
+            {
+              "value": "C3H8",
+              "count": 20
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-10",
+          "table": "flame_design_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, propane"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 19.8-85 %, pressure 0.426-3.02 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow (mg/s): no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "327 tests in the table (per test); outcomes: no"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "soot control through flame structure; fundamental"
+        }
+      }
+    },
+    {
+      "id": "bre",
+      "name": "BRE (ACME)",
+      "psiId": "PSI-20",
+      "fuelPhase": "gas (emulating solids)",
+      "hardware": "CIR ACME modular set",
+      "tests": 0,
+      "granularity": "per test day (18 days)",
+      "rows": 18,
+      "flaggedRows": 18,
+      "fuels": "ethylene, methane",
+      "o2Pct": "21-40",
+      "pressure": "varied, not given",
+      "flowCmS": "still atmosphere",
+      "outcomeRecorded": "flames ignited per day only",
+      "safetyTheme": "material flammability in still air",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames standing in for solids: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only (flames ignited per day)."
+      },
+      "cleanedFile": "acme_bre_days_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Test days by fuel",
+          "total": 18,
+          "items": [
+            {
+              "value": "100% C2H4",
+              "count": 11
+            },
+            {
+              "value": "50% C2H4",
+              "count": 5
+            },
+            {
+              "value": "100% CH4",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "kind": "sum",
+          "label": "Flames ignited, all days",
+          "value": 194,
+          "n": 18
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-20",
+          "table": "acme_bre_days_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 1,
+          "reason": "gas (emulating solids): gas flames used to stand in for burning solids"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21-40 %, pressure not given: does not cover ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 1,
+          "reason": "still atmosphere: still air only, the ventilation-failure case"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (18 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "material flammability in still air, but through gas flames standing in for solids"
+        }
+      }
+    },
+    {
+      "id": "cld-flame",
+      "name": "CLD Flame (ACME)",
+      "psiId": "PSI-21",
+      "fuelPhase": "gas",
+      "hardware": "CIR ACME modular set",
+      "tests": 0,
+      "granularity": "per test day (32 days)",
+      "rows": 32,
+      "flaggedRows": 26,
+      "fuels": "methane, ethylene",
+      "o2Pct": "not in table",
+      "pressure": "not in table",
+      "flowCmS": "coflow",
+      "outcomeRecorded": "flames ignited per day only",
+      "safetyTheme": "fundamental laminar flames",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only."
+      },
+      "cleanedFile": "cld_flame_days_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Test days by fuel bottle",
+          "total": 32,
+          "items": [
+            {
+              "value": "40% CH4",
+              "count": 13
+            },
+            {
+              "value": "100% C2H4",
+              "count": 8
+            },
+            {
+              "value": "50% C2H4",
+              "count": 6
+            },
+            {
+              "value": "100% CH4",
+              "count": 3
+            },
+            {
+              "value": "30% C2H4",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "kind": "sum",
+          "label": "Flames ignited, all days",
+          "value": 344,
+          "n": 32
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-21",
+          "table": "cld_flame_days_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: methane, ethylene"
+        },
+        "atmosphere": {
+          "score": 0,
+          "reason": "O2 not in the table, pressure not in the table: does not cover ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "coflow: no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (32 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental laminar flames"
+        }
+      }
+    },
+    {
+      "id": "s-flame",
+      "name": "s-Flame (ACME)",
+      "psiId": "PSI-23",
+      "fuelPhase": "gas",
+      "hardware": "CIR ACME modular set",
+      "tests": 0,
+      "granularity": "per test day (18 days)",
+      "rows": 18,
+      "flaggedRows": 6,
+      "fuels": "ethylene, methane, hydrogen",
+      "o2Pct": "21-30",
+      "pressure": "~1 atm",
+      "flowCmS": "burner flow",
+      "outcomeRecorded": "flames ignited per day only",
+      "safetyTheme": "fundamental spherical flames, N2 vs He",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Spherical gas flames: the gas flames we built (see CFI-G) do not hold in our 2 mm cells, so this is not testable either. The table has day summaries only."
+      },
+      "cleanedFile": "acme_sflame_days_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Test days by atmosphere",
+          "total": 18,
+          "items": [
+            {
+              "value": "~21% O2 with N2",
+              "count": 8
+            },
+            {
+              "value": "~30% and ~21% O2 with He",
+              "count": 5
+            },
+            {
+              "value": "~21% O2 with He",
+              "count": 2
+            },
+            {
+              "value": "~30% O2 with He",
+              "count": 2
+            },
+            {
+              "value": "~30% O2 with N2",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "kind": "sum",
+          "label": "Flames ignited, all days",
+          "value": 276,
+          "n": 18
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-23",
+          "table": "acme_sflame_days_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, methane, hydrogen"
+        },
+        "atmosphere": {
+          "score": 2,
+          "reason": "O2 21-30 %, pressure 1 atm: covers ISS air; reaches the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 0,
+          "reason": "burner flow: no air speed comparable with cabin ventilation"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "0 tests in the table (per test day (18 days)), fewer than 100; outcomes: flames ignited per day only"
+        },
+        "decision": {
+          "score": 0,
+          "reason": "fundamental spherical flames (nitrogen against helium)"
+        }
+      }
+    },
+    {
+      "id": "spice",
+      "name": "SPICE",
+      "psiId": "PSI-107",
+      "fuelPhase": "gas jet",
+      "hardware": "MSG flow duct",
+      "tests": 469,
+      "granularity": "per flame condition",
+      "rows": 469,
+      "flaggedRows": 83,
+      "fuels": "ethylene, propane, propylene, methane",
+      "o2Pct": "21 (air)",
+      "pressure": "~1 atm",
+      "flowCmS": "0.66-85.3",
+      "outcomeRecorded": "no (smoke point not in table)",
+      "safetyTheme": "soot / smoke formation",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from gas jet flames: the engine's smoke is a single material (cooled flame gas) with no particles or soot, and the table holds the flame conditions, not the smoke points."
+      },
+      "cleanedFile": "spice_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Flame conditions by fuel",
+          "total": 469,
+          "items": [
+            {
+              "value": "75% Propylene",
+              "count": 135
+            },
+            {
+              "value": "Propylene",
+              "count": 122
+            },
+            {
+              "value": "50% Propylene",
+              "count": 111
+            },
+            {
+              "value": "Propane",
+              "count": 50
+            },
+            {
+              "value": "Ethylene",
+              "count": 47
+            },
+            {
+              "value": "Methane",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "kind": "range",
+          "label": "Air coflow (negative readings, flagged as sensor offset, left out)",
+          "unit": "cm/s",
+          "min": 0.66,
+          "max": 85.28,
+          "n": 436
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-107",
+          "table": "spice_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 0,
+          "reason": "model fuels only: ethylene, propane, propylene, methane"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0.66-85.3 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "469 tests in the table (per flame condition); outcomes: no (smoke point not in table)"
+        },
+        "decision": {
+          "score": 1,
+          "reason": "smoke formation, which bears on smoke detection, but no smoke point in the table"
+        }
+      }
+    },
+    {
+      "id": "same-r",
+      "name": "SAME-R",
+      "psiId": "PSI-101",
+      "fuelPhase": "smoke from heated materials",
+      "hardware": "MSG",
+      "tests": 109,
+      "granularity": "per run",
+      "rows": 109,
+      "flaggedRows": 109,
+      "fuels": "Kapton, silicone, lampwick, Teflon, Pyrell",
+      "o2Pct": "21 (air)",
+      "pressure": "~1 atm",
+      "flowCmS": "0-8.1",
+      "outcomeRecorded": "no (smoke measurements not in table)",
+      "safetyTheme": "detection: smoke particle properties",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from heated materials, not flames, for smoke detectors: the engine's smoke is a single material (cooled flame gas) with no particles or soot, and the table holds the heating conditions, not the smoke measurements."
+      },
+      "cleanedFile": "same_r_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Runs by material",
+          "total": 109,
+          "items": [
+            {
+              "value": "Kapton",
+              "count": 29
+            },
+            {
+              "value": "Silicone",
+              "count": 22
+            },
+            {
+              "value": "Lampwick",
+              "count": 20
+            },
+            {
+              "value": "Pyrell",
+              "count": 20
+            },
+            {
+              "value": "Teflon",
+              "count": 18
+            }
+          ]
+        },
+        {
+          "kind": "count",
+          "label": "Record type",
+          "total": 109,
+          "items": [
+            {
+              "value": "smoke generation run",
+              "count": 67
+            },
+            {
+              "value": "aged smoke reading",
+              "count": 42
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-101",
+          "table": "same_r_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: silicone, Kapton, Teflon, Pyrell, lampwick"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "0-8.1 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 1,
+          "reason": "109 tests in the table (per run); outcomes: no (smoke measurements not in table)"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "detection: the smoke particles that cabin smoke detectors must see"
+        }
+      }
+    },
+    {
+      "id": "same",
+      "name": "SAME",
+      "psiId": "PSI-102",
+      "fuelPhase": "smoke from heated materials",
+      "hardware": "MSG",
+      "tests": 8,
+      "granularity": "summary",
+      "rows": 8,
+      "flaggedRows": 4,
+      "fuels": "Teflon, Kapton, silicone, lampwick, dibutyl phthalate",
+      "o2Pct": "21 (air)",
+      "pressure": "~1 atm",
+      "flowCmS": "5-10",
+      "outcomeRecorded": "no",
+      "safetyTheme": "detection: smoke particle properties",
+      "simulation": {
+        "status": "none",
+        "label": "Not simulated",
+        "reason": "Smoke from heated materials, not flames, for smoke detectors: the engine's smoke is a single material (cooled flame gas) with no particles or soot."
+      },
+      "cleanedFile": "same_tests_clean.csv",
+      "facts": [
+        {
+          "kind": "count",
+          "label": "Samples by material",
+          "total": 8,
+          "items": [
+            {
+              "value": "Teflon",
+              "count": 4
+            },
+            {
+              "value": "Dibutyl Phthalate",
+              "count": 1
+            },
+            {
+              "value": "Kapton",
+              "count": 1
+            },
+            {
+              "value": "Lampwick",
+              "count": 1
+            },
+            {
+              "value": "Silicone Rubber",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "kind": "psi",
+          "psiId": "PSI-102",
+          "table": "same_tests_clean.csv"
+        }
+      ],
+      "scores": {
+        "materials": {
+          "score": 2,
+          "reason": "spacecraft solids in the table: silicone, Kapton, Teflon, lampwick"
+        },
+        "atmosphere": {
+          "score": 1,
+          "reason": "O2 21 %, pressure 1 atm: covers ISS air; does not reach the exploration atmosphere"
+        },
+        "airflow": {
+          "score": 2,
+          "reason": "5-10 cm/s overlaps cabin ventilation (7.6-20 cm/s)"
+        },
+        "richness": {
+          "score": 0,
+          "reason": "8 tests in the table (summary), fewer than 100; outcomes: no"
+        },
+        "decision": {
+          "score": 2,
+          "reason": "detection: smoke from heated spacecraft materials"
+        }
+      }
+    }
+  ],
+  "moonBase": {
+    "o2Pct": 34,
+    "gravityG": 0.17,
+    "solidMaxO2Pct": 22.2,
+    "saffireMaxO2Pct": 22.1,
+    "near": [
+      {
+        "investigation": "CFI-G (ACME)",
+        "what": "normal gas flames",
+        "unit": "tests",
+        "atLeast30": 115,
+        "at34": 1,
+        "lowPressure": 20,
+        "outcomes": [
+          {
+            "value": "self extinguished",
+            "count": 61
+          },
+          {
+            "value": "flow terminated",
+            "count": 30
+          },
+          {
+            "value": "no ignition",
+            "count": 24
+          }
+        ]
+      },
+      {
+        "investigation": "FLEX",
+        "what": "fuel droplets",
+        "unit": "tests",
+        "atLeast30": 24,
+        "at34": 9,
+        "lowPressure": 0,
+        "outcomes": [
+          {
+            "value": "disruption",
+            "count": 18
+          },
+          {
+            "value": "completion",
+            "count": 4
+          },
+          {
+            "value": "extinction",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "investigation": "Flame Design (ACME)",
+        "what": "normal gas flames",
+        "unit": "tests",
+        "atLeast30": 131,
+        "at34": 0,
+        "lowPressure": 0,
+        "outcomes": null
+      },
+      {
+        "investigation": "BRE (ACME)",
+        "what": "gas flames standing in for solids, still air",
+        "unit": "test days",
+        "atLeast30": 17,
+        "at34": 13,
+        "lowPressure": null,
+        "outcomes": null
+      },
+      {
+        "investigation": "s-Flame (ACME)",
+        "what": "spherical gas flames",
+        "unit": "test days",
+        "atLeast30": 8,
+        "at34": 0,
+        "lowPressure": null,
+        "outcomes": null
+      },
+      {
+        "investigation": "FLEX-2",
+        "what": "fuel droplets (ranges only)",
+        "unit": "fuels",
+        "atLeast30": 8,
+        "at34": 0,
+        "lowPressure": null,
+        "outcomes": null
+      }
+    ]
+  }
+}

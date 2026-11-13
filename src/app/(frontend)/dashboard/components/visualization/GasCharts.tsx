@@ -108,8 +108,8 @@ export function VelocityVsO2Chart({
                     style={{ borderColor: C.line, background: C.ink }}
                   >
                     <div style={{ color: C.fg }}>{d.material}</div>
-                    <div style={{ color: C.blue }}>Starting velocity: {d.x} cm/s</div>
-                    <div style={{ color: C.amber }}>O₂ consumed: {d.y.toFixed(1)}%</div>
+                    <div style={{ color: C.accentText }}>Starting velocity: {d.x} cm/s</div>
+                    <div style={{ color: C.accentText }}>O₂ consumed: {d.y.toFixed(1)}%</div>
                   </div>
                 )
               }}

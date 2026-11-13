@@ -34,6 +34,7 @@ export const MAT = Object.freeze({
   ICE: 9, OIL: 10, OIL_FIRE: 11, SMOKE: 12, FLAME: 13, FAN: 14, PMMA: 15, PMMA_FIRE: 16,
   SIBAL: 17, SIBAL_FIRE: 18, FIBREGLASS: 19, NOMEX: 20, NOMEX_FIRE: 21, WAX: 22,
   WAX_LIQUID: 23, WAX_FIRE: 24,
+  BURNER: 25,   // flame-core 1.1.0: the porous gas burner (needs fuel gas; not offered yet)
 } as const);
 export const KIND = Object.freeze({ STATIC: 0, POWDER: 1, LIQUID: 2, GAS: 3 } as const);
 export const DIR = Object.freeze({ RIGHT: 0, DOWN: 1, LEFT: 2, UP: 3 } as const);
@@ -58,6 +59,9 @@ export const READING = Object.freeze({
 } as const);
 export const LIGHT = Object.freeze({ DEFAULT: 0, OPPOSED: 1, CONCURRENT: 2 } as const);
 export const NO_READING = -1;          // FC_NO_READING
+export const SAFFIRE_FIRST = 1000;     // FC_PRESET_SAFFIRE_FIRST: the first Saffire preset id
+export const CFIG_VISUAL_DEMO = 2999;  // FC_CFIG_VISUAL_DEMO: the gas flame visual demo, not NASA-scored
+export const CFIG_RUN_STEPS = 1500;    // FC_CFIG_RUN_STEPS: the burner's flow is cut at this step
 export const WIND_PER_CM_S = 0.012;    // FC_WIND_PER_CM_S: the working scale, not physics
 
 export type Mat = Values<typeof MAT>;
@@ -132,9 +136,17 @@ export interface PresetInfo {
 export interface PresetStatus {
   id: number;
   step: number;
+  runSteps: number;      // the timeline's length; finished when step reaches it
   finished: boolean;
   lighting: number;
   airCmS: number;
+}
+
+export interface CfigStatus {
+  id: number;
+  step: number;          // steps since loading
+  runSteps: number;      // CFIG_RUN_STEPS: the flow cut
+  finished: boolean;     // step >= runSteps
 }
 
 // Load the module and create the engine. Each call gives a separate,
@@ -154,9 +166,7 @@ export class Engine {
 
   constructor(fc: FlameCoreModule) {
     this.fc = fc;
-    console.log(Object.keys(fc).filter(k => k.startsWith('_')));
-    
-    fc._fc_create();                       // default parameters, empty chamber
+    fc._fc_create();                      // default parameters, empty chamber
     this.width = fc._fc_width();
     this.height = fc._fc_height();
     this.cells = this.width * this.height;
@@ -258,7 +268,11 @@ export class Engine {
   }
 
   // ---- Presets ---------------------------------------------------------------------
+  // BASS-II ids are 0 .. presetCount() - 1. The Saffire presets (flame-core
+  // 1.1.0) have ids of their own, SAFFIRE_FIRST .. SAFFIRE_FIRST +
+  // saffireCount() - 1; every preset method below takes them.
   presetCount(): number { return this.fc._fc_preset_count(); }
+  saffireCount(): number { return this.fc._fc_preset_saffire_count(); }
 
   // Everything a preset says about itself, as one object.
   preset(id: number): PresetInfo {
@@ -314,10 +328,29 @@ export class Engine {
     const step = fc._fc_preset_step();
     return {
       id, step,
+      runSteps: fc._fc_preset_run_steps(id),
       finished: fc._fc_preset_finished() === 1,
       lighting: fc._fc_preset_active_lighting(),
       airCmS: fc._fc_preset_air_at(id, step),
     };
+  }
+
+  // ---- CFI-G gas flames (flame-core 1.1.0) -------------------------------------------
+  // Only the visual demo is offered: CFIG_VISUAL_DEMO, a VISUAL DEMO, NOT
+  // NASA-SCORED (radiation off; no NASA facts). Loading it resets the world,
+  // paints the burner and plays its timeline: the igniter, then the flow cut
+  // at CFIG_RUN_STEPS. It stops any BASS-II or Saffire preset, and loading a
+  // preset (or reset()) stops it.
+  cfigLoad(id: number): boolean { return this.fc._fc_cfig_load(id) === 0; }
+  cfigStop(): void { this.fc._fc_cfig_stop(); }
+
+  // The CFI-G run playing now, or null. The engine keeps counting steps after
+  // the flow cut; finished means the cut has been reached.
+  cfigStatus(): CfigStatus | null {
+    const id = this.fc._fc_cfig_active();
+    if (id < 0) return null;
+    const step = this.fc._fc_cfig_step();
+    return { id, step, runSteps: CFIG_RUN_STEPS, finished: step >= CFIG_RUN_STEPS };
   }
 
   // ---- Snapshot -----------------------------------------------------------------------

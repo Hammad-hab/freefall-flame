@@ -1,0 +1,130 @@
+test_id,fidelity,nasa_outcome,sim_outcome,match
+B1,FULL,not stated,still burning,
+M17,FULL,went out as the flow was lowered,still burning,no
+P5,PARTIAL,went out as the flow was lowered,still burning,no
+B18,PARTIAL,blow-off as the flow was raised,blown off,yes
+O12,PARTIAL,no ignition at any flow,still burning,no
+T2,FULL,not stated,burned out,
+B2,FULL,not stated,still burning,
+B3,FULL,not stated,still burning,
+B4,FULL,not stated,still burning,
+B5,FULL,not stated,still burning,
+B6,FULL,not stated,burned out,
+B7,FULL,not stated,still burning,
+B8,PARTIAL,not stated,blown off,
+B9,FULL,not stated,still burning,
+B10,FULL,not stated,burned out,
+B11,FULL,not stated,still burning,
+B12,FULL,not stated,still burning,
+B13,FULL,not stated,burned out,
+B14,PARTIAL,went out as the flow was lowered,went out at low flow,yes
+B15,PARTIAL,not stated,blown off,
+B16,PARTIAL,not stated,still burning,
+B17,PARTIAL,not stated,still burning,
+B19,PARTIAL,blow-off as the flow was raised,blown off,yes
+B20,PARTIAL,not stated,still burning,
+B21,PARTIAL,went out as the flow was lowered,still burning,no
+B22,FULL,not stated,still burning,
+F1,PARTIAL,not stated,went out in steady flow,
+F2,PARTIAL,not stated,went out in steady flow,
+F3,PARTIAL,not stated,went out in steady flow,
+F4,PARTIAL,not stated,still burning,
+M1,FULL,not stated,burned out,
+M2,FULL,not stated,burned out,
+M3,FULL,not stated,burned out,
+M4,FULL,not stated,still burning,
+M5,FULL,not stated,burned out,
+M6,FULL,not stated,burned out,
+M7,FULL,not stated,burned out,
+M8,PARTIAL,not stated,burned out,
+M9,FULL,not stated,still burning,
+M10,FULL,not stated,burned out,
+M11,FULL,not stated,burned out,
+M12,FULL,not stated,still burning,
+M13,FULL,not stated,still burning,
+M14,FULL,not stated,burned out,
+M15,FULL,not stated,burned out,
+M16,FULL,not stated,burned out,
+M18,FULL,not stated,still burning,
+M19,FULL,not stated,burned out,
+M20,FULL,not stated,still burning,
+O1,FULL,not stated,still burning,
+O2,FULL,not stated,still burning,
+O3a,FULL,not stated,still burning,
+O3b,PARTIAL,not stated,still burning,
+O4,PARTIAL,went out as the flow was lowered,went out at low flow,yes
+O5a,FULL,not stated,went out at low flow,
+O5b,FULL,not stated,still burning,
+O6,PARTIAL,went out as the flow was lowered,still burning,no
+O7,PARTIAL,blow-off as the flow was raised,still burning,no
+O8a,PARTIAL,went out as the flow was lowered,still burning,no
+O8b,PARTIAL,blow-off as the flow was raised,still burning,no
+O9,PARTIAL,blow-off as the flow was raised,still burning,no
+O10,PARTIAL,not stated,still burning,
+O11,PARTIAL,blow-off as the flow was raised,still burning,no
+O13a,FULL,not stated,went out at low flow,
+O13b,FULL,not stated,still burning,
+O14,PARTIAL,went out as the flow was lowered,still burning,no
+O15a,FULL,not stated,still burning,
+O15b,FULL,not stated,went out at low flow,
+O16,FULL,not stated,still burning,
+O17,FULL,not stated,blown off,
+O18,FULL,not stated,blown off,
+O19,PARTIAL,went out as the flow was lowered,still burning,no
+O20,FULL,not stated,still burning,
+O21,PARTIAL,not stated,still burning,
+O22,PARTIAL,blow-off as the flow was raised,still burning,no
+P1,PARTIAL,went out as the flow was lowered,still burning,no
+P2,PARTIAL,not stated,still burning,
+P3a,PARTIAL,not stated,still burning,
+P3b,PARTIAL,not stated,still burning,
+P4,PARTIAL,not stated,still burning,
+P6,PARTIAL,not stated,still burning,
+P8,FULL,would not stay lit,still burning,no
+P9,PARTIAL,went out as the flow was lowered,still burning,no
+P10,PARTIAL,went out as the flow was lowered,still burning,no
+P12,PARTIAL,not stated,still burning,
+P13a,PARTIAL,went out as the flow was lowered,still burning,no
+P13b,PARTIAL,went out as the flow was lowered,still burning,no
+P14,PARTIAL,not stated,still burning,
+P15,PARTIAL,not stated,still burning,
+P16,PARTIAL,not stated,still burning,
+P17,PARTIAL,not stated,still burning,
+P18,PARTIAL,not stated,still burning,
+P19,PARTIAL,not stated,still burning,
+P20,PARTIAL,not stated,still burning,
+P21a,FULL,not stated,still burning,
+P21b,FULL,not stated,still burning,
+P22a,PARTIAL,went out as the flow was lowered,still burning,no
+P22b,PARTIAL,went out as the flow was lowered,still burning,no
+P23,PARTIAL,not stated,still burning,
+P24,PARTIAL,not stated,still burning,
+P25,PARTIAL,went out as the flow was lowered,still burning,no
+T1,FULL,not stated,still burning,
+T3,PARTIAL,not stated,still burning,
+T4,FULL,not stated,still burning,
+T5,FULL,not stated,burned out,
+T6,FULL,not stated,burned out,
+T7,PARTIAL,not stated,went out at low flow,
+T9,FULL,not stated,still burning,
+T10,FULL,not stated,still burning,
+T11,FULL,not stated,still burning,
+T12,FULL,not stated,still burning,
+T13,FULL,not stated,still burning,
+T14,FULL,not stated,still burning,
+T15,FULL,not stated,blown off,
+T16,FULL,not stated,still burning,
+T17,FULL,not stated,blown off,
+T18,FULL,not stated,still burning,
+T19,FULL,not stated,still burning,
+T20,FULL,not stated,still burning,
+T21,FULL,not stated,blown off,
+T22,FULL,not stated,still burning,
+T23,FULL,not stated,still burning,
+T24,FULL,not stated,still burning,
+T25,FULL,not stated,burned out,
+T26,FULL,not stated,burned out,
+T27,FULL,not stated,burned out,
+T28a,FULL,not stated,still burning,
+T28b,FULL,not stated,still burning,
+T29,FULL,not stated,burned out,

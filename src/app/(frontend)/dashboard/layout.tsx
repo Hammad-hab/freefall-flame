@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div>
-      <div className="min-h-screen bg-[#100e0c] text-white antialiased">
+      <div className="min-h-screen bg-ink text-fg antialiased">
           {children}
       </div>
     </div>

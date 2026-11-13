@@ -1,0 +1,18 @@
+{
+  "about": "Made by src/scripts/home-flame.ts from the sandbox engine (do not edit by hand): the Temperature view, the sandbox's own colour scale, solid fuel shown faintly.",
+  "testId": "B14",
+  "step": 1000,
+  "outcomeAtStep": "still burning",
+  "crop": {
+    "x": 48,
+    "y": 55,
+    "width": 125,
+    "height": 41
+  },
+  "scale": 4,
+  "engineWasmSha256": "dc28682f76257b5d3d8ed3a0334da1d368e4f250341c26c546243ce2734c859a",
+  "image": "/home/b14-temperature.png",
+  "width": 500,
+  "height": 164,
+  "pngSha256": "180f0f1839b90e33ccb9443f997bfd8ce76864e299547dbe6d4c91bbb2f90681"
+}

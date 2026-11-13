@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 
 import config from '@/payload.config'
+import { isNotFoundOrForbidden } from '@/lib/errors'
 
 // Types and pure column helpers live in src/lib so client components can
 // import them without pulling in this server-only module.
@@ -27,6 +28,19 @@ const REVALIDATE_SECONDS = 60
 
 async function getClient() {
   return getPayload({ config: await config })
+}
+
+/**
+ * Local preview of an UNPUBLISHED dataset, before its published flag is
+ * switched: start the dev server with DATASET_PREVIEW_IDS=4 (comma-separated
+ * ids) and /dashboard?dataset=4 shows it. Never in a production build, and
+ * nothing a visitor sends can turn it on; without the variable, unpublished
+ * datasets stay "not found" as before.
+ */
+function isPreviewDataset(id: number | string): boolean {
+  if (process.env.NODE_ENV === 'production') return false
+  const ids = (process.env.DATASET_PREVIEW_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  return ids.includes(String(id))
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,23 +83,30 @@ function toRow(doc: any): DataRow {
 /* Fetchers                                                            */
 /* ------------------------------------------------------------------ */
 
-/** All published datasets, for index pages and dataset pickers. */
-export const getPublishedDatasets = unstable_cache(
-  async (): Promise<DatasetMeta[]> => {
-    const payload = await getClient()
-    const res = await payload.find({
-      collection: 'datasets',
-      where: { published: { equals: true } },
-      sort: 'name',
-      limit: 100,
-      depth: 1,
-      overrideAccess: false, // enforce the public access rules (published only)
-    })
-    return res.docs.map(toMeta)
-  },
-  ['published-datasets'],
-  { tags: ['datasets'], revalidate: REVALIDATE_SECONDS },
-)
+/** All published datasets, straight from the database (no cache). */
+export async function getPublishedDatasetsUncached(): Promise<DatasetMeta[]> {
+  const payload = await getClient()
+  const res = await payload.find({
+    collection: 'datasets',
+    where: { published: { equals: true } },
+    sort: 'name',
+    limit: 100,
+    depth: 1,
+    overrideAccess: false, // enforce the public access rules (published only)
+  })
+  return res.docs.map(toMeta)
+}
+
+/**
+ * All published datasets, for index pages and dataset pickers. Cached for
+ * REVALIDATE_SECONDS; Next serves the old list while it refreshes, so right
+ * after a published flag changes it can name a dataset that is no longer
+ * public (the dashboard page then asks getPublishedDatasetsUncached).
+ */
+export const getPublishedDatasets = unstable_cache(getPublishedDatasetsUncached, ['published-datasets'], {
+  tags: ['datasets'],
+  revalidate: REVALIDATE_SECONDS,
+})
 
 /** One published dataset's definition (columns, papers). Returns null if missing or unpublished. */
 export async function getDataset(id: number | string): Promise<DatasetMeta | null> {
@@ -95,11 +116,15 @@ export async function getDataset(id: number | string): Promise<DatasetMeta | nul
       collection: 'datasets',
       id,
       depth: 1,
-      overrideAccess: false,
+      overrideAccess: isPreviewDataset(id),
     })
     return doc ? toMeta(doc) : null
-  } catch {
-    return null // not found, or not visible to the public
+  } catch (e) {
+    // Not found, or not visible to the public: "dataset not found". Anything
+    // else (the database unreachable) is rethrown, so the page can say so
+    // instead of pretending the dataset doesn't exist.
+    if (isNotFoundOrForbidden(e)) return null
+    throw e
   }
 }
 

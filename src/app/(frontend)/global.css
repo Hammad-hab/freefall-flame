@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import "tw-shimmer";
 
 @theme {
     /* Surfaces: all share the navy hue, stepping up in lightness */
@@ -8,15 +9,30 @@
     --color-line: #2e2418;
     --color-fg: #f0ebe2;
     --color-muted: #a89e90;
-  
+
     /* Accents */
     --color-flame-amber: #ffa64d;   /* primary accent: the only warm color */
     --color-flame-blue: #ffa64d;    /* secondary: links, focus, info */
-  
+    /* feat/themes: every colour comes from the active theme's CSS variables
+       (ui/themes.ts themeCss, in the frontend layout); the fallbacks are Ember,
+       today's look. */
+    /* Surfaces */
+    --color-ink: var(--c-ink, #120e08);
+    --color-ink-2: var(--c-ink2, #1a140c);
+    --color-ink-3: var(--c-ink3, #1f1a14);      /* cards */
+    --color-line: var(--c-line, #2e2418);
+    --color-fg: var(--c-fg, #f0ebe2);
+    --color-muted: var(--c-muted, #b4aca0);
+
+    /* Accents */
+    --color-flame-amber: var(--c-accent, #ffa64d);       /* the accent as a fill (buttons, bars) */
+    --color-flame-blue: var(--c-accent-text, #ffa64d);   /* the accent as text: links, focus, info */
+    --color-on: var(--c-on, #1a0f05);                    /* text on the accent fill */
+
     /* Status: one scale, muted, tied to the palette */
-    --color-status-triage: #4fa3ff;
-    --color-status-investigating: #ffa64d;
-    --color-status-fixing: #5fd3a5;
+    --color-status-triage: var(--c-info, #4fa3ff);
+    --color-status-investigating: var(--c-accent-text, #ffa64d);
+    --color-status-fixing: var(--c-fixing, #5fd3a5);
   --animate-flicker: flicker 2.6s ease-in-out infinite;
 
   @keyframes flicker {
@@ -37,12 +53,26 @@
 @theme inline {
   --font-display: var(--font-bricolage), system-ui, sans-serif;
   --font-body: var(--font-instrument), system-ui, sans-serif;
+  @keyframes collapsible-down {
+  from {
+    height: 0;
+        }
+  to {
+    height: var(--radix-collapsible-content-height, var(--collapsible-panel-height, auto));
+        }
+    }
+  @keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height, var(--collapsible-panel-height, auto));
+        }
+  to {
+    height: 0;
+        }
+    }
 }
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
+  /* color-scheme (dark or light) comes with each theme (ui/themes.ts). */
 
   body {
     background: var(--color-ink);
@@ -54,4 +84,15 @@
     outline: 2px solid var(--color-flame-blue);
     outline-offset: 3px;
   }
+
+  /* recharts measures label text in a span it adds to <body> (off-screen,
+     aria-hidden) and leaves the last label in it, e.g. "T'ien". Hidden, it
+     still measures, but no longer shows up in the page's text or a copy. */
+  #recharts_measurement_span {
+    visibility: hidden !important;
+  }
 }
+
+@custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));
+
+@custom-variant data-closed (&:where([data-state="closed"], [data-closed]:not([data-closed="false"])));

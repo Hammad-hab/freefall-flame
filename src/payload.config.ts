@@ -10,6 +10,8 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { DatasetImports, DatasetRows, Datasets } from './collections/Dataset'
 import { Papers } from './collections/Papers'
+import { ChatThreads } from './collections/ChatThreads'
+import { ChatMessages } from './collections/ChatMessages'
 // import { Papers } from './collections/Papers'
 
 const filename = fileURLToPath(import.meta.url)
@@ -20,14 +22,21 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
   },
-  collections: [Users, Media, Papers, Datasets, DatasetRows, DatasetImports],
+  collections: [Users, Media, Papers, Datasets, DatasetRows, DatasetImports, ChatThreads, ChatMessages],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: postgresAdapter({
     pool: { connectionString: process.env.DATABASE_URL || '' },
+    // Schema push is OFF unless PAYLOAD_PUSH=true. Payload's default pushes
+    // the schema to the database on every dev start and test run (and the
+    // database is the shared Supabase one), so it must be asked for, never
+    // implied. A production build (NODE_ENV=production) never pushes anyway.
+    push: process.env.PAYLOAD_PUSH === 'true',
   }),
   sharp,
+  // No anonymous usage data sent to Payload (on by default).
+  telemetry: false,
   plugins: [
     s3Storage({
       collections: {

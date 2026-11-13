@@ -1,12 +1,14 @@
-import { fillView, centreVelocity } from './colors';
+import { fillView, centreVelocity, type RGB, type View } from './colors';
 import { KIND, type Engine } from '../engine/Engine';
 
+// Arrow sizes in overlay pixels at 4 pixels per cell; they scale with the cell.
 const ARROW_EVERY = 6;
 const ARROW_SCALE = 90;
 const ARROW_MAX = 22;
 const ARROW_MIN_SPEED = 0.003;
+const DESIGN_SCALE = 4;
 
-export type ViewName = string; // narrow to a union of your views, e.g. 'material' | 'flow' | ...
+export type ViewName = View;
 
 export interface Cell { x: number; y: number }
 export type StrokeHandler = (x: number, y: number, erase: boolean, first: boolean) => void;
@@ -23,6 +25,12 @@ export class GridView {
   private stroke: Stroke | null = null;
 
   view: ViewName = 'material';
+  /** Empty cells in the material view take this colour (the dashboard's background). */
+  airColour: RGB | null = null;
+  /** The theme's air is light (light themes): the brush outline is drawn dark in the Material view. */
+  lightAir = false;
+  /** Camera view exposure (display only; colors.ts fillView). */
+  exposure = 1;
   hover: Cell | null = null;
   brushRadius = 2;
   onStroke: StrokeHandler = () => {};
@@ -44,13 +52,15 @@ export class GridView {
   get scale(): number { return this.overlayCanvas.width / this.engine.width; }
 
   draw(): void {
-    fillView(this.engine, this.view, this.image.data);
+    fillView(this.engine, this.view, this.image.data, this.airColour, this.exposure);
     this.grid.putImageData(this.image, 0, 0);
     const o = this.overlay, s = this.scale;
     o.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
     if (this.view === 'flow') this.drawArrows();
     if (this.hover) {
-      o.strokeStyle = 'rgba(255,255,255,0.75)';
+      // Every data view is dark; only the Material view's air follows a light theme.
+      o.strokeStyle = this.lightAir && this.view === 'material' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.75)';
+      o.lineWidth = Math.max(1, s / DESIGN_SCALE);
       o.beginPath();
       o.arc((this.hover.x + 0.5) * s, (this.hover.y + 0.5) * s, (this.brushRadius + 0.5) * s, 0, 2 * Math.PI);
       o.stroke();
@@ -58,9 +68,9 @@ export class GridView {
   }
 
   private drawArrows(): void {
-    const e = this.engine, o = this.overlay, s = this.scale;
+    const e = this.engine, o = this.overlay, s = this.scale, unit = s / DESIGN_SCALE;
     o.strokeStyle = 'rgba(255,255,255,0.7)';
-    o.lineWidth = 1;
+    o.lineWidth = Math.max(1, unit);
     o.beginPath();
     for (let y = ARROW_EVERY / 2; y < e.height; y += ARROW_EVERY) {
       for (let x = ARROW_EVERY / 2; x < e.width; x += ARROW_EVERY) {
@@ -68,7 +78,7 @@ export class GridView {
         const { u, v } = centreVelocity(e, x, y);
         const speed = Math.hypot(u, v);
         if (speed < ARROW_MIN_SPEED) continue;
-        const len = Math.min(ARROW_MAX, speed * ARROW_SCALE);
+        const len = Math.min(ARROW_MAX, speed * ARROW_SCALE) * unit;
         const cx = (x + 0.5) * s, cy = (y + 0.5) * s;
         const dx = (u / speed) * len, dy = (v / speed) * len;
         o.moveTo(cx, cy);

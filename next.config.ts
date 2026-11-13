@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(dirname),
   },
+  // The sandbox is a dashboard tab, not a page of its own.
+  async redirects() {
+    return [{ source: '/sandbox', destination: '/dashboard?tab=sandbox', permanent: false }]
+  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

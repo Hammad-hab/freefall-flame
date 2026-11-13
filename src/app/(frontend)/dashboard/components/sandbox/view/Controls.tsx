@@ -6,14 +6,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, MAT, PARAM, DIR, WIND_PER_CM_S, type Dir, type Param } from '../engine/Engine';
-import { VIEWS, SCALES, sample, type View } from './colors';
-import { C, panelCls, panelStyle } from '../../ui/chart-theme';
+import { VIEWS, SCALES, EXPOSURES, FUEL_NOTE, tintedFuelColour, sample, type Exposure, type View } from './colors';
+
+// The faint-fuel colour of a room-temperature (300 K) sample, for the legend's swatch.
+const COLD_FUEL = `rgb(${tintedFuelColour(sample(SCALES.temperature.stops, 300)).join(',')})`;
+import { ZOOMS, type Zoom } from './fit';
+import { C, alpha, panelCls, panelStyle } from '../../ui/chart-theme';
 
 export const TOOLS = ['paint', 'erase', 'ignite'] as const;
 export type Tool = (typeof TOOLS)[number];
 
 const VIEW_LABELS: Record<View, string> = {
-  material: 'Material', temperature: 'Temperature', oxygen: 'Oxygen', co2: 'CO2', flow: 'Flow', camera: 'Camera',
+  material: 'Material', temperature: 'Temperature', oxygen: 'Oxygen', flow: 'Flow', co2: 'CO2', co: 'CO', camera: 'Camera',
 };
 const GRAVITY_PRESETS: [string, number][] = [['Earth', 1], ['Mars', 0.38], ['Moon', 0.165], ['Zero', 0]];
 const FAN_DIRS: [string, Dir][] = [['Right', DIR.RIGHT], ['Down', DIR.DOWN], ['Left', DIR.LEFT], ['Up', DIR.UP]];
@@ -38,11 +42,11 @@ const pill =
 const pillState = (on: boolean) => ({
   borderColor: on ? C.blue : C.line,
   background: on ? C.blue : C.surface,
-  color: on ? C.ink : C.muted,
+  color: on ? C.on : C.muted,
 });
 
 /** The one primary action per group (Play/Pause). */
-const primary = { borderColor: C.blue, background: C.blue, color: C.ink };
+const primary = { borderColor: C.blue, background: C.blue, color: C.on };
 
 /** Inset row holding a slider or a select. */
 const rowCls = 'rounded-xl border p-3';
@@ -52,7 +56,7 @@ const labelCls = 'text-[12px]';
 
 /** Value readout. tabular-nums keeps it from jittering as the number changes. */
 const badgeCls = 'inline-block rounded-full px-2 py-0.5 text-[11px] tabular-nums';
-const badgeStyle = { background: C.chip2, color: C.blue };
+const badgeStyle = { background: C.chip2, color: C.accentText };
 
 const selectCls = 'rounded-lg border px-2 py-1 text-[11px]';
 const selectStyle = { borderColor: C.line, background: C.surface, color: C.fg };
@@ -105,10 +109,12 @@ export function Tabs({ tabs, active, onChange }: {
 }
 
 // ---- Run bar --------------------------------------------------------------------
-export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, onReset }: {
+export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, onReset, behind = false }: {
   playing: boolean; setPlaying: (p: boolean) => void;
   speed: number; setSpeed: (s: number) => void; speeds: readonly number[];
   onStep: () => void; onReset: () => void;
+  /** The clock can't keep up at this speed (it runs as fast as it can instead). */
+  behind?: boolean;
 }) {
   const step = useCallback(() => { setPlaying(false); onStep(); }, [setPlaying, onStep]);
 
@@ -140,28 +146,63 @@ export function RunBar({ playing, setPlaying, speed, setSpeed, speeds, onStep, o
       >
         {speeds.map((s) => <option key={s} value={s}>{s}x</option>)}
       </select>
+      {playing && behind && (
+        <span id="slower-note" className="text-[10px]" style={{ color: C.muted }}>
+          slower than real time
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---- Zoom (display only) ------------------------------------------------------------
+export function ZoomBar({ zoom, setZoom }: { zoom: Zoom; setZoom: (z: Zoom) => void }) {
+  return (
+    <div id="zoom-bar" role="group" aria-label="Zoom (display only)" className="flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>Zoom</span>
+      {ZOOMS.map((z) => (
+        <button key={z} className={pill} style={pillState(z === zoom)} onClick={() => setZoom(z)} aria-pressed={z === zoom} data-zoom={z}>
+          {z}x
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---- Camera exposure (display only) ---------------------------------------------------
+export function ExposureBar({ exposure, setExposure }: { exposure: Exposure; setExposure: (e: Exposure) => void }) {
+  return (
+    <div id="exposure-bar" role="group" aria-label="Camera exposure (display only)" className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider" style={{ color: C.muted }}>Exposure</span>
+      {EXPOSURES.map((e) => (
+        <button key={e} className={pill} style={pillState(e === exposure)} onClick={() => setExposure(e)} aria-pressed={e === exposure} data-exposure={e}>
+          ×{e}
+        </button>
+      ))}
+      <span className="text-[10px]" style={{ color: C.muted }}>display only: brightens the glow on the same colour scale</span>
     </div>
   );
 }
 
 // ---- Views + legend ---------------------------------------------------------------
-export function ViewBar({ view, setView }: { view: View; setView: (v: View) => void }) {
+export function ViewBar({ view, setView, exposure = 1 }: { view: View; setView: (v: View) => void; exposure?: number }) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
       <div id="view-bar" className="flex min-w-0 flex-wrap gap-1.5">
         {VIEWS.map((v) => (
-          <button key={v} className={pill} style={pillState(v === view)} onClick={() => setView(v)}>
+          <button key={v} className={pill} style={pillState(v === view)} onClick={() => setView(v)} aria-pressed={v === view} data-view={v}>
             {VIEW_LABELS[v]}
           </button>
         ))}
       </div>
-      <Legend view={view} />
+      <Legend view={view} exposure={exposure} />
     </div>
   );
 }
 
-// A colour ramp under the canvas for every view but Material.
-function Legend({ view }: { view: View }) {
+// A colour ramp under the canvas for every view but Material. In the Camera
+// view with an exposure, the same ramp now stands for glow 0 to 1/exposure.
+function Legend({ view, exposure = 1 }: { view: View; exposure?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const scale = view === 'material' ? undefined : SCALES[view];
 
@@ -177,14 +218,30 @@ function Legend({ view }: { view: View }) {
   }, [scale]);
 
   if (!scale) return <div id="legend" />;
-  const lo = scale.stops[0][0], hi = scale.stops[scale.stops.length - 1][0];
+  const exposed = view === 'camera' && exposure > 1;
+  const lo = scale.stops[0][0], hi = exposed ? Number((scale.stops[scale.stops.length - 1][0] / exposure).toPrecision(3)) : scale.stops[scale.stops.length - 1][0];
   return (
-    <div id="legend" className="flex items-center gap-2 text-[10px] tabular-nums" style={{ color: C.muted }}>
-      <span>{lo}</span>
-      {/* The ramp is drawn 260x1; CSS stretches that single row into a readable band. */}
-      <canvas ref={ref} width={260} height={1} className="h-2 min-w-0 flex-1 rounded-full" />
-      <span>{hi}</span>
-      <span className="whitespace-nowrap">{scale.unit}</span>
+    <div className="flex w-full min-w-0 flex-col gap-1">
+      <div id="legend" data-view={view} className="flex items-center gap-2 text-[10px] tabular-nums" style={{ color: C.muted }}>
+        <span>{lo}</span>
+        {/* The ramp is drawn 260x1; CSS stretches that single row into a readable band. */}
+        <canvas ref={ref} width={260} height={1} className="h-2 min-w-0 flex-1 rounded-full" />
+        <span>{hi}</span>
+        <span className="whitespace-nowrap">{scale.unit}{exposed ? ` (exposure ×${exposure})` : ''}</span>
+      </div>
+      {/* Temperature: a cold sample would be as dark as the air, so solid fuel is tinted faintly (colors.ts). */}
+      {view === 'temperature' && (
+        <div id="legend-fuel" className="flex items-center gap-1.5 text-[10px]" style={{ color: C.muted }}>
+          <span aria-hidden className="inline-block h-2 w-3 rounded-sm border" style={{ background: COLD_FUEL, borderColor: C.line }} />
+          <span>{FUEL_NOTE} (a tint, not a temperature)</span>
+        </div>
+      )}
+      {/* A label that must be read with the view (CO: the engine makes it by a rule, not chemistry). */}
+      {scale.note && (
+        <div id="legend-note" className="text-[10px] font-semibold tracking-wide" style={{ color: C.accentText }}>
+          {scale.note}
+        </div>
+      )}
     </div>
   );
 }
@@ -231,9 +288,11 @@ export function BuildPanel({ engine, c }: { engine: Engine; c: Controls }) {
 
       {/* 25 materials: two columns, each name truncated rather than wrapped so the
           grid rows stay aligned. The swatch carries the colour, so the selected
-          state is an amber border instead of the usual amber fill. */}
+          state is an amber border instead of the usual amber fill.
+          flame-core 1.1.0 adds a 26th, the gas burner; it does nothing without
+          fuel gas, which the sandbox doesn't offer yet, so it is left out. */}
       <div id="palette" className="mt-3 grid grid-cols-2 gap-1.5">
-        {engine.materials.map((m) => {
+        {engine.materials.filter((m) => m.id !== MAT.BURNER).map((m) => {
           const on = m.id === material && tool === 'paint';
           return (
             <button
@@ -248,7 +307,11 @@ export function BuildPanel({ engine, c }: { engine: Engine; c: Controls }) {
             >
               <span
                 className="h-3 w-3 shrink-0 rounded-[3px] border"
-                style={{ background: `rgb(${m.r},${m.g},${m.b})`, borderColor: 'rgba(255,255,255,0.18)' }}
+                style={{
+                  // Air shows the colour it has on the canvas (the dashboard's panel colour).
+                  background: m.id === MAT.AIR ? C.ink2 : `rgb(${m.r},${m.g},${m.b})`,
+                  borderColor: alpha(C.fg, 0x2e),
+                }}
               />
               <span className="truncate">{m.name}</span>
             </button>

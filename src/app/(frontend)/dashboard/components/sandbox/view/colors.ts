@@ -3,9 +3,12 @@
 // No DOM here: fillView() writes into any Uint8ClampedArray (an
 // ImageData's .data in the browser, a plain array in Node).
 
-import { KIND } from '../engine/Engine';
+import { KIND, MAT } from '../engine/Engine';
 
-export const VIEWS = ['material', 'temperature', 'oxygen', 'co2', 'flow', 'camera'] as const;
+const AIR = MAT.AIR;
+
+// The game's order (src/ui.c VIEW_NAMES): Mat, Temp, O2, Flow, CO2, CO, Cam.
+export const VIEWS = ['material', 'temperature', 'oxygen', 'flow', 'co2', 'co', 'camera'] as const;
 export type View = (typeof VIEWS)[number];
 
 export type RGB = [number, number, number];
@@ -19,6 +22,8 @@ export interface Grid {
   temperature: ArrayLike<number>;
   oxygen: ArrayLike<number>;
   co2: ArrayLike<number>;
+  co: ArrayLike<number>;     // fc_grid_co(): fraction 0..1, approximate
+  fuel?: ArrayLike<number>;  // fc_grid_fuel(): only the Temperature view's faint fuel uses it
   flowX: ArrayLike<number>;
   flowY: ArrayLike<number>;
 }
@@ -45,6 +50,14 @@ const CO2_STOPS: Stop[] = [
   [0, [15, 15, 25]], [0.01, [55, 35, 100]], [0.05, [140, 55, 175]], [0.12, [235, 110, 170]],
   [0.21, [255, 235, 225]],
 ];
+// Carbon monoxide, an APPROXIMATE quantity (the engine makes it by a rule,
+// not chemistry). The game's CO_STOPS: its scale ends at 0.01, far below
+// CO2's, because much less CO is made.
+const CO_STOPS: Stop[] = [
+  [0, [15, 15, 25]], [0.0003, [35, 70, 40]], [0.002, [100, 150, 40]], [0.005, [225, 215, 60]],
+  [0.01, [255, 255, 225]],
+];
+export const CO_APPROX_LABEL = 'APPROXIMATE (a rule, not chemistry)';
 const FLOW_STOPS: Stop[] = [
   [0, [15, 15, 25]], [0.02, [25, 45, 130]], [0.1, [30, 140, 200]], [0.3, [150, 230, 240]],
   [0.5, [255, 255, 255]],
@@ -85,16 +98,18 @@ const LUTS = {
   temperature: makeLut(TEMP_STOPS, 1601),
   oxygen: makeLut(OXY_STOPS),
   co2: makeLut(CO2_STOPS),
+  co: makeLut(CO_STOPS),
   flow: makeLut(FLOW_STOPS),
   camera: makeLut(CAMERA_STOPS),
 } satisfies Record<Exclude<View, 'material'>, Lut>;
 
-export const SCALES: Record<Exclude<View, 'material' | 'temperature'> | 'temperature', { stops: Stop[]; unit: string }> = {
-  // for legends: the stops and the unit
+export const SCALES: Record<Exclude<View, 'material'>, { stops: Stop[]; unit: string; note?: string }> = {
+  // for legends: the stops, the unit, and a label that must show with the view
   temperature: { stops: TEMP_STOPS, unit: 'K' },
   oxygen: { stops: OXY_STOPS, unit: 'O2 fraction' },
-  co2: { stops: CO2_STOPS, unit: 'CO2 fraction' },
   flow: { stops: FLOW_STOPS, unit: 'cells/step' },
+  co2: { stops: CO2_STOPS, unit: 'CO2 fraction' },
+  co: { stops: CO_STOPS, unit: 'CO fraction', note: CO_APPROX_LABEL },
   camera: { stops: CAMERA_STOPS, unit: 'glow 0..1' },
 };
 
@@ -105,9 +120,48 @@ function put(out: Pixels, p: number, lut: Lut, v: number): void {
   out[p] = lut.lut[i * 3]; out[p + 1] = lut.lut[i * 3 + 1]; out[p + 2] = lut.lut[i * 3 + 2]; out[p + 3] = 255;
 }
 
+// Solid fuel in the Temperature view (display only). A sample at room
+// temperature is the same near-black as the air round it, so before
+// ignition and after its flame goes out it can't be seen. Every solid or
+// liquid cell that still holds fuel is blended toward a green the scale never
+// uses, by at most FUEL_TINT_MAX. The blend fades out as the cell's own
+// temperature colour gets brighter (gone once its brightest channel reaches
+// FUEL_TINT_FADE), so a hot sample keeps its true temperature colour.
+export const FUEL_TINT: RGB = [60, 200, 90];
+export const FUEL_TINT_MAX = 0.4;
+export const FUEL_TINT_FADE = 160;
+export const FUEL_NOTE = 'fuel shown faintly';
+
+/** The faint-fuel blend weight for a cell whose temperature colour is (r, g, b). */
+export function fuelTintWeight(r: number, g: number, b: number): number {
+  return FUEL_TINT_MAX * Math.max(0, 1 - Math.max(r, g, b) / FUEL_TINT_FADE);
+}
+
+/** A temperature colour as a fuel cell of that colour is drawn (unchanged when hot). */
+export function tintedFuelColour(c: RGB): RGB {
+  const w = fuelTintWeight(c[0], c[1], c[2]);
+  return w === 0 ? c : (c.map((v, k) => Math.round(v * (1 - w) + FUEL_TINT[k] * w)) as RGB);
+}
+
+function tintFuel(out: Pixels, p: number): void {
+  const t = tintedFuelColour([out[p], out[p + 1], out[p + 2]]);
+  out[p] = t[0]; out[p + 1] = t[1]; out[p + 2] = t[2];
+}
+
+/** Camera exposure steps (display only): the glow is multiplied before the same colour scale. */
+export const EXPOSURES = [1, 2, 4, 8] as const;
+export type Exposure = (typeof EXPOSURES)[number];
+
 // Fill `out` (cells * 4 bytes, RGBA) with one view of the engine's grid.
-export function fillView(engine: ColorEngine, view: View, out: Pixels): void {
-  const { material, temperature, oxygen, co2, flowX, flowY } = engine.grid;
+// `airColour`, if given, paints empty (air) cells in the material view, so the
+// chamber matches the dashboard's background; no other colour changes.
+// `exposure` (Camera view only) multiplies the engine's glow before the colour
+// scale, like a longer camera exposure: no glow stays black, and anything at
+// or above 1/exposure takes the scale's top colour. The engine is unchanged.
+// `fuelFaint` (Temperature view only, on by default) draws solid fuel faintly
+// (FUEL_TINT above).
+export function fillView(engine: ColorEngine, view: View, out: Pixels, airColour: RGB | null = null, exposure = 1, fuelFaint = true): void {
+  const { material, temperature, oxygen, co2, co, fuel, flowX, flowY } = engine.grid;
   const mats = engine.materials, W = engine.width, cells = engine.cells;
   const glow = view === 'camera' ? engine.camera() : null;   // fc_camera_intensity()
   for (let i = 0, p = 0; i < cells; i++, p += 4) {
@@ -116,12 +170,16 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels): void {
     switch (view) {
       case 'temperature':
         put(out, p, LUTS.temperature, temperature[i]);
+        if (fuelFaint && !gas && fuel !== undefined && fuel[i] > 0) tintFuel(out, p);
         break;
       case 'oxygen':
         if (gas) put(out, p, LUTS.oxygen, oxygen[i]); else setRgb(out, p, NO_GAS);
         break;
       case 'co2':
         if (gas) put(out, p, LUTS.co2, co2[i]); else setRgb(out, p, NO_GAS);
+        break;
+      case 'co':
+        if (gas) put(out, p, LUTS.co, co[i]); else setRgb(out, p, NO_GAS);
         break;
       case 'flow': {
         if (!gas) { setRgb(out, p, NO_GAS); break; }
@@ -135,13 +193,14 @@ export function fillView(engine: ColorEngine, view: View, out: Pixels): void {
       case 'camera': {
         // Gas is black; solids and liquids barely visible; the glow on top.
         const base = gas ? 0 : CAMERA_SOLID_DIM;
-        put(out, p, LUTS.camera, glow![i]);
+        put(out, p, LUTS.camera, glow![i] * exposure);
         out[p] = Math.min(255, out[p] + m.r * base);
         out[p + 1] = Math.min(255, out[p + 1] + m.g * base);
         out[p + 2] = Math.min(255, out[p + 2] + m.b * base);
         break;
       }
       default:                                                   // 'material'
+        if (airColour && material[i] === AIR) { setRgb(out, p, airColour); break; }
         out[p] = m.r; out[p + 1] = m.g; out[p + 2] = m.b; out[p + 3] = 255;
     }
   }

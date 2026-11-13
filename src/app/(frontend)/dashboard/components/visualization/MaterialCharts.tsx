@@ -191,12 +191,19 @@ export function MeanCo2ByMaterialChart({
 export function ThicknessDistributionChart({
   data,
   unit,
+  rodsElsewhere = 0,
 }: {
   data: CountRow[]
   unit: string
+  /** Rods have a diameter, not a thickness; say how many are in the rod chart instead. */
+  rodsElsewhere?: number
 }) {
+  const n = data.reduce((s, d) => s + d.value, 0)
   return (
-    <Panel title="Thickness Distribution" subtitle={`Sample thickness ranges (${unit})`}>
+    <Panel
+      title="Thickness Distribution"
+      subtitle={`Sample thickness ranges (${unit}), ${n} tests${rodsElsewhere ? `; the ${rodsElsewhere} rods are in the rod-diameter chart` : ''}`}
+    >
       <div className="mt-4 h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
@@ -208,6 +215,61 @@ export function ThicknessDistributionChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
+    </Panel>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Rod diameters (rods have no thickness in the cleaned table)         */
+/* ------------------------------------------------------------------ */
+
+export function RodDiameterChart({ data }: { data: CountRow[] }) {
+  const n = data.reduce((s, d) => s + d.value, 0)
+  return (
+    <Panel title="Rod Diameters" subtitle={`PMMA rods by diameter (mm), ${n} tests`}>
+      <div className="mt-4 h-[220px]" data-chart="rod-diameter">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+            <XAxis dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} />
+            <YAxis stroke={C.muted} fontSize={11} tickLine={false} allowDecimals={false} />
+            <Tooltip content={<ChartTooltip unit=" tests" />} />
+            <Bar dataKey="value" name="Tests" fill={C.blue} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Panel>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* NASA's stated outcome (the five codes, with counts)                 */
+/* ------------------------------------------------------------------ */
+
+export function OutcomeChart({ data }: { data: (CountRow & { code: string })[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  const stated = data.filter((d) => d.code !== 'not_stated').reduce((s, d) => s + d.value, 0)
+  return (
+    <Panel title="NASA's Stated Outcome" subtitle={`How each test ended, as NASA's table says: stated for ${stated} of ${total} tests`}>
+      <div className="mt-4 h-[220px]" data-chart="outcome">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.line} />
+            <XAxis type="number" stroke={C.muted} fontSize={11} tickLine={false} allowDecimals={false} />
+            <YAxis type="category" dataKey="name" stroke={C.muted} fontSize={11} tickLine={false} width={130} />
+            <Tooltip content={<ChartTooltip unit=" tests" />} />
+            <Bar dataKey="value" name="Tests" fill={C.amber} radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="mt-2 grid grid-cols-1 gap-x-4 text-[11px] @md:grid-cols-2" data-outcome-counts>
+        {data.map((d) => (
+          <li key={d.code} className="flex justify-between gap-2" style={{ color: C.fg }}>
+            <span style={{ color: C.muted }}>{d.name}</span>
+            <span className="tabular-nums">{d.value}</span>
+          </li>
+        ))}
+      </ul>
     </Panel>
   )
 }

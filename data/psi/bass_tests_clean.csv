@@ -1,0 +1,122 @@
+as_run_no,test_no,sample_no,date,gmt_day,fuel_raw,material,geometry,size_cm,note,flags
+1,1,4,3/30/2012,90,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+2,42,24,3/30/2012,90,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+3,18,19,3/30/2012,90,PMMA sphere 1 cm,PMMA,sphere,1.0,,
+4,7,10,4/5/2012,96,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+5,8,11,4/5/2012,96,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+6,43,24,4/9/2012,100,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+7,44,24,4/9/2012,100,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+8,45,24,4/9/2012,100,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+9,19,19,5/2/2012,123,PMMA sphere 1 cm,PMMA,sphere,1.0,,
+10,20,19,5/2/2012,123,PMMA sphere 1 cm,PMMA,sphere,1.0,,
+11,21,19,5/2/2012,123,PMMA sphere 1 cm,PMMA,sphere,1.0,,
+12,4,12,5/10/2012,131,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+13,10,2,5/10/2012,131,SIBAL 1 cm,SIBAL fabric,fabric,1.0,,
+14,12,27,5/10/2012,131,Nomex blend 2 cm,Nomex,fabric,2.0,,
+15,54,21,5/11/2012,132,PMMA 2 cm,PMMA,flat sample,2.0,,
+16,55,21,5/11/2012,132,PMMA 2 cm,PMMA,flat sample,2.0,,
+17,56,21,5/11/2012,132,PMMA 2 cm,PMMA,flat sample,2.0,,
+18,57,21,5/11/2012,132,PMMA 2 cm,PMMA,flat sample,2.0,,
+19,110,21,5/11/2012,132,PMMA 2 cm,PMMA,flat sample,2.0,,
+20,30,15,6/5/2012,157,PMMA 1 cm,PMMA,flat sample,1.0,,
+21,31,15,6/5/2012,157,PMMA 1 cm,PMMA,flat sample,1.0,,
+22,32,15,6/5/2012,157,PMMA 1 cm,PMMA,flat sample,1.0,,
+23,33,15,6/5/2012,157,PMMA 1 cm,PMMA,flat sample,1.0,,
+24,12-R,27,6/5/2012,157,Nomex blend 2 cm,Nomex,fabric,2.0,,
+24,12-R2,27,6/5/2012,157,Nomex blend 2 cm,Nomex,fabric,2.0,,
+25,46,22,6/11/2012,163,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+26,47,22,6/11/2012,163,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+27,48,22,6/11/2012,163,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+28,49,22,6/11/2012,163,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+29,22,18,6/14/2012,166,1 cm sphere,PMMA,sphere,1.0,,material assumed PMMA (sphere samples)
+30,23,18,6/14/2012,166,1 cm sphere,PMMA,sphere,1.0,,material assumed PMMA (sphere samples)
+31,24,18,6/14/2012,166,1 cm sphere,PMMA,sphere,1.0,,material assumed PMMA (sphere samples)
+32,25,18,6/14/2012,166,1 cm sphere,PMMA,sphere,1.0,,material assumed PMMA (sphere samples)
+33,58,25,6/18/2012,170,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+34,59,25,6/18/2012,170,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+35,60,25,6/18/2012,170,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+36,61,25,6/18/2012,170,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+37,5,9,6/28/2012,180,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+38,14,29,6/28/2012,180,Nomex III Natural,Nomex,fabric,,,
+39,66,33,6/28/2012,180,PMMA slab,PMMA,slab,,,
+40,67,33,6/28/2012,180,PMMA slab,PMMA,slab,,,
+41,34,16,6/29/2012,181,1 cm sphere,PMMA,sphere,1.0,,material assumed PMMA (sphere samples)
+42,35,16,6/29/`12,181,1 cm sphere,PMMA,sphere,1.0,,"date ""6/29/`12"" has a typo; material assumed PMMA (sphere samples)"
+43,16,31,6/29/2012,181,ultem sheet,Ultem,sheet,,,
+44,5b,9,6/29/2012,181,SIBAL 2 cm   opposed flow,SIBAL fabric,fabric,2.0,opposed flow,
+45,6,8,7/3/2012,185,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+46,82,35,7/3/2012,185,candle,wax candle (type not stated),candle,,,
+47,82a,35,7/3/2012,185,candle,wax candle (type not stated),candle,,,
+48,82b,35,7/3/2012,185,candle,wax candle (type not stated),candle,,,
+49,68,33,7/3/2012,185,pmma slab,PMMA,slab,,,
+50,69,33,7/12/2012,194,pmma slab,PMMA,slab,,,
+51,111,21,7/12/2012,194,2 cm sphere   wake ign,PMMA,sphere,2.0, wake ignition,material assumed PMMA (sphere samples)
+52,112,21,7/12/2012,194,2 cm sphere   wake ign,PMMA,sphere,2.0, wake ignition,material assumed PMMA (sphere samples)
+53,113,21,7/12/2012,194,2 cm sphere   wake ign,PMMA,sphere,2.0, wake ignition,material assumed PMMA (sphere samples)
+54,2,5,7/19/2012,201,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+55,3,6,7/19/2012,201,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+56,15,30,7/19/2012,201,nomex natural III,Nomex,fabric,,,
+57,13,28,7/19/2012,201,Nomex blend 2 cm,Nomex,fabric,2.0,,
+58,17,32,7/19/2012,201,ultem sheet,Ultem,sheet,,,
+59,114,25,7/19/2012,201,pmma sphere,PMMA,sphere,,,
+60,62,23,7/23/2012,205,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+61,63,23,7/23/2012,205,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+62,64,23,7/23/2012,205,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+63,65,23,7/23/2012,205,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+64,118,23,7/23/2012,205,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+65,11,3,8/9/2012,222,SIBAL 1 cm,SIBAL fabric,fabric,1.0,,
+66,9,7,8/9/2012,222,SIBAL 2 cm,SIBAL fabric,fabric,2.0,,
+67,102,22,8/9/2012,222,PMMA sphere 2 cm,PMMA,sphere,2.0,,
+68,83a,36,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+69,83b,36,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+70,83c,36,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+71,84a,37,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+72,84b,37,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+73,86a,38,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+74,86b,38,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+75,86c,38,8/16/2012,229,Japan Wax Candle   wake,Japan wax,candle,, wake ignition,
+76,70,34,8/21/2012,234,PMMA slab,PMMA,slab,,,
+77,71,34,8/21/2012,234,PMMA slab,PMMA,slab,,,
+78,74,41,8/21/2012,234,paraffin wax slab,paraffin wax,slab,,,
+79,75,41,8/21/2012,234,parrafin wax slab,paraffin wax,slab,,,
+80,98,24,4/5/2013,95,PMMA 2 cm,PMMA,flat sample,2.0,,
+81,99,24,4/5/2013,95,PMMA 2 cm,PMMA,flat sample,2.0,,
+82,114,25,4/9/2013,99,PMMA 2 cm,PMMA,flat sample,2.0,,
+83,115,25,4/9/2013,99,pmma 2 cm,PMMA,flat sample,2.0,,
+84,116,25,4/9/2013,99,pmma 2 cm,PMMA,flat sample,2.0,,
+85,117,25,4/9/2013,99,pmma 2 cm,PMMA,flat sample,2.0,,
+85,117a,25,4/9/2013,99,pmma 2 cm,PMMA,flat sample,2.0,,
+86,100,24,4/12/2013,102,pmma 2 cm,PMMA,flat sample,2.0,,
+87,85,43,4/12/2013,102,candle    paraffin   wake,paraffin wax,candle,, wake ignition,
+88,93,43,4/12/2013,102,candle    paraffin   wake,paraffin wax,candle,, wake ignition,
+89,26,17,4/16/2013,106,pmma 1 cm,PMMA,flat sample,1.0,,
+90,27,17,4/16/2013,106,pmma 1 cm,PMMA,flat sample,1.0,,
+91,28,17,4/16/2013,106,pmma 1 cm,PMMA,flat sample,1.0,,
+89,87,40,4/23/2013,113,candle   Japan wax,Japan wax,candle,,,
+90,103,22,4/23/2013,113,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+91,104,22,4/23/2013,113,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+92,105,22,4/23/2013,113,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+93,38,20,4/26/2013,113,1 cm sphere   wake,PMMA,sphere,1.0, wake ignition,material assumed PMMA (sphere samples)
+94,39,20,4/26/2013,116,1 cm wake sphere,PMMA,sphere,1.0, wake ignition,material assumed PMMA (sphere samples)
+95,40,20,4/26/2013,116,1 cm wake sphere,PMMA,sphere,1.0, wake ignition,material assumed PMMA (sphere samples)
+96,72,34,4/26/2013,116,pmma slab opposed,PMMA,slab,,opposed flow,
+97,73,34,4/26/2013,116,pmma slab   oppsed,PMMA,slab,,opposed flow,
+98,118,23,4/29/2013,119,2 cm pmma sphere,PMMA,sphere,2.0,,
+99,119,23,4/29/2013,119,2 cm pmma sphere,PMMA,sphere,2.0,,
+100,89,44,5/2/2013,122,parrafin wax candle,paraffin wax,candle,,,
+101,95,44,5/2/2013,122,paraffin wax candle,paraffin wax,candle,,,
+102,92,40,5/2/2013,122,candle   Japan wax,Japan wax,candle,,,
+103,78,42,5/2/2013,122,paraffin wax slab,paraffin wax,slab,,,
+104,50,26,5/15/2103,135,2 cm pmma sphere,PMMA,sphere,2.0,,"date ""5/15/2103"" has a typo"
+105,51,26,5/15/2013,135,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+106,52,26,5/15/2013,135,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+107,53,26,5/15/2013,135,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+108,106,26,5/17/2013,137,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+109,107,26,5/17/2013,137,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+110,108,26,5/17/2013,137,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+111,109,26,6/1/2013,137,2 cm sphere,PMMA,sphere,2.0,,material assumed PMMA (sphere samples)
+112,79,42,6/1/2013,150,flat wax slab,paraffin wax,slab,,,
+113,80,42,6/1/2013,150,flat wax slab,paraffin wax,slab,,,
+114,75,41,6/1/2013,150,flat wax slab,paraffin wax,slab,,,
+115,53,26,6/1/2013,150,pmma sphere,PMMA,sphere,,,
+116,53a,26,6/1/2013,150,pmma sphere,PMMA,sphere,,,
