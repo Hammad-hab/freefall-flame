@@ -880,8 +880,7 @@ const UserMessage: FC = () => {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content peer bg-muted text-foreground rounded-(--composer-radius) px-4 py-2 wrap-break-word empty:hidden">
-          <MessagePrimitive.Parts
+        <div className="aui-user-message-content peer bg-(--composer-bg) text-foreground border border-foreground/10 rounded-(--composer-radius) px-4 py-2 wrap-break-word empty:hidden">          <MessagePrimitive.Parts
             components={{ File: UserFilePart, Image: UserImagePart }}
           />
         </div>
