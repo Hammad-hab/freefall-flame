@@ -5,18 +5,20 @@ import Link from 'next/link'
 import type { TabId } from './layout-reducer'
 import { TAB_REGISTRY, TAB_ORDER } from './tabs'
 import { Icon } from '../ui/Card'
+import AccountChip from './AccountChip'
 
 interface SidebarProps {
   activeTab: TabId | null
   canSplit: boolean
   onOpenTab: (tab: TabId) => void
   onSplitRight: (tab: TabId) => void
+  tabs?: TabId[]
 }
 
 /** Below this window width the sidebar starts collapsed and opens over the content. */
 const NARROW_PX = 768
 
-export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }: SidebarProps) {
+export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight, tabs = TAB_ORDER }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [narrow, setNarrow] = useState(false)
 
@@ -44,6 +46,11 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
         >
           <Icon d={narrow ? 'M4 6h16M4 12h16M4 18h16' : 'M9 6l6 6-6 6'} className="h-4 w-4" />
         </button>
+        {/* Collapsed, the chip keeps just the letter badge (or a log-in mark),
+            pinned to the strip's foot so it stays visible. */}
+        <div className="mt-auto w-full">
+          <AccountChip compact />
+        </div>
       </div>
     )
   }
@@ -75,7 +82,7 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
         </button>
       </div>
       <nav aria-label="Dashboard tabs" className="flex-1 overflow-y-auto py-1">
-        {TAB_ORDER.map((tab) => {
+        {tabs.map((tab) => {
           const meta = TAB_REGISTRY[tab]
           const isActive = tab === activeTab
           return (
@@ -119,6 +126,10 @@ export default function Sidebar({ activeTab, canSplit, onOpenTab, onSplitRight }
           <Icon d={TAB_REGISTRY.customize.icon} className="h-3.5 w-3.5 shrink-0" />
           {TAB_REGISTRY.customize.label}
         </button>
+      </div>
+      {/* The account control sits in the sidebar's foot, below the tabs. */}
+      <div className="mt-auto">
+        <AccountChip />
       </div>
     </div>
   )

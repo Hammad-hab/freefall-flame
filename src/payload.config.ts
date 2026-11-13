@@ -10,6 +10,8 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { DatasetImports, DatasetRows, Datasets } from './collections/Dataset'
 import { Papers } from './collections/Papers'
+import { ChatThreads } from './collections/ChatThreads'
+import { ChatMessages } from './collections/ChatMessages'
 // import { Papers } from './collections/Papers'
 
 const filename = fileURLToPath(import.meta.url)
@@ -20,7 +22,7 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
   },
-  collections: [Users, Media, Papers, Datasets, DatasetRows, DatasetImports],
+  collections: [Users, Media, Papers, Datasets, DatasetRows, DatasetImports, ChatThreads, ChatMessages],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },

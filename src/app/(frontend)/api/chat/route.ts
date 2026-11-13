@@ -1,82 +1,146 @@
-import 'server-only'
-import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
-import { AI_MODEL } from '@/lib/ai-guard' // adjust path
+// src/app/api/chat/route.ts
+import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import { streamText, convertToModelMessages, tool, stepCountIs } from 'ai'
+import { z } from 'zod'
+import { AI_MODEL } from '@/lib/ai-guard'
+import psiCatalogue from '@/app/(frontend)/dashboard/components/investigations/psi.json'
+import scorecard from '@/app/(frontend)/dashboard/components/sandbox/scorecard.json'
+import {
+  rank,
+  DEFAULT_WEIGHTS,
+  type PsiCatalogue,
+  type PsiInvestigation,
+} from '@/lib/psi'
+import { SYSTEM_PROMPT } from '@/lib/system-prompt'
 
-export const maxDuration = 60
+const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY })
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const SYSTEM = 'You are a helpful assistant.' // put your combustion-specific prompt here
+// The PSI catalogue is static, checked-in data, so compute the habitat-relevance
+// ranking once at module load rather than on every chat request.
+const catalogue = psiCatalogue as PsiCatalogue
+const ranked = rank(
+  catalogue.investigations.map((i) => ({ id: i.id, name: i.name, scores: i.scores })),
+  DEFAULT_WEIGHTS,
+)
+const rankById = new Map((ranked ?? []).map((r) => [r.id, r]))
+const investigationIds = catalogue.investigations.map((i) => i.id)
 
-type Part = { type: string; text?: string }
-type UIMsg = { role: 'user' | 'assistant' | 'system'; parts?: Part[] }
+// Scorecard: static, checked-in record of every BASS-II preset the sandbox can
+// load, with NASA's stated outcome and the sandbox's precomputed verdict.
+const scorecardTests = new Map(
+  (scorecard as { tests: { testId: string; nasaOutcome: string; verdict: string; runSteps: number }[] }).tests.map(
+    (t) => [t.testId, t],
+  ),
+)
+const presetTestIds = (scorecard as { presetTestIds: string[] }).presetTestIds
+const VALID_VIEWS = ['material', 'temperature', 'oxygen', 'flow', 'co2', 'co', 'camera'] as const
+type SandboxView = (typeof VALID_VIEWS)[number]
+
+function toSummary(inv: PsiInvestigation) {
+  const r = rankById.get(inv.id)
+  return {
+    id: inv.id,
+    name: inv.name,
+    psiId: inv.psiId,
+    tests: inv.tests,
+    safetyTheme: inv.safetyTheme,
+    score: r?.score ?? null,
+    rank: r?.rank ?? null,
+  }
+}
+
+function toDetail(inv: PsiInvestigation) {
+  const r = rankById.get(inv.id)
+  return {
+    id: inv.id,
+    name: inv.name,
+    psiId: inv.psiId,
+    fuelPhase: inv.fuelPhase,
+    hardware: inv.hardware,
+    tests: inv.tests,
+    granularity: inv.granularity,
+    rows: inv.rows,
+    flaggedRows: inv.flaggedRows,
+    fuels: inv.fuels,
+    o2Pct: inv.o2Pct,
+    pressure: inv.pressure,
+    flowCmS: inv.flowCmS,
+    outcomeRecorded: inv.outcomeRecorded,
+    safetyTheme: inv.safetyTheme,
+    simulation: inv.simulation,
+    facts: inv.facts,
+    sources: inv.sources,
+    scores: inv.scores,
+    score: r?.score ?? null,
+    rank: r?.rank ?? null,
+  }
+}
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) return new Response('Missing OPENROUTER_API_KEY', { status: 500 })
-
-  const { messages } = (await req.json()) as { messages: UIMsg[] }
-  const chat = messages.map((m) => ({
-    role: m.role,
-    content: (m.parts ?? []).filter((p) => p.type === 'text').map((p) => p.text ?? '').join(''),
-  }))
-
-  const upstream = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      stream: true,
-      usage: { include: true },
-      messages: [{ role: 'system', content: SYSTEM }, ...chat],
-    }),
-    signal: req.signal,
-  }).catch(() => null)
-
-  if (!upstream || !upstream.ok || !upstream.body) {
-    console.log(`[ai] ${AI_MODEL} HTTP ${upstream?.status ?? 'fetch failed'}`)
-    return new Response('Upstream error', { status: 502 })
-  }
-
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      const id = crypto.randomUUID()
-      writer.write({ type: 'text-start', id })
-
-      const reader = upstream.body!.getReader()
-      const decoder = new TextDecoder()
-      let buf = ''
-      let usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number } | undefined
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buf += decoder.decode(value, { stream: true })
-        const lines = buf.split('\n')
-        buf = lines.pop() ?? ''
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue // skips ": OPENROUTER PROCESSING" keepalives
-          const payload = line.slice(6).trim()
-          if (!payload || payload === '[DONE]') continue
-          try {
-            const json = JSON.parse(payload)
-            const delta = json.choices?.[0]?.delta?.content
-            if (delta) writer.write({ type: 'text-delta', id, delta })
-            if (json.usage) usage = json.usage
-          } catch {
-            /* partial or malformed chunk, ignore */
+  const { messages } = await req.json()
+  const result = streamText({
+    model: openrouter.chat(AI_MODEL),
+    messages: await convertToModelMessages(messages),
+    stopWhen: stepCountIs(5), // lets the model call a tool, then continue
+    system: SYSTEM_PROMPT,
+    tools: {
+      listInvestigations: tool({
+        description:
+          "List NASA's 14 PSI combustion investigations with their habitat-relevance score and rank. Use this first when the user asks about investigations in general or wants to know which ones exist.",
+        inputSchema: z.object({}),
+        execute: async () => ({
+          investigations: catalogue.investigations.map(toSummary),
+        }),
+      }),
+      getInvestigation: tool({
+        description:
+          "Fetch one investigation by its id (e.g. \"bass-ii\", \"saffire\"). Returns its full record: fuels, oxygen/pressure/flow ranges, stated outcomes, simulation status, computed facts, sources, and per-criterion habitat-relevance scores. Use this when the user asks about a specific investigation.",
+        inputSchema: z.object({
+          id: z
+            .string()
+            .describe(`One of: ${investigationIds.join(', ')}`),
+        }),
+        execute: async ({ id }) => {
+          const inv = catalogue.investigations.find((i) => i.id === id)
+          if (!inv) {
+            return {
+              error: `No investigation with id "${id}". Available ids: ${investigationIds.join(', ')}`,
+            }
           }
-        }
-      }
-
-      writer.write({ type: 'text-end', id })
-      console.log(
-        `[ai] ${AI_MODEL} HTTP ${upstream.status}: ${usage?.prompt_tokens ?? '?'} prompt + ${usage?.completion_tokens ?? '?'} completion tokens` +
-          (typeof usage?.cost === 'number' ? `, cost ${usage.cost} credits (USD)` : ''),
-      )
+          return toDetail(inv)
+        },
+      }),
+      openSandbox: tool({
+        description:
+          "Offer to show a 2D sandbox simulation for a BASS-II test. Use this when the user asks to see, run, or visualise a test (e.g. \"show me B14\", \"what does B14 look like\"). Only BASS-II tests that the sandbox can load are valid. Pick the view most relevant to the conversation: temperature (burning sample), oxygen (O2-limited burning), flow (ventilation), co/co2 (gas readings), material (fuel layout), camera (visual appearance).",
+        inputSchema: z.object({
+          testId: z
+            .string()
+            .describe(`One of: ${presetTestIds.join(', ')}`),
+          view: z
+            .enum(VALID_VIEWS)
+            .optional()
+            .describe('Most relevant view for the conversation; defaults to temperature'),
+        }),
+        execute: async ({ testId, view }) => {
+          if (!presetTestIds.includes(testId)) {
+            return {
+              error: `No sandbox preset for "${testId}". Available test ids: ${presetTestIds.join(', ')}`,
+            }
+          }
+          const rec = scorecardTests.get(testId)
+          const v = (view ?? 'temperature') as SandboxView
+          return {
+            testId,
+            view: v,
+            href: `/dashboard?tab=sandbox&preset=${encodeURIComponent(testId)}&view=${v}`,
+            nasaOutcome: rec?.nasaOutcome ?? null,
+            verdict: rec?.verdict ?? null,
+            runSteps: rec?.runSteps ?? null,
+          }
+        },
+      }),
     },
-    onError: () => 'Something went wrong.',
   })
-
-  return createUIMessageStreamResponse({ stream })
+  return result.toUIMessageStreamResponse()
 }

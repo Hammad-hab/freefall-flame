@@ -73,6 +73,8 @@ export interface Config {
     datasets: Dataset;
     'dataset-rows': DatasetRow;
     'dataset-imports': DatasetImport;
+    'chat-threads': ChatThread;
+    'chat-messages': ChatMessage;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,6 +92,8 @@ export interface Config {
     datasets: DatasetsSelect<false> | DatasetsSelect<true>;
     'dataset-rows': DatasetRowsSelect<false> | DatasetRowsSelect<true>;
     'dataset-imports': DatasetImportsSelect<false> | DatasetImportsSelect<true>;
+    'chat-threads': ChatThreadsSelect<false> | ChatThreadsSelect<true>;
+    'chat-messages': ChatMessagesSelect<false> | ChatMessagesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -399,6 +403,40 @@ export interface DatasetImport {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-threads".
+ */
+export interface ChatThread {
+  id: number;
+  ownerId: string;
+  title?: string | null;
+  status?: ('regular' | 'archived') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-messages".
+ */
+export interface ChatMessage {
+  id: number;
+  thread: number | ChatThread;
+  messageId: string;
+  parentId?: string | null;
+  format: string;
+  content:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -444,6 +482,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'dataset-imports';
         value: number | DatasetImport;
+      } | null)
+    | ({
+        relationTo: 'chat-threads';
+        value: number | ChatThread;
+      } | null)
+    | ({
+        relationTo: 'chat-messages';
+        value: number | ChatMessage;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -638,6 +684,30 @@ export interface DatasetImportsSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-threads_select".
+ */
+export interface ChatThreadsSelect<T extends boolean = true> {
+  ownerId?: T;
+  title?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-messages_select".
+ */
+export interface ChatMessagesSelect<T extends boolean = true> {
+  thread?: T;
+  messageId?: T;
+  parentId?: T;
+  format?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -56,7 +56,7 @@ function ToolFallbackRoot({
   className,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
-  defaultOpen = false,
+  defaultOpen = true,
   children,
   ...props
 }: ToolFallbackRootProps) {
@@ -1213,7 +1213,7 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
     approval != null ||
     (isRequiresAction && offersInterruptAction(status, approval, interrupt));
 
-  const [open, setOpen] = useState(isRequiresAction);
+  const [open, setOpen] = useState(true);
   const [prevRequiresAction, setPrevRequiresAction] =
     useState(isRequiresAction);
   if (isRequiresAction !== prevRequiresAction) {

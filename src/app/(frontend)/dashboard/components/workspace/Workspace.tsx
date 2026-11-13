@@ -5,6 +5,7 @@ import type { DatasetMeta, DataRow } from '@/lib/types'
 import type { ParsedRow } from '@/lib/combustion'
 import type { ShareResult } from '@/lib/shares'
 import { createInitialState, layoutReducer, countLeaves, type TabId } from './layout-reducer'
+import { TAB_REGISTRY, TAB_ORDER } from './tabs'
 import type { TabData } from './tabs'
 import {
   cardHref,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { DataRow, DatasetMeta } from '@/lib/types';
 import GridCanvas from './view/GridCanvas';
 import { Engine, CFIG_VISUAL_DEMO, FIDELITY, LIGHT, PARAM, SAFFIRE_FIRST, loadEngine, type Light } from './engine/Engine';
@@ -50,6 +51,10 @@ interface SandboxProps {
 }
 
 export default function Page({ dataset, rows, links }: SandboxProps) {
+  const searchParams = useSearchParams()
+  const initialView = searchParams.get('view')
+  const validViews = ['material', 'temperature', 'oxygen', 'flow', 'co2', 'co', 'camera'] as const
+  const initialViewValid = (validViews as readonly string[]).includes(initialView ?? '') ? (initialView as (typeof validViews)[number]) : null
   const [engine, setEngine] = useState<Engine | null>(null);
   const readingIndex = useMemo(
     () => (dataset && rows ? buildReadingIndex(dataset.columns, rows) : null),
@@ -87,6 +92,10 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
   // Latest controls for the canvas callbacks, so its loop never sees stale values.
   const cr = useRef(c);
   cr.current = c;
+  // A ?view= param (e.g. from the chat's sandbox tool) sets the initial view.
+  useEffect(() => {
+    if (initialViewValid) cr.current.setView(initialViewValid);
+  }, [initialViewValid]);
   const behindRef = useRef(false);
 
   const scenario = useRef<Scenario>(null);
@@ -191,6 +200,7 @@ export default function Page({ dataset, rows, links }: SandboxProps) {
       let id: number | null = ids.find((i) => engine.preset(i).testId === request.testId) ?? null;
       if (id !== null && engine.preset(id).fidelity === FIDELITY.NOT_MODELLED) id = null;
       if (id !== null) loadPreset(id, engine.preset(id).defaultLighting, false);
+      if (initialViewValid) cr.current.setView(initialViewValid);
       setFocus({ id, testId: request.testId, nonce: request.nonce });
     } else if (request.kind === 'group') {
       setFocus({ group: request.group, nonce: request.nonce });
