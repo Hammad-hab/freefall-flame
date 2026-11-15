@@ -1,6 +1,6 @@
 'use client'
+import { O2CoverageChart } from './O2CoverageChart'
 
-/** Conclusions tab: what the PSI data shows, where it's blind, what to do next. */
 
 const FINDINGS = [
   {
@@ -53,37 +53,6 @@ const BARS = [
 
 const X = (pct: number) => 40 + (pct / 100) * 560
 
-function CoverageBar() {
-  return (
-    <svg viewBox="0 0 620 230" role="img" className="w-full max-w-3xl"
-         aria-label="Oxygen concentration tested by investigation versus Moon base range">
-      {/* Moon-base band */}
-      <rect x={X(30)} y={10} width={X(34) - X(30)} height={170} fill="currentColor" opacity={0.18} />
-      <text x={X(32)} y={22} fontSize={10} textAnchor="middle" fill="currentColor">Moon base</text>
-      <text x={X(32)} y={34} fontSize={10} textAnchor="middle" fill="currentColor">30%+</text>
-
-      {BARS.map((b, i) => (
-        <g key={b.label}>
-          <rect x={X(b.from)} y={50 + i * 40} width={X(b.to) - X(b.from)} height={18} rx={3}
-                fill="currentColor" opacity={b.tone === 'solid' ? 0.85 : 0.4} />
-          <text x={X(b.to) + 6} y={63 + i * 40} fontSize={11} fill="currentColor">{b.label}</text>
-        </g>
-      ))}
-
-      {/* axis */}
-      <line x1={40} y1={185} x2={600} y2={185} stroke="currentColor" opacity={0.5} />
-      {[0, 21, 50, 100].map((t) => (
-        <g key={t}>
-          <line x1={X(t)} y1={185} x2={X(t)} y2={190} stroke="currentColor" />
-          <text x={X(t)} y={204} fontSize={10} textAnchor="middle" fill="currentColor">{t}%</text>
-        </g>
-      ))}
-      <text x={X(21)} y={218} fontSize={9} textAnchor="middle" fill="currentColor" opacity={0.7}>Earth air</text>
-      <text x={X(100)} y={218} fontSize={9} textAnchor="end" fill="currentColor" opacity={0.7}>Spacesuit</text>
-    </svg>
-  )
-}
-
 export default function Conclusions() {
   return (
     <div id="conclusions" data-conclusions className="space-y-8 p-6 max-w-4xl">
@@ -113,7 +82,7 @@ export default function Conclusions() {
         <p className="mt-1 opacity-80">
           Oxygen range each investigation tested, against the expected Moon-base air.
         </p>
-        <CoverageBar />
+        <O2CoverageChart />   {/* was <CoverageBar /> */}
         <ul className="mt-3 list-disc pl-5 space-y-1">
           {GAPS.map((g) => <li key={g}>{g}</li>)}
         </ul>
