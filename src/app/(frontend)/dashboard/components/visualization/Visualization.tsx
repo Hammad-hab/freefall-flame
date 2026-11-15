@@ -308,8 +308,9 @@ export default function Visualization({
         </div>
       )}
 
-      {/* Generic comparison — always available for any dataset */}
-      {/*<GenericCompare dataset={dataset} rows={rows} />*/}
+      {/* Generic comparison — always available for any dataset, including the
+          ones without BASS-II's columns (FLEX, CFI-G). */}
+      <GenericCompare dataset={dataset} rows={rows} />
     </div>
   );
 }
