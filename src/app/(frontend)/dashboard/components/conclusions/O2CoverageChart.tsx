@@ -57,7 +57,7 @@ export function O2CoverageChart() {
             </text>
           </g>
         ))}
-        <text x={(M.l + W - M.r) / 2} y={H - 8} fontSize={12} textAnchor="middle" fill="currentColor">
+        <text x={(M.l + W - M.r) / 2} y={H - 25} fontSize={12} textAnchor="middle" fill="currentColor">
           Oxygen concentration (% by volume)
         </text>
 
@@ -72,7 +72,7 @@ export function O2CoverageChart() {
         {/* Moon-base band */}
         <rect x={x(MOON.from)} y={M.t - 8} width={x(MOON.to) - x(MOON.from)}
               height={plotBottom - M.t + 8} fill="currentColor" opacity={0.2} />
-        <text x={x((MOON.from + MOON.to) / 2)} y={M.t - 14} fontSize={10} fontWeight={600}
+        <text x={x((MOON.from + MOON.to) / 2 + 5)} y={M.t - 14} fontSize={10} fontWeight={600}
               textAnchor="middle" fill="currentColor">
           Moon base
         </text>
@@ -96,13 +96,13 @@ export function O2CoverageChart() {
             <rect x={x(r.min)} y={y(i) + 8} width={x(r.max) - x(r.min)} height={24} rx={4}
                   fill={r.openLeft ? 'url(#fadeLeft)' : 'currentColor'}
                   opacity={r.group === 'solid' ? 0.95 : hover === i ? 0.7 : 0.5} />
-            <text x={x(r.max) + 6} y={y(i) + 25} fontSize={11} fill="currentColor">{r.max}%</text>
+            <text x={x(r.max)} y={y(i) + 25} fontSize={11} fill="currentColor">{r.max}%</text>
           </g>
         ))}
       </svg>
 
       {/* legend + readout */}
-      <figcaption className="mt-2 text-sm space-y-1">
+      <figcaption className="mt-2 text-sm space-y-1 mb-10">
         <div className="flex flex-wrap gap-x-5 gap-y-1 opacity-80">
           <span>■ solid materials (what a habitat is made of)</span>
           <span>▒ other flames and droplets</span>
