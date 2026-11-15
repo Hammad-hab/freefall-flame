@@ -53,7 +53,7 @@ export default function SourcesStrip({
   }
 
   return (
-    <div className={panelCls} style={panelStyle}>
+    <div className={`${panelCls} flex max-h-[420px] flex-col`} style={panelStyle}>
       <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
         Sources
       </h3>
@@ -62,7 +62,7 @@ export default function SourcesStrip({
         supports any particular chart value.
       </p>
 
-      <div className="mt-3 space-y-2">
+       <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {dataset.papers.map((p: PaperRef) => (
           <div
             key={p.id}

@@ -12,6 +12,78 @@
         "ntrsId": "20150019858",
         "url": "https://ntrs.nasa.gov/citations/20150019858"
       }
+    ],
+    "FLEX": [
+      {
+        "title": "FLEX Cool Flame Alkane Droplets",
+        "ntrsId": "20140006750",
+        "url": "https://ntrs.nasa.gov/citations/20140006750"
+      },
+      {
+        "title": "FLEX Decisive Step Forward",
+        "ntrsId": "20120015928",
+        "url": "https://ntrs.nasa.gov/citations/20120015928"
+      },
+      {
+        "title": "FLEX Detailed Results TP-2015-216046",
+        "ntrsId": "20150023456",
+        "url": "https://ntrs.nasa.gov/citations/20150023456"
+      },
+      {
+        "title": "FLEX Methanol Droplet Combustion",
+        "ntrsId": "20130014061",
+        "url": "https://ntrs.nasa.gov/citations/20130014061"
+      }
+    ],
+    "Saffire I-III": [
+      {
+        "title": "Saffire I-III Overview Slides",
+        "ntrsId": "20170002628",
+        "url": "https://ntrs.nasa.gov/citations/20170002628"
+      },
+      {
+        "title": "Saffire I-III Results Slides",
+        "ntrsId": "20180005168",
+        "url": "https://ntrs.nasa.gov/citations/20180005168"
+      },
+      {
+        "title": "Saffire ICES Objectives Hardware",
+        "ntrsId": "20170000230",
+        "url": "https://ntrs.nasa.gov/citations/20170000230"
+      },
+      {
+        "title": "Saffire Large-Scale Flammability Results",
+        "ntrsId": "20170008805",
+        "url": "https://ntrs.nasa.gov/citations/20170008805"
+      },
+      {
+        "title": "Saffire Objectives Development Status",
+        "ntrsId": "20170001636",
+        "url": "https://ntrs.nasa.gov/citations/20170001636"
+      },
+      {
+        "title": "Saffire Poster",
+        "ntrsId": "20150000894",
+        "url": "https://ntrs.nasa.gov/citations/20150000894"
+      }
+    ],
+    "SAME-R": [
+      {
+        "title": "SAME-R Particle Morphology",
+        "ntrsId": "20150010172",
+        "url": "https://ntrs.nasa.gov/citations/20150010172"
+      },
+      {
+        "title": "SAME-R Preliminary Results",
+        "ntrsId": "20120012884",
+        "url": "https://ntrs.nasa.gov/citations/20120012884"
+      }
+    ],
+    "SAME": [
+      {
+        "title": "SAME Fact Sheet",
+        "url": "https://www.nasa.gov/wp-content/uploads/2025/07/smoke-aerosol-measurement-experiment-same.pdf"
+      }
     ]
   }
 }

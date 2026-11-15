@@ -9,7 +9,7 @@ import {
   type ParsedRow,
   type ScoredMaterial,
 } from "@/lib/combustion";
-import type { DataRow } from "@/lib/types";
+import type { DataRow, PaperRef } from "@/lib/types";
 import { C, alpha, panelCls, panelStyle } from "../ui/chart-theme";
 
 type SortMode = "name" | "tests" | "score";
@@ -27,7 +27,7 @@ const REFERENCE_LINES = [
  * band. Empty cells mean no recorded tests — an evidence gap, NOT proof that
  * the condition is safe or unsafe.
  */
-export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; rawRows: DataRow[] }) {
+export default function OxygenHeatmap({ rows, rawRows, papers = [] }: { rows: ParsedRow[]; rawRows: DataRow[]; papers?: PaperRef[] }) {
   const [bandWidth, setBandWidth] = useState(1);
   const [sort, setSort] = useState<SortMode>("score");
   const [selectedCell, setSelectedCell] = useState<{ material: string; bandIdx: number } | null>(null);
@@ -63,14 +63,20 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
     return m;
   }, [rows, bands]);
 
-  // Build lookup: parsedRow._idx -> raw DataRow (for paper links)
+  // Build lookup: parsedRow._idx -> raw DataRow (for paper links).
+  // `_idx` is the index into the raw rows array (see parseRows), so key by
+  // position. DataRow._index is the dataset's 1-based rowIndex and never
+  // matches it, which is why keying by _index resolved nothing.
   const rawByIdx = useMemo(() => {
     const m = new Map<number, DataRow>();
-    for (const r of rawRows) {
-      if (r._index !== null && r._index !== undefined) m.set(r._index, r);
-    }
+    rawRows.forEach((r, i) => m.set(i, r));
     return m;
   }, [rawRows]);
+
+  // A row carries the Payload paper id, not its NTRS id; the citable id (and
+  // the fallback source URL) live on the dataset's paper, so resolve one to the
+  // other before building a citation link.
+  const paperById = useMemo(() => new Map(papers.map((p) => [String(p.id), p])), [papers]);
 
   // Gap finder: materials with no valid tests at or above the threshold
   const [gapThreshold, setGapThreshold] = useState(bands.length > 0 ? bands[bands.length - 1].max : 21);
@@ -430,25 +436,36 @@ export default function OxygenHeatmap({ rows, rawRows }: { rows: ParsedRow[]; ra
             {selectedCell.material} · {bands[selectedCell.bandIdx].label} O₂ — {selectedRows.length} test{selectedRows.length === 1 ? "" : "s"}
           </div>
           <div className="space-y-1">
-            {selectedRows.map(({ row, raw }) => (
-              <div key={row._idx} className="flex items-center gap-2 text-[11px]" style={{ color: C.muted }}>
-                <span style={{ color: C.fg }}>Test {row.testNo ?? "—"}</span>
-                <span>O₂i {row.o2i ?? "—"}%</span>
-                <span>O₂f {row.o2f ?? "—"}%</span>
-                {raw._paper && (
-                  <a
-                    href={`https://ntrs.nasa.gov/citations/${raw._paper}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                    style={{ color: C.accentText }}
-                  >
-                    Paper {raw._paper}
-                  </a>
-                )}
-                {!raw._paper && <span>No paper link</span>}
-              </div>
-            ))}
+            {selectedRows.map(({ row, raw }) => {
+              const paper = raw._paper != null ? paperById.get(String(raw._paper)) : undefined
+              const href = paper?.ntrsId
+                ? `https://ntrs.nasa.gov/citations/${paper.ntrsId}`
+                : paper?.sourceUrl ?? null
+              return (
+                <div key={row._idx} className="flex items-center gap-2 text-[11px]" style={{ color: C.muted }}>
+                  <span style={{ color: C.fg }}>Test {row.testNo ?? "—"}</span>
+                  <span>O₂i {row.o2i ?? "—"}%</span>
+                  <span>O₂f {row.o2f ?? "—"}%</span>
+                  {href ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                      style={{ color: C.accentText }}
+                    >
+                      {paper?.ntrsId ? `NTRS ${paper.ntrsId}` : "Source link"}
+                    </a>
+                  ) : raw._paper != null ? (
+                    // A row-level reference we can't resolve to this dataset's
+                    // papers: say so rather than dropping it or inventing a link.
+                    <span>Unresolved paper {raw._paper}</span>
+                  ) : (
+                    <span>No paper link</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

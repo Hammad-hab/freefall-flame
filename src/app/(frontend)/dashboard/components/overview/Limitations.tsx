@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { C, panelCls, panelStyle } from "../ui/chart-theme"
 
 /**
@@ -43,6 +44,17 @@ export default function Limitations() {
           scores or safety ratings.
         </li>
       </ul>
+      <p className="text-[12px]" style={{ color: C.muted }}>
+        <a
+          href={"?tab=conclusions"}
+          data-link-investigations
+          className="underline decoration-dotted underline-offset-2 hover:opacity-80"
+          style={{ color: C.accentText }}
+        >
+          See the conclusions we draw
+        </a>
+        
+      </p>
     </div>
   )
 }

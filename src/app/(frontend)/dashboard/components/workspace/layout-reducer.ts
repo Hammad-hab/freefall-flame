@@ -9,7 +9,7 @@
  * All operations are immutable (state in, new state out).
  */
 
-export type TabId = 'overview' | 'investigations' | 'evidence' | 'visualization' | 'ai-summary' | 'papers' | 'sandbox' | 'customize'
+export type TabId = 'overview' | 'investigations' | 'evidence' | 'visualization' | 'ai-summary' | 'papers' | 'sandbox' | 'conclusions' | 'customize'
 
 export type Direction = 'row' | 'col'
 

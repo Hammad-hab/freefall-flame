@@ -21,6 +21,7 @@ import {
 import type { DatasetMeta, DataRow } from "@/lib/types";
 import { C, panelCls, panelStyle } from "../ui/chart-theme";
 import GenericCompare from "./GenericCompare";
+import GeneralCharts from "./GeneralCharts";
 import { DataTable } from "./DataTable";
 import { FilterPill, Notice, StatCard } from "./primitives";
 import type { WorkspaceLinks } from "../workspace/links";
@@ -293,23 +294,14 @@ export default function Visualization({
           <DataTable filtered={filtered} rows={rows} resolutions={resolutions} all={parsed} links={links} />
         </>
       ) : (
-        /* Graceful degradation: required BASS-II columns are missing. */
-        <div className={panelCls} style={panelStyle}>
-          <h3 className="text-[14px] font-medium" style={{ color: C.fg }}>
-            Combustion analysis unavailable for this dataset
-          </h3>
-          <p className="mt-2 text-[12px]" style={{ color: C.muted }}>
-            This dataset does not include the columns needed for combustion analysis
-            {materialCol ? "" : " (no material column)"}
-            {o2iCol && o2fCol ? "" : " (no initial/final oxygen columns)"}. The charts are omitted
-            rather than filled with unrelated columns. You can still explore this dataset with the
-            generic comparison below.
-          </p>
-        </div>
+        /* No BASS-II column set (FLEX, CFI-G, an uploaded dataset): plot the
+           columns this dataset does have rather than showing a dead end. */
+        <GeneralCharts dataset={dataset} rows={rows} />
       )}
 
-      {/* Generic comparison — always available for any dataset */}
-      {/*<GenericCompare dataset={dataset} rows={rows} />*/}
+      {/* Generic comparison — always available for any dataset, including the
+          ones without BASS-II's columns (FLEX, CFI-G). */}
+      <GenericCompare dataset={dataset} rows={rows} />
     </div>
   );
 }

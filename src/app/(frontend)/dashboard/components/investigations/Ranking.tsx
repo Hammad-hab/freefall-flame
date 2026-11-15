@@ -8,6 +8,8 @@
  */
 import { CRITERIA, MAX_WEIGHT, DEFAULT_WEIGHTS, rankLabel, type HabitatReference, type Ranked, type Weights } from '@/lib/psi'
 import { C } from '../ui/chart-theme'
+import Latex from 'react-latex-next';
+import 'katex/dist/katex.min.css'
 
 /** "1." for a rank of its own, "2=" for a tie. */
 const rankLabelText = (r: Ranked, ranked: Ranked[]) => {
@@ -22,9 +24,13 @@ export function WeightsPanel({ weights, onChange }: { weights: Weights; onChange
   return (
     <div id="psi-weights">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[11px]" style={{ color: C.muted }}>
-          Score = Σ weight × criterion ÷ (2 × Σ weights) × 100. Each criterion is 0, 1 or 2.
-        </p>
+        <div className="py-1 leading-normal" style={{ color: C.muted, fontSize: 14 }}>
+          <Latex>
+            {String.raw`$\displaystyle \text{Score} = \frac{\sum_i w_i c_i}{2 \sum_i w_i} \times 100$`}
+          </Latex>
+          <br/>
+           Each criterion is 0, 1 or 2.
+        </div>
         <button
           onClick={() => onChange({ ...DEFAULT_WEIGHTS })}
           disabled={isDefault}
