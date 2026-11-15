@@ -27,6 +27,7 @@ import ReferencedPapers from '../papers/ReferencedPapers'
 import Sandbox from '../sandbox/sandbox'
 import Investigations from '../investigations/Investigations'
 import Customize from '../customize/Customize'
+import Conclusions from '../conclusions/Conclusions'
 import { linkProps, type WorkspaceLinks } from './links'
 import ChatUI from '../chat/chatui'
 import { C } from '../ui/chart-theme'
@@ -105,14 +106,14 @@ function VisualizationContent({ data }: { data: TabData }) {
   return <Visualization dataset={data.dataset} rows={data.rows} links={data.links} />
 }
 
-function AiSummaryContent({ data }: { data: TabData }) {
-  return (
-    <div className="space-y-8">
-      <InterpretationPanel datasetId={data.datasetId} datasetName={data.datasetName} />
-      <ReferencedPapers papers={data.dataset.papers} />
-    </div>
-  )
-}
+// function AiSummaryContent({ data }: { data: TabData }) {
+//   return (
+//     <div className="space-y-8">
+//       <InterpretationPanel datasetId={data.datasetId} datasetName={data.datasetName} />
+//       <ReferencedPapers papers={data.dataset.papers} />
+//     </div>
+//   )
+// }
 
 function PapersContent({ data }: { data: TabData }) {
   return <ReferencedPapers papers={data.dataset.papers} />
@@ -167,7 +168,12 @@ export const TAB_REGISTRY: Record<
     icon: 'M12 3a9 9 0 100 18c.8 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1-.3-.3-.4-.7-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 005-5c0-4.4-4-8-9-8zM7.5 12h.01M9.5 7.5h.01M14.5 7.5h.01M16.5 11h.01',
     render: () => <Customize />,
   },
+  conclusions: {
+    label: 'Conclusions',
+    icon: 'M5 3v18M5 4h12l-2.5 4L17 12H5',
+    render: () => <Conclusions />,
+  },
 }
 
 /** The data tabs, in the sidebar's order. Customize sits apart, at the sidebar's foot. */
-export const TAB_ORDER: TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox']
+export const TAB_ORDER: TabId[] = ['overview', 'investigations', 'evidence', 'visualization', 'ai-summary', 'papers', 'sandbox', 'conclusions']

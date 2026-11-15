@@ -327,6 +327,42 @@
           "kind": "psi",
           "psiId": "PSI-98/99/100",
           "table": "saffire_tests_clean.csv"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire I-III Overview Slides",
+          "ntrsId": "20170002628",
+          "url": "https://ntrs.nasa.gov/citations/20170002628"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire I-III Results Slides",
+          "ntrsId": "20180005168",
+          "url": "https://ntrs.nasa.gov/citations/20180005168"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire ICES Objectives Hardware",
+          "ntrsId": "20170000230",
+          "url": "https://ntrs.nasa.gov/citations/20170000230"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire Large-Scale Flammability Results",
+          "ntrsId": "20170008805",
+          "url": "https://ntrs.nasa.gov/citations/20170008805"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire Objectives Development Status",
+          "ntrsId": "20170001636",
+          "url": "https://ntrs.nasa.gov/citations/20170001636"
+        },
+        {
+          "kind": "paper",
+          "title": "Saffire Poster",
+          "ntrsId": "20150000894",
+          "url": "https://ntrs.nasa.gov/citations/20150000894"
         }
       ],
       "scores": {
@@ -427,6 +463,30 @@
           "kind": "psi",
           "psiId": "PSI-69",
           "table": "flex_tests_clean.csv"
+        },
+        {
+          "kind": "paper",
+          "title": "FLEX Cool Flame Alkane Droplets",
+          "ntrsId": "20140006750",
+          "url": "https://ntrs.nasa.gov/citations/20140006750"
+        },
+        {
+          "kind": "paper",
+          "title": "FLEX Decisive Step Forward",
+          "ntrsId": "20120015928",
+          "url": "https://ntrs.nasa.gov/citations/20120015928"
+        },
+        {
+          "kind": "paper",
+          "title": "FLEX Detailed Results TP-2015-216046",
+          "ntrsId": "20150023456",
+          "url": "https://ntrs.nasa.gov/citations/20150023456"
+        },
+        {
+          "kind": "paper",
+          "title": "FLEX Methanol Droplet Combustion",
+          "ntrsId": "20130014061",
+          "url": "https://ntrs.nasa.gov/citations/20130014061"
         }
       ],
       "scores": {
@@ -1230,6 +1290,18 @@
           "kind": "psi",
           "psiId": "PSI-101",
           "table": "same_r_tests_clean.csv"
+        },
+        {
+          "kind": "paper",
+          "title": "SAME-R Particle Morphology",
+          "ntrsId": "20150010172",
+          "url": "https://ntrs.nasa.gov/citations/20150010172"
+        },
+        {
+          "kind": "paper",
+          "title": "SAME-R Preliminary Results",
+          "ntrsId": "20120012884",
+          "url": "https://ntrs.nasa.gov/citations/20120012884"
         }
       ],
       "scores": {
@@ -1311,6 +1383,11 @@
           "kind": "psi",
           "psiId": "PSI-102",
           "table": "same_tests_clean.csv"
+        },
+        {
+          "kind": "paper",
+          "title": "SAME Fact Sheet",
+          "url": "https://www.nasa.gov/wp-content/uploads/2025/07/smoke-aerosol-measurement-experiment-same.pdf"
         }
       ],
       "scores": {
