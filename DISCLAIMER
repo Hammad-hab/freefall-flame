@@ -1,0 +1,26 @@
+## AI Use Disclosure
+
+**Flame in Freefall** was built by a human team for the NASA Space Apps Challenge 2026. Artificial intelligence tools were used as assistants during development, in the following ways:
+
+**Code refactoring.** AI tools helped restructure and clean up parts of the codebase, including reorganizing components and simplifying logic.
+
+**Comments and documentation.** AI tools helped write code comments and parts of the project documentation.
+
+**Research.** AI tools helped us find and understand background material on microgravity combustion, the BASS-II experiments, and related NASA investigations.
+
+**Human review.** The project team reviewed AI-assisted code and text before including it. The AI tools did not produce the datasets. The data, rankings and scores shown in the app come from NASA's open records (the PSI tables and NTRS papers listed on the [Sources](/sources) page) and from the stated assumptions documented there.
+
+### AI features inside the app
+
+Some parts of the dashboard, such as the Interpretation tab and the AI summaries, use an AI model to generate plain-language explanations. These features:
+
+- are always labeled as interpretation, not as NASA findings;
+- only receive the project's checked-in data, never raw or unpublished data;
+- are guarded against inventing figures that are not in the underlying data;
+- fall back to built-in, rule-based summaries when no AI service is available.
+
+AI-generated explanations can still be incomplete or wrong. Please check anything important against the original sources.
+
+### Limitations and affiliation
+
+This is an independent project that uses open NASA data. It is not affiliated with, endorsed by, or sponsored by NASA. The combustion sandbox is a simplified simulator, and its results (including the Moon-base extrapolation) are illustrative only. They are not validated for real fire-safety or engineering decisions.
