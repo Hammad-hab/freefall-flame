@@ -55,10 +55,10 @@ const X = (pct: number) => 40 + (pct / 100) * 560
 
 export default function Conclusions() {
   return (
-    <div id="conclusions" data-conclusions className="space-y-8 p-6 max-w-4xl">
+    <div id="conclusions" data-conclusions className="space-y-8 p-6 max-w-4xl m-auto">
       <section>
-        <h2 className="text-2xl font-semibold">Conclusions</h2>
-        <p className="mt-2 text-lg">
+        <h2 className="text-3xl font-semibold">Conclusions</h2>
+        <p className="mt-2 text-md">
           Microgravity fire research gives firm answers on suppression, smoke detection and the
           role of oxygen and airflow. It gives none for solid materials at Moon-base oxygen
           or lunar gravity, so for habitats it bounds the risk and does not predict it.
@@ -67,7 +67,7 @@ export default function Conclusions() {
 
       <section>
         <h3 className="text-lg font-semibold">What the data shows</h3>
-        <ol className="mt-3 space-y-3">
+        <ol className="mt-3 space-y-3 text-sm">
           {FINDINGS.map((f, i) => (
             <li key={f.title}>
               <strong>{i + 1}. {f.title}.</strong> {f.body}{' '}
@@ -79,25 +79,25 @@ export default function Conclusions() {
 
       <section>
         <h3 className="text-lg font-semibold">Where the evidence stops</h3>
-        <p className="mt-1 opacity-80">
+        <p className="mt-1 opacity-80 text-md">
           Oxygen range each investigation tested, against the expected Moon-base air.
         </p>
         <O2CoverageChart />   {/* was <CoverageBar /> */}
-        <ul className="mt-3 list-disc pl-5 space-y-1">
+        <ul className="mt-3 list-disc pl-5 space-y-1 text-sm">
           {GAPS.map((g) => <li key={g}>{g}</li>)}
         </ul>
       </section>
 
       <section>
         <h3 className="text-lg font-semibold">Recommendations</h3>
-        <ul className="mt-2 list-disc pl-5 space-y-1">
+        <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
           {RECS.map((r) => <li key={r}>{r}</li>)}
         </ul>
       </section>
 
       <section>
         <h3 className="text-lg font-semibold">Beyond space</h3>
-        <p className="mt-1">
+        <p className="mt-1 text-sm">
           The same research produced fine-water-mist extinguishers, better smoke detection and
           firefighter protective gear on Earth.
         </p>
