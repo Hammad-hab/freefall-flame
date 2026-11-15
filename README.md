@@ -1,378 +1,153 @@
-# Flame in Freefall — NASA microgravity combustion dashboard
+# Flame in Freefall
 
-A read-only, data-driven web app for exploring NASA combustion experiments
-collected aboard the International Space Station (BASS-II and 13 other PSI
-investigations), ranked for crew-habitat fire safety, plus a sandboxed
-combustion simulator and a Payload admin panel for managing datasets.
+**An evidence dashboard for fire safety in microgravity and on the Moon.**
 
-- **Framework:** Next.js 16 (App Router, React Server Components) + React 19
-- **CMS:** Payload 3.0 (Postgres backend)
-- **Styling:** Tailwind CSS 4 · **Charts:** Recharts 3 · **Background:** Three.js
-- **Language:** TypeScript 5
-- **Branding:** the public product is called **Flame in Freefall**; the
-  dashboard is served at `/dashboard?dataset=<id>`
+Built for the NASA Space Apps Challenge 2026. It turns NASA's microgravity combustion records from the International Space Station into something you can search, compare, rank and question, and it shows where the evidence stops.
 
-The app is a **PWA-style workspace**: the public site is two pages (`/` and
-`/dashboard`), with an admin panel, an API surface, and a set of supporting
-scripts and data files.
+> Live demo: https://freefall-flame-72z4.vercel.app/
 
----
+## Why it exists
 
-## Page directory
+Fire behaves differently in free fall. With no buoyancy, a flame becomes a blue sphere fed by slow diffusion, and smoke does not rise to a ceiling detector. Planned Moon-base air (30% oxygen or more at 10.2 psi or less) is also far more flammable than Earth air. NASA has decades of results in its Physical Science Informatics (PSI) database, but they are hard to find, compare and interpret.
 
-```
-src/app/(frontend)/          Public dashboard (React Server Components)
-├── page.tsx                 Home — "Flame in Freefall"
-├── dashboard/               The data app (server entry + tabbed workspace)
-├── sources/page.tsx         Sources documentation
-├── login/page.tsx           Admin login form
-└── (payload)/               Payload admin panel
-    admin/[[...segments]]/   Admin app shell
-    api/                     Payload REST + GraphQL endpoints
-src/app/(payload)/           Payload admin app (admin layout, importMap)
-src/collections/             Payload CMS collections (Datasets, Rows, Papers, Users, Chats)
-src/lib/                     Pure data logic (combustion scoring, PSI, persona)
-src/scripts/                 Data import/catalogue generation scripts
-src/app/(frontend)/dashboard/components/  Per-tab React components
-src/app/(frontend)/dashboard/docs/       Dashboard project documentation
-```
+Flame in Freefall loads BASS-II and 13 other PSI investigations, ranks them for crew-habitat fire safety with transparent, adjustable criteria, and marks every gap as a gap.
 
----
+**Headline finding:** in the tables loaded here, no solid-material test goes above 22.2% O₂ (BASS-II; Saffire's highest is 22.1%), and PSI holds no partial-gravity data yet. Moon-base conditions sit beyond the evidence, so the data bounds the risk and does not predict it.
 
-## Public pages
+## What you can do
 
-### Home — `/`
+| Area | What it gives you |
+|---|---|
+| **Home** (`/`) | Intro, a sandbox render of BASS-II test B14, and a preview of the top-ranked investigations |
+| **Investigations** | The 14 PSI investigations as cards, ranked on five criteria with adjustable weights, a Moon-base extrapolation card, and the stated assumptions |
+| **Overview** | Dataset summary, key numbers, materials, scorecard, sources, limitations, a column list with row preview, and a breakdown of rows by Principal Investigator |
+| **Evidence** | Materials ranked by evidence coverage (not danger), plus a materials × O₂ heatmap where empty cells are gaps, not proof of safety |
+| **Visualization** | Gas composition before and after tests, thickness distribution, air velocity against O₂ consumed, tests per material, a raw table that shows censored readings as recorded, and a plot-any-two-columns comparison |
+| **Interpretation** | An AI chat panel grounded in the checked-in PSI catalogue, with a deterministic fallback when no AI key is set |
+| **Referenced Papers** | The NTRS papers linked to the dataset |
+| **Sandbox** | A playable flame simulator with all 129 NASA BASS-II presets |
+| **Conclusions** | Findings, evidence gaps, data bias and recommendations |
+| **Customize** | A theme picker (20 palettes) with a live preview |
+| **Sources** (`/sources`) | Every PSI table, the hand-checked papers, and the assumptions that are not NASA data |
 
-**`src/app/(frontend)/page.tsx`**
-
-The landing page, titled **"Flame in Freefall"**. It is an intro/marketing
-screen with no datasets in it:
-
-- Header with the "Flame in Freefall" wordmark and links to Dashboard, Sources
-  and Sandbox.
-- Hero: "Fire behaves differently in space. Compare how." with a short
-  description and two CTA buttons (Open the dashboard / Browse sources).
-- A pixel-art **sandbox temperature view** (BASS-II test B14 at a given step,
-  rendered by the sandbox engine itself) with a "Run it in the sandbox" link.
-- **"Ranked for habitat fire safety"** — the 14 PSI investigations scored at
-  equal weights, with the top 5 shown; link to the Investigations tab.
-- **"What you can do here"** — five feature cards: Catalogue (PSI investigations
-  as cards), Rank (transparent scoring with adjustable weights), BASS-II (charts
-  and data table for the 129 tests), Simulate (run tests in the sandbox and see
-  whether they match NASA's outcome), Ask (AI explanations grounded in the data),
-  Moon base (extrapolation card at 34% O2, 0.17 g).
-- **"Built from NASA's open records"** — the three data sources (PSI, NTRS, and
-  the stated assumptions), with a "See all sources" link.
-- **"Bring your own dataset"** — an explainer for admins: add a dataset and its
-  papers in the admin panel, define columns, upload the CSV (validate first),
-  then it opens at `/dashboard?dataset=…`.
-- Footer: "Built for the NASA Space Apps Challenge 2026" + "Independent project
-  using open NASA data. Not affiliated with NASA."
-
-Metadata: title **Flame in Freefall**, description explaining the ranking and the
-BASS-II sandbox.
-
-### Dashboard — `/dashboard`
-
-**`src/app/(frontend)/dashboard/page.tsx`**
-
-The main data app. Server entry point. It:
-
-1. Reads `?dataset=` and `?tab=` from the URL.
-2. Loads the dataset definition and all rows through `src/components/util.ts`
-   (each call enforces the published-only access rule).
-3. Resolves the combustion column mapping (`resolveBass2Columns`), parses every
-   row (`parseRows`), computes row-shares (`computeShares`), and renders the
-   **Workspace** (the tabbed main area).
-4. Maps bad/missing `?dataset=` to a friendly "Dataset not found" page, and a
-   database that can't be reached to a friendly "data unavailable" page instead
-   of a raw 500.
-
-The workspace is a **JupyterLab-style pane tree** (`layout-reducer.ts`): a
-sidebar lists the tabs, clicking one opens it in the focused pane, and a split
-button opens a new pane on the right. The tree is a pure, unit-tested reducer
-with leaf nodes (pane + tab strip) and split nodes.
-
-The active tab is chosen from this registry:
-
-| Tab id | Label | What it renders |
-|---|---|---|
-| `overview` | **Overview** (default) | Title, summary chart + named links, key numbers, Materials card, Scorecard card, AI assistant, Sources strip, Limitations, "About this dataset" card (column list + row preview, plus a live Statistics breakdown of rows by Principal Investigator). |
-| `investigations` | **Investigations** | NASA PSI catalogue: 14 investigation cards, ranked by transparent criteria with adjustable weights, plus widgets for ranking, weights, AI summary, simulation status, filter/sort, the Moon-base extrapolation card, and stated assumptions. |
-| `evidence` | **Evidence** | EvidenceRanking (evidence-coverage scores, adjustable weights, sort), OxygenHeatmap (materials × O₂ band heatmap, adjustable band width), Limitations. |
-| `visualization` | **Visualization** | Charts grouped by material: outcome chart, tests/mean O₂·CO·CO₂ by material, before/after gas composition, thickness distribution, air velocity vs O₂ consumed, tests by Principal Investigator, plus the raw data table with censored markers, and the dataset-agnostic GenericCompare scatter. |
-| `ai-summary` | **Interpretation** | The AI chat panel (`ChatUI`) — attribute the dataset's rows, answer questions with the deterministic fallback or OpenRouter, label AI output as interpretation. |
-| `papers` | **Referenced Papers** | List of papers linked to the dataset. |
-| `sandbox` | **Sandbox** | The combustion simulator (see below). |
-| `conclusions` | **Conclusions** | Findings, evidence gaps, data bias, recommendations, and "beyond space" for the BASS-II dataset. |
-| `customize` | **Customize** | Theme picker (20 palettes) + a live preview sample + the data colour scale (see below). |
-
-Notes:
-
-- `?tab=` in the URL switches to that tab; `?dataset=` selects the dataset.
-  Sandbox links carry `?tab=sandbox&preset=B14`, `?tab=sandbox&group=bass`,
-  `?tab=sandbox&demo=cfig`, `?tab=sandbox&scenario=moon`.
-- Tabs can be split into panes, docked, and their layout is remembered in
-  `localStorage` (`psi-layout-v1`); weights are remembered (`psi-weights-v1`).
-
-### Sources — `/sources`
-
-**`src/app/(frontend)/sources/page.tsx`**
-
-Documentation of where every number comes from. It renders:
-
-- **Papers** — the hand-checked NTRS papers (title + NTRS id + investigation),
-  listed only where checked.
-- **NASA PSI tables (14)** — a table of every investigation: PSI id, what was
-  burned, rows (with granularity), and the cleaned file name.
-- **Stated assumptions** — ISS cabin air, the exploration atmosphere
-  (Norcross et al. 2013), and cabin ventilation (SAE 932191); these are NOT
-  NASA data and are shown so the ranking can be reviewed.
-
-The page explains the two rules in plain language: values are cleaned without
-inventing, and papers are listed only where they've been checked.
-
-### Login — `/login`
-
-**`src/app/(frontend)/login/page.tsx`**
-
-A client-side sign-in / sign-up form. Two modes, toggled by a link:
-
-- **Log in** — POSTs email + password to `/api/users/login`.
-- **Sign up** — validates the password (min 8 chars, matching confirmation),
-  POSTs to `/api/users` to create the account, then logs in.
-
-On success it redirects to `/` (the page will then offer the admin route).
-Errors are shown inline. Note: this is only the **frontend form**; authentication
-is enforced server-side by the Payload collections (`/api/users`, `/api/users/login`).
-
-### Sandbox — `/sandbox` (sandbox tab inside the dashboard)
-
-**`src/app/(frontend)/dashboard/components/sandbox/`**
-
-A self-contained mini-app (inside the dashboard layout) for the
-`flame_core` WebAssembly engine. It is **not** tied to a dataset — it has its
-own presets and its own model fuels.
-
-- **Engine** (`engine/Engine.ts`) — a thin TypeScript wrapper around the
-  `flame_core` C API exported from `engine/flame_core.mjs` (a `.wasm` module).
-  Exposes `reset`, `step`, `setParam`/`getParam`, `paint`/`paintFan`/`erase`/
-  `ignite`/`addHeat`, `summary`, `events`, `outcome`, `log`, `camera`,
-  `presetCount/preset/presetStatus`. The material table is AIR, WOOD, FAN, PMMA,
-  SIBAL, NOMEX, WAX… with RGB + kind. Every C function is prefixed `_fc_` and
-  strings are read as pointers.
-- **GridCanvas** (`view/GridCanvas.tsx`) — two `<canvas>`s: a pixel grid
-  (one cell per pixel, `image-rendering: pixelated`) and an overlay for arrows
-  and the brush. `GridView` drives `fillView` (pure colourisation) every frame.
-- **Controls** (`view/Controls.tsx`) — tabs Build / World / Presets; a run bar
-  (Play/Pause, Step, Reset, speed 1–8) with keyboard shortcuts (Space play/
-  pause, N step, C reset); a view selector (material / temperature / oxygen /
-  flow / CO2 / CO / camera) with a colour legend; a Build panel (brush radius,
-  fan direction, 25 material swatches) and a World panel.
-- **PresetsPanel** (`view/PresetsPanel.tsx`) — a browser for all 129 NASA
-  BASS-II presets with a searchable/filterable list (material, outcome,
-  fidelity), a detail card (outcome, sample, conditions, fidelity, rule,
-  run steps, NASA readings), a lighting selector (Opposed vs Concurrent) and
-  Load & Run controls.
-
-Views: Material (fuel layout), Temperature (the burning sample), Oxygen
-(O₂-limited burning), Flow (ventilation), CO2, CO, Camera (gas black,
-solids faint, with glow). The Moon-base what-if (`?tab=sandbox&scenario=moon`)
-runs BASS-II test B1 with only oxygen raised to 34% and gravity set to 0.17 g
-— marked as an extrapolation because the engine is not validated above 22.2%
-O₂ and doesn't model pressure (runs at 1 atm).
-
-Two side panels: a **PresetsPanel** (list of presets with the sandbox results
-recorded) and a **Controls** panel. The page receives `dataset`/`rows` from the
-dashboard so presets can be cross-referenced with NASA's readings.
-
----
-
-## Admin panel — `/admin`
-
-**`src/app/(payload)/admin/[[...segments]]/page.tsx`**
-
-The Payload admin app (generated, don't edit). It provides:
-
-- Authentication (`/api/users` signup/login, sessions).
-- **Collection management** for all CMS collections (`users`, `media`,
-  `papers`, `datasets`, `dataset-rows`, `dataset-imports`, `chat-threads`,
-  `chat-messages`).
-- **CSV import** — upload a CSV, validate it, and create `Dataset` +
-  `DatasetRows` documents.
-- **S3 media uploads** (client-side to S3).
-
-The admin panel is reachable by anyone; the README and deploy notes strongly
-recommend strong passwords and keeping `PAYLOAD_SECRET` out of git.
-
----
-
-## Public API routes — `/api/*`
-
-All routes enforce authentication via `src/lib/chat-auth.ts` (require an
-authenticated owner). The API is split into three areas:
-
-### Chat (the `ai-summary` tab)
-
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/chat` | POST | Streaming chat using the AI SDK. Provides tools: `listInvestigations` (14 PSI cards with score/rank), `getInvestigation` (full card record), `openSandbox` (offer a sandbox view for a BASS-II test). The model is fixed server-side and only ever receives the checked-in PSI catalogue, never raw data. |
-| `/api/threads` | GET, POST | List the owner's chat threads or create a new one. |
-| `/api/threads/[id]` | GET, PATCH, DELETE | Read/update/archive or delete a thread. |
-| `/api/threads/[id]/messages` | GET, POST | List or post messages in a thread. |
-
-### Dataset interpretation (the `/dashboard` AI panel)
-
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/interpretations` | GET | Plain-language summary of a dataset: parses the CSV, computes material metrics, returns a deterministic fallback plus optional AI output, and lists all materials. |
-| `/api/psi-interpretation` | GET | One-line summary of a single PSI investigation (or `?id=overall` for the ranking), generated from the checked-in `psi.json` facts with the number/invented-figure guard. |
-| `/api/cf-interpretation` | GET | Same as above but for the sandbox CF (combustion) dataset. |
+The dashboard is a resizable, JupyterLab-style workspace. Click a tab to open it in the focused pane, or split it to the right to put a chart next to the papers behind it. Layout and weights are remembered in `localStorage`.
 
 ### Sandbox
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/sandbox` | GET | Returns the sandbox's preset list and results for the UI. |
-| `/api/preset-status` | GET | Returns the current running state of a preset. |
+The sandbox runs on `flame_core`, a C engine compiled to WebAssembly.
 
-**AI cost controls** (in `src/lib/ai-guard.ts`): a fixed model, a per-visitor
-limit (e.g. 10 new requests per 10 minutes), a daily cap on paid calls, an
-in-memory cache keyed by exactly what the model is sent, and the model is
-forbidden from inventing numbers that are not in the data it is given.
+- **Build:** paint a grid with 25 materials (wood, PMMA, SIBAL, Nomex, wax, fans and more), place fans in any direction, erase, ignite and add heat.
+- **Run:** play, pause, step and reset (`Space`, `N`, `C`) at speeds 1 to 8.
+- **Views:** material, temperature, oxygen, flow, CO₂, CO and a camera view.
+- **Presets:** search and filter all 129 BASS-II tests by material, outcome and fidelity, choose opposed or concurrent spread, and compare the simulated outcome with NASA's.
+- **Moon-base what-if:** BASS-II test B1 with only oxygen raised to 34% and gravity set to 0.17 g, marked as extrapolation.
 
----
+## How it stays honest
 
-## Supporting infrastructure
+- **Evidence is not danger.** Rankings measure how much data exists, never how hazardous a material is.
+- **Nothing is invented.** Missing values stay missing. Censored or out-of-range readings (`>500`, `OR`, `sat`) are stored as `null` with the original text kept in `rawData`, and shown as source text, never as zero.
+- **Gaps are shown as gaps.** An empty heatmap cell means untested.
+- **Deterministic first.** Every figure comes from pure, unit-tested code. AI explains and never computes.
+- **AI is guarded.** The model is fixed on the server and only sees the checked-in catalogue, never raw data. Answers that invent numbers, are too general or are not marked as interpretation are rejected.
+- **Assumptions are labelled.** The ISS cabin air, the exploration atmosphere (Norcross et al., 2013) and cabin ventilation (SAE 932191) are not NASA data and are listed on `/sources` so the ranking can be reviewed.
 
-### Data model — Payload collections
-
-Defined in `src/collections/`:
-
-- **Users** — auth-enabled admin accounts.
-- **Media** — S3 uploads (alt text only).
-- **Papers** — title, authors, year, document type, NTRS id (unique, indexed),
-  DOI, source URL, license, experiments, linked datasets, abstract, full text
-  (hidden from public).
-- **Datasets** — name, description, `columns[]` (label/key/type/unit/
-  `canonicalField`/options/required/csvHeader), row count, last imported time,
-  `papers[]` links.
-- **DatasetRows** — one flat row per CSV row: `data` JSON keyed by column key,
-  `rowIndex`, `sourcePaper`, `sourcePage`, `rawData` (the original text of any
-  non-numeric reading, kept so censored readings aren't silently treated as
-  blanks).
-- **DatasetImports** — uploaded CSVs, validated against a dataset's columns.
-- **ChatThreads / ChatMessages** — owner-scoped chat history for the AI panel.
-
-### Pure logic — `src/lib/`
-
-All framework-free, deterministic, unit-tested:
-
-- **combustion.ts** — column resolution (admin canonical mapping → exact key →
-  exact label → unique fuzzy substring), row parsing (valid/missing/censored/
-  out-of-range/invalid), material metrics, evidence scoring, O₂ band derivation.
-- **psi.ts** — the 14-investigation catalogue types, the five ranking
-  criteria, the habitat reference values, `rank`, `rankLabel`, `testsLabel`.
-- **psi-ai.ts / psi.ts** — the AI prompts, the facts sent to the model, and the
-  answer guards (rejects invented numbers, too-general answers, unmarked
-  interpretations).
-- **ai-guard.ts** — the model, rate limits, daily cap, in-memory cache, and
-  visitor identification.
-- **shares.ts** — row-share computation (used identically by the Statistics card
-  and the header bar so they can never disagree).
-- **widget-layout.ts** — the pure widget-layout reducer and parser for the
-  Investigations tab.
-- **columns.ts / columns.ts** — column-type helpers.
-- **ai-call.ts** — OpenRouter call wrapper.
-- **errors.ts** — `isNotFoundOrForbidden` helper.
-
-### Generation scripts — `src/scripts/`
-
-- **import-csv.ts** — the CSV importer (parses, infers column types, validates
-  rows, stores rawData for non-numeric readings).
-- **psi-catalogue.ts** — generates `src/app/(frontend)/dashboard/components/investigations/psi.json`
-  (the 14-investigation catalogue, ranking, and facts) from cleaned NASA tables
-  + sources.json + the sandbox scorecard. Regenerated when the cleaned data
-  changes; `psi.json` must never be edited by hand.
-- **psi-tables.ts / psi-catalogue.ts** — PSI table helpers.
-- **import-bass2-clean.ts** — imports the cleaned BASS-II dataset (id 4).
-- **export-datasets.ts** — database backup writer.
-- **switch-bass2-default.ts** — changes which BASS-II dataset is default.
-- **seed-papers.ts / download-papers.py / home-flame.ts / sandbox-scorecard.ts**
-  — miscellaneous data setup.
-- **dataset.ts** — dataset schema definitions.
-
-### Data — `data/`
-
-- **psi/** — cleaned NASA PSI tables, the investigations catalogue CSV, and
-  sources.json.
-- **bass2_all_outcomes.csv** — raw BASS-II outcomes.
-- **PSI-25_BASS-II_cleaned.csv** — raw cleaned BASS-II table.
-- **README-bass2-clean.md / README-bass2-scorecard.md** — dataset READMEs.
-
----
-
-## Dashboard project documentation — `/dashboard/docs/*`
-
-Built into the repo for the dashboard development team:
-
-- **README.md** — project overview, architecture, data flow, component
-  reference, environment variables, and a table of the tabs.
-- **architecture.md** — system architecture, data flow, API routes, caching
-  strategy, and security.
-- **components.md** — component-by-component reference for the dashboard.
-- **data-flow.md** — the complete path from CSV import to chart.
-- **investigations.md** — deep-dive into the Investigations tab: the 14 cards,
-  the ranking criteria and formula, weights, the Moon-base extrapolation, the
-  AI interpretation, the simulation statuses, and the file list.
-
-> Note: the `dashboard/docs/` files are kept somewhat out of sync with the
-> current tree (they describe an older tab layout — a "ranking" tab, a
-> deleted `Header` component, a top-of-dashboard `Share` component). The live
-> tabs are the nine listed above.
-
----
-
-## What each page does, at a glance
-
-| Page | Purpose | Read-only for visitors? |
-|---|---|---|
-| `/` | Home / marketing / ranking preview / sandbox image | Yes |
-| `/dashboard` | The data app: dataset loading, tabbed workspace, charts, evidence, simulations, AI chat, conclusions | Yes (for published datasets) |
-| `/sources` | Documentation of NASA PSI tables, papers, and stated assumptions | Yes |
-| `/login` | Sign-in / sign-up form | No |
-| `/admin` | Payload admin panel (collection CRUD, CSV import) | No |
-| `/api/*` | Chat, threads, dataset interpretation, sandbox data | No (auth required, scoped) |
-| `/dashboard/docs/*` | Dashboard project documentation | Yes |
-
----
-
-## Development
+## Quick start
 
 ```bash
 pnpm install
-pnpm dev          # dev server at http://localhost:3000
+pnpm dev          # http://localhost:3000
 pnpm build        # production build
 pnpm start        # production server
-pnpm test         # unit (vitest) + e2e (Playwright)
-pnpm lint         # ESLint
+pnpm test         # unit (Vitest) + end-to-end (Playwright)
+pnpm lint
 ```
 
-Environment variables (from `.env.example`):
+Requires Node 20.18.1 or newer and pnpm 12.x.
 
-| Variable | Needed? | Purpose |
+Copy `.env.example` to `.env`:
+
+| Variable | Needed | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | Postgres connection string (shared Supabase) |
-| `PAYLOAD_SECRET` | Yes | Signs admin sessions |
-| `OPEN_ROUTER` | Optional | OpenRouter AI key; without it AI panels use the built-in summaries |
-| `S3_BUCKET`… | Only for media uploads | S3-compatible storage for the `media` collection |
-| `PAYLOAD_PUSH` | Leave unset | Schema push (off in dev/tests/prod) |
-| `DATASET_PREVIEW_IDS` | Leave unset | Local preview of unpublished datasets (dev only) |
+| `DATABASE_URL` | Yes | Postgres connection string |
+| `PAYLOAD_SECRET` | Yes | Signs admin sessions; never commit it |
+| `OPEN_ROUTER` | Optional | OpenRouter key. Without it, AI panels use the built-in summaries |
+| `OPEN_API_ROUTER` | Optional | OpenRouter LLM key. |
+| `PAYLOAD_PUSH` | Leave unset | Schema push is off by default; set `true` for one dev run to apply an approved schema change |
+| `DATASET_PREVIEW_IDS` | Leave unset | Preview unpublished datasets locally (dev only) |
 
-### Conventions for the team
+## Bring your own dataset
 
-- One commit per feature, conventional-commit style with the issue ref as a
-  suffix; one branch per issue named from the issue id.
-- PRs are opened for the partner to review and close, not self-merged.
-- No AI attribution anywhere in deliverables (no "Generated with" footers,
-  no AI mentions in commit messages, code, or diffs).
+1. Open `/admin` and sign in.
+2. Add a **Dataset** and its **Papers**, then define the columns (label, key, type, unit, canonical field).
+3. Upload the CSV under **Dataset Imports** and use _validate first_.
+4. Open `/dashboard?dataset=<id>`. Datasets are visible to visitors only when published.
+
+The importer infers column types, validates every row and records censored readings. Charts that need combustion columns degrade to a clear message naming the missing ones, and the generic comparison works on any numeric data.
+
+## How it works
+
+```
+CSV ─▶ import-csv.ts ─▶ Payload (Postgres) ─▶ server components ─▶ pure logic ─▶ client charts
+        infer + validate     datasets, rows        getDataset/getAllRows   combustion.ts    Recharts
+```
+
+- **Column resolution:** admin canonical mapping, then exact key, then exact label, then a unique fuzzy match. Ambiguous matches are flagged, never guessed.
+- **Row parsing:** each reading is `valid`, `missing`, `censored`, `outOfRange` or `invalid`. O₂ consumed is computed only from two valid, independent columns.
+- **Evidence score:** test coverage, O₂ diversity and O₂ range, each normalised against the best-covered material, with adjustable weights. A missing component is excluded and the rest renormalised.
+- **Investigations ranking:** five criteria over the 14-investigation catalogue (`psi.json`, generated by `src/scripts/psi-catalogue.ts` and never edited by hand).
+
+### Stack
+
+Next.js 16 (App Router, React Server Components), React 19, TypeScript 5, Payload 3.0 on Postgres, S3-compatible storage, Tailwind CSS 4, Recharts 3, Three.js (background), PapaParse, AI SDK with OpenRouter, a WebAssembly C engine for the sandbox, Vitest and Playwright.
+
+### Layout
+
+```
+src/app/(frontend)/       Public site: /, /dashboard, /sources, /login
+  dashboard/components/   One folder per tab
+  dashboard/docs/         Developer documentation
+src/app/(payload)/        Admin panel and REST/GraphQL API
+src/collections/          Users, Media, Papers, Datasets, DatasetRows,
+                          DatasetImports, ChatThreads, ChatMessages
+src/lib/                  Pure, unit-tested logic (combustion, psi, shares, ai-guard)
+src/scripts/              Importers and catalogue generation
+data/psi/                 Cleaned PSI tables, catalogue CSV, sources.json
+data/                     BASS-II CSVs and dataset READMEs
+```
+
+## API
+
+All routes require an authenticated owner (`src/lib/chat-auth.ts`).
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `/api/chat` | POST | Streaming chat with tools `listInvestigations`, `getInvestigation`, `openSandbox` |
+| `/api/threads`, `/api/threads/[id]`, `/api/threads/[id]/messages` | GET, POST, PATCH, DELETE | Owner-scoped chat history |
+| `/api/interpretations` | GET | Dataset summary: deterministic fallback plus optional AI |
+| `/api/psi-interpretation` | GET | One-line summary of one investigation, or `?id=overall` |
+| `/api/cf-interpretation` | GET | The same for the sandbox CF dataset |
+| `/api/sandbox`, `/api/preset-status` | GET | Preset list, results and running state |
+
+**AI cost controls** (`src/lib/ai-guard.ts`): fixed model, a per-visitor limit (10 new requests per 10 minutes), a daily cap on paid calls, and an in-memory cache keyed by exactly what the model is sent. The cache and the daily count reset when the server restarts.
+
+## Limitations
+
+- Microgravity is not lunar or Martian gravity, and PSI has no partial-gravity data yet.
+- Gas measurements are not fire outcomes.
+- The sandbox is not validated above about 22% O₂ and runs at 1 atm, so pressure is not modelled.
+- Excluded censored readings can bias statistics low.
+- Evidence scores describe coverage, not risk.
+- `/admin` and `/login` are reachable by anyone. Use strong passwords and keep `PAYLOAD_SECRET` out of git.
+
+## Contributing
+
+- One branch per issue, named from the issue id.
+- One commit per feature, in conventional-commit style with the issue reference as a suffix.
+- Open a pull request for review and do not self-merge.
+- Keep commits, code and diffs free of generated-by footers or tool attributions.
+- Never edit `psi.json` by hand. Regenerate it with `src/scripts/psi-catalogue.ts`.
+- The files in `dashboard/docs/` lag the current tab layout, so treat the source as the truth.
+
+## Credits
+
+Built for the NASA Space Apps Challenge 2026. This is an independent project using open NASA data (PSI and NTRS) and is not affiliated with NASA.
