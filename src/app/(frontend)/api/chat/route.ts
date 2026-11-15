@@ -76,6 +76,34 @@ function toDetail(inv: PsiInvestigation) {
   }
 }
 
+/**
+ * Render an unknown stream error as readable text for the client.
+ *
+ * The AI SDK replaces every stream error with the generic "An error occurred."
+ * unless the route supplies its own `onError`; that hides the actual cause
+ * (bad/missing API key, rejected model, upstream 4xx) from the chat UI and from
+ * anyone reading Vercel logs. We surface the real message in dev and prod so
+ * failures are diagnosable, plus the HTTP status and upstream body when present.
+ */
+function describeChatError(error: unknown): string {
+  const parts: string[] = []
+  let current: unknown = error
+  // Walk the cause chain a few levels: provider errors wrap the upstream one.
+  for (let depth = 0; current != null && depth < 3; depth++) {
+    if (current instanceof Error) {
+      parts.push(current.name ? `${current.name}: ${current.message}` : current.message)
+      const extra = current as Error & { statusCode?: number; status?: number; responseBody?: string }
+      const status = extra.statusCode ?? extra.status
+      if (status !== undefined) parts.push(`(HTTP ${status})`)
+      if (extra.responseBody) parts.push(extra.responseBody.slice(0, 500))
+    } else {
+      parts.push(String(current))
+    }
+    current = (current as { cause?: unknown } | null)?.cause
+  }
+  return parts.join(' <- ').slice(0, 2000) || 'An error occurred.'
+}
+
 export async function POST(req: Request) {
   const { messages } = await req.json()
   const result = streamText({
@@ -142,5 +170,12 @@ export async function POST(req: Request) {
       }),
     },
   })
-  return result.toUIMessageStreamResponse()
+  return result.toUIMessageStreamResponse({
+    onError: (error) => {
+      // Log server-side too, so Vercel logs carry the cause even when the
+      // client never surfaces the message.
+      console.error('[chat] model stream error:', error)
+      return describeChatError(error)
+    },
+  })
 }
