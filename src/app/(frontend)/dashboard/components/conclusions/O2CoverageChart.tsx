@@ -21,9 +21,11 @@ const RANGES: Range[] = [
     note: 'Gas flames with up to 85% O₂ from a spherical burner. Not cabin solids.' },
 ]
 
+const OTHER = '#7aa2f7' // colour for non-solid investigations (bars + legend)
+
 const MOON = { from: 30, to: 34 }
 const W = 760, H = 330
-const M = { l: 150, r: 24, t: 44, b: 52 }
+const M = { l: 150, r: 24, t: 56, b: 52 }
 const x = (v: number) => M.l + (v / 100) * (W - M.l - M.r)
 const rowH = 48
 const y = (i: number) => M.t + i * rowH
@@ -41,6 +43,10 @@ export function O2CoverageChart() {
           <linearGradient id="fadeLeft" x1="0" x2="1" y1="0" y2="0">
             <stop offset="0" stopColor="currentColor" stopOpacity="0" />
             <stop offset="0.35" stopColor="currentColor" stopOpacity="1" />
+          </linearGradient>
+          <linearGradient id="fadeLeftOther" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stopColor={OTHER} stopOpacity="0" />
+            <stop offset="0.35" stopColor={OTHER} stopOpacity="1" />
           </linearGradient>
           <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"
                    patternTransform="rotate(45)">
@@ -77,10 +83,10 @@ export function O2CoverageChart() {
           Moon base
         </text>
 
-        {/* Earth air reference */}
+        {/* Earth air reference (label raised so it doesn't run into "no solid tests") */}
         <line x1={x(21)} x2={x(21)} y1={M.t - 8} y2={plotBottom} stroke="currentColor"
               strokeDasharray="4 3" opacity={0.7} />
-        <text x={x(21)} y={M.t - 14} fontSize={10} textAnchor="end" dx={-4} fill="currentColor" opacity={0.8}>
+        <text x={x(21)} y={M.t - 32} fontSize={10} textAnchor="end" dx={-4} fill="currentColor" opacity={0.8}>
           Earth air 21%
         </text>
 
@@ -94,8 +100,12 @@ export function O2CoverageChart() {
               {r.label}
             </text>
             <rect x={x(r.min)} y={y(i) + 8} width={x(r.max) - x(r.min)} height={24} rx={4}
-                  fill={r.openLeft ? 'url(#fadeLeft)' : 'currentColor'}
-                  opacity={r.group === 'solid' ? 0.95 : hover === i ? 0.7 : 0.5} />
+                  fill={
+                    r.group === 'solid'
+                      ? (r.openLeft ? 'url(#fadeLeft)' : 'currentColor')
+                      : (r.openLeft ? 'url(#fadeLeftOther)' : OTHER)
+                  }
+                  opacity={r.group === 'solid' ? 0.95 : hover === i ? 1 : 0.8} />
             <text x={x(r.max)} y={y(i) + 25} fontSize={11} fill="currentColor">{r.max}%</text>
           </g>
         ))}
@@ -103,10 +113,20 @@ export function O2CoverageChart() {
 
       {/* legend + readout */}
       <figcaption className="mt-2 text-sm space-y-1 mb-10">
-        <div className="flex flex-wrap gap-x-5 gap-y-1 opacity-80">
-          <span>■ solid materials (what a habitat is made of)</span>
-          <span>▒ other flames and droplets</span>
-          <span>▨ untested for solids</span>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 opacity-90">
+          <span className="inline-flex items-center gap-2">
+            <i className="inline-block h-3 w-5 rounded-sm bg-current" />
+            solid materials (what a habitat is made of)
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <i className="inline-block h-3 w-5 rounded-sm" style={{ background: OTHER }} />
+            other flames and droplets
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <i className="inline-block h-3 w-5 rounded-sm"
+               style={{ background: 'repeating-linear-gradient(45deg, currentColor 0 1.5px, transparent 1.5px 6px)', opacity: 0.6 }} />
+            untested for solids
+          </span>
         </div>
         <p className="min-h-[2.5rem]">
           {hover !== null
