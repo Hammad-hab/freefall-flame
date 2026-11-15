@@ -44,6 +44,10 @@ const RECS = [
   'Re-tune smoke detectors for microgravity particle sizes and transport delay.',
 ]
 
+const BIAS = [
+  {title: "Data is heavily inclined towards PMMA", body: `A large share of the tests (75.9% of valid runs, 98/129 tests recorded PMMA) used PMMA, a homogeneous, well-characterized solid commonly chosen as a reference fuel. This makes PMMA the best-covered material by a wide margin, but that reflects experimental convention, not relevance to real fire scenarios. Spacecraft fires are more likely to involve a mixture of materials with varying composition, geometry, and thermal properties, so conclusions drawn from PMMA may not generalize. Coverage for other materials is sparser and uneven, which limits how much can be said about how fires would behave across realistic fuel combinations.`}
+]
+
 // O₂ coverage, % by volume. Figures from the papers and challenge page.
 const BARS = [
   { label: 'Solids (BASS-II, Saffire)', from: 0, to: 22.2, tone: 'solid' },
@@ -85,6 +89,23 @@ export default function Conclusions() {
         <O2CoverageChart />   {/* was <CoverageBar /> */}
         <ul className="mt-3 list-disc pl-5 space-y-1 text-sm">
           {GAPS.map((g) => <li key={g}>{g}</li>)}
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="text-lg font-semibold">Biases in Data</h3>
+        <ul className="mt-3 list-disc pl-5 space-y-1 text-sm">
+          <div className="mt-3 space-y-3 text-sm">
+            {BIAS.map((f, i) => (
+              <div key={f.title}>
+                <strong>{i + 1}. {f.title}.</strong>
+                <br />
+                <p className='ml-5'>
+                  {f.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </ul>
       </section>
 
