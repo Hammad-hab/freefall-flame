@@ -96,7 +96,7 @@ function EvidenceContent({ data }: { data: TabData }) {
   return (
     <div className="space-y-6">
       <EvidenceRanking rows={data.parsedRows} />
-      <OxygenHeatmap rows={data.parsedRows} rawRows={data.rows} />
+      <OxygenHeatmap rows={data.parsedRows} rawRows={data.rows} papers={data.dataset.papers} />
       <Limitations />
     </div>
   )

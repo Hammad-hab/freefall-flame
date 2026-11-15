@@ -194,6 +194,31 @@ describe('OxygenHeatmap', () => {
     render(<OxygenHeatmap rows={parsed} rawRows={rawRows} />)
     expect(screen.getByText(/evidence gap, not proof of safety/i)).toBeDefined()
   })
+
+  it('links a row to its paper by NTRS id, not by the internal paper id', () => {
+    // A row carries the Payload paper id (7), not the NTRS id; the NTRS id is
+    // on the dataset's paper, so the drill-down has to resolve one to the other.
+    const withPaper = rows.map((r) => ({ ...r, _paper: 7 })) as DataRow[]
+    const { container } = render(
+      <OxygenHeatmap
+        rows={parsed}
+        rawRows={withPaper}
+        papers={[{ id: 7, title: 'Olson et al. 2015', ntrsId: '20150019858', sourceUrl: null }]}
+      />,
+    )
+    const cell = Array.from(container.querySelectorAll('svg g')).find((g) => {
+      const t = g.querySelector('title')?.textContent ?? ''
+      // A filled cell: its title reads "... O₂ band: N tests" with N > 0.
+      return /O₂ band: [1-9]\d* tests/.test(t)
+    })!
+    fireEvent.click(cell)
+    // The clicked cell holds more than one test, so expect one link per row.
+    const links = screen.getAllByRole('link', { name: /20150019858/ })
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) {
+      expect(link.getAttribute('href')).toBe('https://ntrs.nasa.gov/citations/20150019858')
+    }
+  })
 })
 
 /* ------------------------------------------------------------------ */
